@@ -91,7 +91,7 @@ def step(job, runtime):
         },
     )
     terms = [g["term"].lower() for g in lesson["data"].get("glossary", []) if g.get("term")]
-    diff, acceptable = speech_match(turn["text"], result["text"], terms)
+    diff, acceptable = speech_match(voices.spoken_text(turn), result["text"], terms)
     if not acceptable:
         turn.setdefault("voice_candidate_failures", []).append(
             {"transcript": result["text"], "wer": diff["wer"]}
@@ -119,6 +119,7 @@ def step(job, runtime):
         audio_check={
             "transcript": result["text"],
             "wer": diff["wer"],
+            "spoken_text": voices.spoken_text(turn),
             "timestamps": result.get("timestamps", []),
             "asr_settings": result.get("generation_settings", {}),
         },

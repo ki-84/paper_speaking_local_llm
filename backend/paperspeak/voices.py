@@ -16,13 +16,18 @@ GUIDE_STYLE_VERSION = "maya-warm-1"
 def guide_audio_key(turn):
     revision = config.manifest()["models"]["tts-design"]["revision"]
     return hashlib.sha256(
-        (turn["id"] + turn["text"] + GUIDE_STYLE_VERSION + GUIDE_INSTRUCTION + revision).encode()
+        (turn["id"] + turn["text"] + spoken_text(turn) + GUIDE_STYLE_VERSION + GUIDE_INSTRUCTION + revision).encode()
     ).hexdigest()
+
+
+def spoken_text(turn):
+    """A pronunciation expansion may differ from the written lesson line."""
+    return turn.get("spoken_text") or turn["text"]
 
 
 def guide_request(turn, output, seed):
     return {
-        "text": turn["text"],
+        "text": spoken_text(turn),
         "voice": GUIDE_VOICE,
         "instruction": GUIDE_INSTRUCTION,
         "output": str(output),

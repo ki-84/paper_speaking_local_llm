@@ -664,7 +664,8 @@ def lesson_step(job, runtime):
         stage(f"Making a sentence easier to hear in chapter {ordinal + 1}", progress)
         transcript = turn.get("audio_check", {}).get("transcript", "")
         terms = [g["term"].lower() for g in data.get("glossary", []) if g.get("term")]
-        if turn.get("audio") and transcript and speech_match(turn["text"], transcript, terms)[1]:
+        spoken = voices.spoken_text(turn) if turn["speaker"] == "guide" else turn["text"]
+        if turn.get("audio") and transcript and speech_match(spoken, transcript, terms)[1]:
             # A normalization fix may make the saved, already checked voice
             # valid. Keep it instead of changing scientifically reviewed text.
             turn["audio_verified"] = True
@@ -739,10 +740,12 @@ def lesson_step(job, runtime):
             },
         )
         terms = [g["term"].lower() for g in data.get("glossary", []) if g.get("term")]
-        diff, acceptable = speech_match(turn["text"], result["text"], terms)
+        spoken = voices.spoken_text(turn) if turn["speaker"] == "guide" else turn["text"]
+        diff, acceptable = speech_match(spoken, result["text"], terms)
         turn["audio_check"] = {
             "transcript": result["text"],
             "wer": diff["wer"],
+            "spoken_text": spoken,
             "timestamps": result["timestamps"],
             "asr_settings": result.get("generation_settings", {}),
         }

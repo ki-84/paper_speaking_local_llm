@@ -210,4 +210,8 @@ def test_pretraining_spelling_does_not_trigger_a_false_audio_repair():
     assert word_diff("only half-way", "only halfway")["wer"] == 0
     assert word_diff("four-fold change in d ff", "fourfold change in DFF")["wer"] == 0
     assert word_diff("four-fold change", "threefold change")["wer"] > 0
+    assert word_diff("The feedforward table", "The feed-forward table")["wer"] == 0
+    assert word_diff("The feedforward table", "The feedback table")["wer"] > 0
+    assert word_diff("per Sterner et al. (2026a)", "per Sterner at all, 2026a")["wer"] == 0
+    assert word_diff("per Sterner et al. (2026a)", "per Sterner at all, 2025a")["wer"] > 0
     assert word_diff("two steps", "three steps")["wer"] > 0

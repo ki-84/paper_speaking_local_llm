@@ -145,6 +145,7 @@ def words(text):
     # ASR transcript without any change in the spoken audio.
     text = re.sub(r"\bd[_ -]?model\b", "d model", text)
     text = re.sub(r"\bd[_ -]?ff\b", "dff", text)
+    text = re.sub(r"\bfeed[-‐‑ ]?forward\b", "feedforward", text)
     text = re.sub(r"\bhalf[-‐‑ ]?way\b", "halfway", text)
     text = re.sub(
         r"\b(zero|one|two|three|four|five|six|seven|eight|nine|ten)[-‐‑ ]?fold\b",
@@ -166,6 +167,10 @@ def words(text):
 
 
 def word_diff(reference, heard):
+    # "et al." in a written citation is pronounced "et all"; ASR often
+    # writes the equally sounding English words "at all".
+    if re.search(r"\bet\s+al\b", reference, flags=re.I):
+        heard = re.sub(r"\b(?:et|at)[,\s]+(?:al|all)\b", "et al", heard, flags=re.I)
     a, b = words(reference), words(heard)
     # ASR can spell an initialism with spaces (SQL -> S Q L). Merge only
     # isolated letters for initialisms actually present in either text. Number

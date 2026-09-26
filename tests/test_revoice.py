@@ -85,3 +85,27 @@ def test_revoice_batches_generation_before_verification(database):
     for _ in range(3):
         assert not revoice.step(db.one("SELECT * FROM jobs WHERE id=?", (jid,)), Voice())
     assert calls == ["tts_design", "tts_design", "asr"]
+
+
+def test_revoice_can_verify_a_spoken_letter_expansion(database):
+    cid = chapter_fixture(database)
+    chapter = db.one("SELECT * FROM chapters WHERE id=?", (cid,))
+    chapter["data"]["turns"][0]["text"] = "And y is the short summary."
+    chapter["data"]["turns"][0]["spoken_text"] = "And the letter Y is the short summary."
+    db.save_chapter(chapter)
+    job = db.one("SELECT * FROM jobs WHERE id=?", (revoice.schedule()[0],))
+
+    class Voice:
+        def speech(self, mode, request):
+            if mode == "tts_design":
+                assert request["text"] == "And the letter Y is the short summary."
+                Path(request["output"]).write_bytes(b"new voice")
+                return {"duration": 2.0}
+            return {"text": "And the letter why is the short summary.", "timestamps": []}
+
+    assert not revoice.step(job, Voice())
+    assert revoice.step(job, Voice())
+    turn = db.one("SELECT * FROM chapters WHERE id=?", (cid,))["data"]["turns"][0]
+    assert turn["text"] == "And y is the short summary."
+    assert turn["voice"] == "Maya"
+    assert turn["audio_check"]["spoken_text"] == turn["spoken_text"]

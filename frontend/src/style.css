@@ -1336,6 +1336,44 @@ footer > span:first-child {
   background: #e3e3dd;
   text-decoration: line-through;
 }
+.pronunciation-focus {
+  margin: 20px 0;
+  padding: 17px;
+  border: 1px solid #c9d9bc;
+  border-radius: 8px;
+  background: #fafcf5;
+}
+.pronunciation-focus h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #324c38;
+}
+.pronunciation-focus h4 span {
+  font-size: 13px;
+  font-weight: 500;
+}
+.pronunciation-focus-item {
+  margin-top: 13px;
+  padding: 12px 0 0;
+  border-top: 1px solid #dce6d2;
+}
+.pronunciation-focus-item > strong {
+  margin-right: 9px;
+  font-size: 15px;
+  color: #263a2d;
+}
+.pronunciation-focus-item .same-sound {
+  font-size: 11px;
+  color: #477455;
+}
+.pronunciation-focus-item .sound-tip {
+  color: #314932;
+}
+.pronunciation-focus-audio {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .assessment details {
   border-top: 1px solid #dce3d2;
   padding: 13px 0;

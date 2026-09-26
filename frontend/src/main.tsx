@@ -2087,6 +2087,9 @@ function Assessment({
           <p>Your recording is saved. You can stay here while we check it.</p>
           {a.transcript && <p className="heard"><small>WE HEARD</small>{a.transcript}</p>}
           {a.word_match != null && <p><strong>{a.word_match}%</strong> words matched · {a.pace_wpm} words per minute. Sound and rhythm feedback is still on its way.</p>}
+          {a.pronunciation_focus && (
+            <PronunciationCoach focus={a.pronunciation_focus} referenceAudio={a.reference_audio} recordingAudio={a.wav || a.audio} />
+          )}
         </>
       ) : ["failed","cancelled"].includes(attempt.state) ? (
         <>
@@ -2145,6 +2148,9 @@ function Assessment({
                 are below.
               </p>
             </>
+          )}
+          {a.pronunciation_focus && (
+            <PronunciationCoach focus={a.pronunciation_focus} referenceAudio={a.reference_audio} recordingAudio={a.wav || a.audio} />
           )}
           {a.pronunciation && (
             <details>
@@ -2273,6 +2279,43 @@ function Assessment({
           </button>
         </>
       )}
+    </section>
+  );
+}
+function PronunciationCoach({
+  focus,
+  referenceAudio,
+  recordingAudio,
+}: {
+  focus: any;
+  referenceAudio?: string;
+  recordingAudio?: string;
+}) {
+  return (
+    <section className="pronunciation-focus" aria-label="Words to check">
+      <h4>Words to check <span lang="ja">· 確認したい単語</span></h4>
+      <p>{focus.message}</p>
+      <p lang="ja">{focus.message_ja}</p>
+      {focus.items?.length ? focus.items.map((item: any, i: number) => (
+        <div className="pronunciation-focus-item" key={i}>
+          <strong>{item.expected || "—"} → {item.heard || "—"}</strong>
+          {item.kind === "same_sound" && <span className="same-sound">Same sound · 同じ発音</span>}
+          <p>{item.message}</p>
+          <p lang="ja">{item.message_ja}</p>
+          {item.tip && <>
+            <p className="sound-tip"><strong>{item.sound}</strong> {item.tip}</p>
+            <p lang="ja">{item.tip_ja}</p>
+          </>}
+          <div className="pronunciation-focus-audio">
+            {referenceAudio && item.reference_start != null && item.reference_end != null && (
+              <ClipButton path={referenceAudio} start={item.reference_start} end={item.reference_end} label="Example · お手本" />
+            )}
+            {recordingAudio && item.start != null && item.end != null && (
+              <ClipButton path={recordingAudio} start={item.start} end={item.end} label="Your voice · 自分の声" />
+            )}
+          </div>
+        </div>
+      )) : <p>No clear word differences were found. Listen to the full recording to check the sounds.<br /><span lang="ja">明確な単語の違いは見つかりませんでした。発音は録音全体を聞いて確認してください。</span></p>}
     </section>
   );
 }

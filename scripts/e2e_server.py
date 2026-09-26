@@ -7,7 +7,8 @@ import tempfile
 
 os.environ["PAPERSPEAK_DATA"] = tempfile.mkdtemp(prefix="paperspeak-ui-")
 import uvicorn
-from paperspeak import config, db, lessons, papers
+from paperspeak import config, db, lessons, papers, practice
+from paperspeak.quality import word_diff
 
 try:
     db.init()
@@ -106,6 +107,32 @@ try:
                     },
                 }
             ),
+        ),
+    )
+    reference_line = "The old weights stay fixed"
+    heard_line = "The old weights stay mixed"
+    reference_stamps = [
+        {"word": word, "start": i * 0.2, "end": i * 0.2 + 0.15}
+        for i, word in enumerate(reference_line.split())
+    ]
+    heard_stamps = [
+        {"word": word, "start": i * 0.2, "end": i * 0.2 + 0.15}
+        for i, word in enumerate(heard_line.split())
+    ]
+    recording = {
+        "phase": "done", "audio": "audio/sample.wav", "wav": "audio/sample.wav",
+        "reference_audio": "audio/sample.wav", "transcript": heard_line,
+        "pace_wpm": 125, "pauses": [],
+        **word_diff(reference_line, heard_line),
+    }
+    recording["pronunciation_focus"] = practice.pronunciation_focus(
+        recording, reference_stamps, heard_stamps
+    )
+    db.execute(
+        "INSERT INTO attempts VALUES (?,?,?,?,?,?,?,?)",
+        (
+            "test-pronunciation-coach", lid, "test-chapter", "test-turn-1",
+            "read", "ready", db.dumps(recording), 0,
         ),
     )
     search_paper = {

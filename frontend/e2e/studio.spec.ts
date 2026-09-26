@@ -83,6 +83,18 @@ test("Japanese aid keeps English and the source visible", async ({ page }) => {
   await page.getByRole("button", { name: "Source 1" }).click();
   await expect(page.getByText("Original evidence for the interface test.")).toBeVisible();
 });
+test("recording feedback explains a word to compare in English and Japanese", async ({ page }) => {
+  await page.getByRole("button", { name: "Next sentence" }).click();
+  await page.getByText("Your earlier recordings (1)").click();
+  await page.getByRole("button", { name: "See feedback" }).click();
+  const coach = page.getByRole("region", { name: "Words to check" });
+  await expect(coach.getByRole("heading", { name: /Words to check/ })).toBeVisible();
+  await expect(coach.getByText("fixed → mixed")).toBeVisible();
+  await expect(coach.getByText(/Try \/f\/ in/)).toBeVisible();
+  await expect(coach.getByText(/聞き比べてください/)).toBeVisible();
+  await expect(coach.getByRole("button", { name: "Example · お手本" })).toBeEnabled();
+  await expect(coach.getByRole("button", { name: "Your voice · 自分の声" })).toBeEnabled();
+});
 test("browser microphone saves a real recording and guards navigation", async ({
   page,
 }) => {

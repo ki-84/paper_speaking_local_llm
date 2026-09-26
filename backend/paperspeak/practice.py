@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 from difflib import SequenceMatcher
+from functools import lru_cache
 
 import imageio_ffmpeg
 import numpy as np
@@ -129,6 +131,128 @@ SOUND_TIPS = {
     },
 }
 
+# These are practice cues for the printed target word. They do not assert that
+# the learner produced a particular wrong phone: the phone probe is too noisy
+# for that conclusion on learner speech.
+WORD_SOUND_GUIDES = {
+    "HH": ("/h/", "Let out a soft breath before the vowel.", "母音の前で、息を軽く出して /h/ を始めます。"),
+    "TH": ("/θ/", "Put your tongue lightly between your teeth and let air pass.", "舌先を上下の歯の間に軽く置き、息を通します。"),
+    "DH": ("/ð/", "Use the same tongue position as in thin, and add your voice.", "舌先を歯の間に軽く置き、声を出します。"),
+    "R": ("/ɹ/", "Keep your tongue away from the roof of your mouth.", "舌を上あごに付けずに /r/ を出します。"),
+    "L": ("/l/", "Touch the ridge behind your top teeth with your tongue.", "舌先を上の前歯のすぐ後ろに付けます。"),
+    "V": ("/v/", "Touch your lower lip to your top teeth and add your voice.", "下唇を上の歯に軽く当て、声を出します。"),
+    "F": ("/f/", "Touch your lower lip to your top teeth and let air pass.", "下唇を上の歯に軽く当て、息を通します。"),
+    "AE": ("/æ/", "Open your mouth wider than for bed.", "「bed」の /e/ より口を少し大きく開きます。"),
+    "EH": ("/ɛ/", "Say the short vowel in bed.", "「bed」の短い母音を意識します。"),
+    "IH": ("/ɪ/", "Keep this vowel short, as in ship.", "「ship」の短い母音を意識します。"),
+    "IY": ("/iː/", "Hold this vowel a little longer, as in sheep.", "「sheep」の母音を少し長めに伸ばします。"),
+    "OW": ("/oʊ/", "Let the vowel glide, as in go.", "「go」のように母音を滑らかに変化させます。"),
+    "SH": ("/ʃ/", "Round your lips gently, as in she.", "「she」のように唇を少し丸めます。"),
+    "Z": ("/z/", "Keep your voice on for the final /z/ sound.", "語尾の /z/ まで声を出し続けます。"),
+}
+
+
+@lru_cache(maxsize=1)
+def pronunciation_dictionary():
+    import cmudict
+
+    return cmudict.dict()
+
+
+def dictionary_sounds(word):
+    return [
+        tuple(re.sub(r"\d", "", phone) for phone in pronunciation)
+        for pronunciation in pronunciation_dictionary().get(word.lower(), [])[:4]
+    ]
+
+
+def word_sound_guide(expected, heard):
+    target = next(iter(dictionary_sounds(expected)), ())
+    comparison = next(iter(dictionary_sounds(heard)), ())
+    if not target or not comparison:
+        return None
+    for tag, start, end, _, _ in SequenceMatcher(
+        a=target, b=comparison, autojunk=False
+    ).get_opcodes():
+        if tag == "equal":
+            continue
+        for phone in target[start:end]:
+            if phone in WORD_SOUND_GUIDES:
+                sound, english, japanese = WORD_SOUND_GUIDES[phone]
+                return {
+                    "sound": sound,
+                    "tip": f"Try {sound} in ‘{expected}’. {english}",
+                    "tip_ja": f"「{expected}」の {sound} を練習しましょう。{japanese}",
+                }
+    return None
+
+
+def indexed_word_times(stamps):
+    return [
+        {"start": stamp.get("start"), "end": stamp.get("end")}
+        for stamp in stamps
+        for _ in words(stamp.get("word", ""))
+    ]
+
+
+def pronunciation_focus(diff, reference_stamps, learner_stamps):
+    """Give word-level practice cues without turning uncertain phones into errors."""
+    changes = diff.get("words", [])
+    reference_count = sum(bool(item.get("expected")) for item in changes)
+    learner_count = sum(bool(item.get("heard")) for item in changes)
+    reference_times = indexed_word_times(reference_stamps)
+    learner_times = indexed_word_times(learner_stamps)
+    if len(reference_times) != reference_count:
+        reference_times = []
+    if len(learner_times) != learner_count:
+        learner_times = []
+    result = []
+    ri = li = 0
+    for item in changes:
+        expected, heard = item.get("expected", ""), item.get("heard", "")
+        reference = reference_times[ri] if expected and reference_times else {}
+        learner = learner_times[li] if heard and learner_times else {}
+        ri += bool(expected)
+        li += bool(heard)
+        if item.get("kind") == "match":
+            continue
+        same_sound = bool(
+            expected and heard and set(dictionary_sounds(expected)) & set(dictionary_sounds(heard))
+        )
+        if same_sound:
+            message = f"The recognizer wrote ‘{heard}’; the line says ‘{expected}’. These can sound the same. The spelling difference alone does not show a pronunciation error."
+            message_ja = f"音声認識は「{heard}」と書きましたが、お手本は「{expected}」です。発音が同じ場合があり、表記の違いだけでは発音の誤りとは言えません。"
+        elif expected and heard:
+            message = f"The recognizer heard ‘{heard}’ where the line says ‘{expected}’. Compare the two recordings."
+            message_ja = f"音声認識は「{heard}」と聞き取りました。お手本の「{expected}」と聞き比べてください。"
+        elif expected:
+            message = f"The recognizer missed ‘{expected}’. Listen for this word, then try it again."
+            message_ja = f"「{expected}」が聞き取られませんでした。お手本を聞いて、もう一度試してください。"
+        else:
+            message = f"The recognizer heard an extra ‘{heard}’. Check this short part of your recording."
+            message_ja = f"「{heard}」という単語が余分に聞き取られました。録音のこの部分を確認してください。"
+        guide = word_sound_guide(expected, heard) if expected and heard and not same_sound else None
+        result.append({
+            "kind": "same_sound" if same_sound else item["kind"],
+            "expected": expected, "heard": heard,
+            "message": message, "message_ja": message_ja,
+            "sound": guide["sound"] if guide else None,
+            "tip": guide["tip"] if guide else None,
+            "tip_ja": guide["tip_ja"] if guide else None,
+            "reference_start": reference.get("start"), "reference_end": reference.get("end"),
+            "start": learner.get("start"), "end": learner.get("end"),
+        })
+    # A few clear next steps are more useful than a long list of model guesses.
+    actionable = [item for item in result if item["kind"] != "same_sound"][:3]
+    if not actionable:
+        actionable = [item for item in result if item["kind"] == "same_sound"][:1]
+    return {
+        "status": "word_recognition_only",
+        "items": actionable,
+        "message": "A word recognizer can make mistakes. These are words to check, not proof of a pronunciation error.",
+        "message_ja": "音声認識には誤りもあります。これは聞き比べる候補であり、発音の間違いを断定するものではありません。",
+    }
+
 
 def pronunciation_feedback(learner, reference):
     a = reference.get("phones", [])
@@ -250,6 +374,9 @@ def practice_step(job, runtime):
             a["reference_audio"] = turn["audio"]
             a["reference_timestamps"] = turn.get("audio_check", {}).get(
                 "timestamps", []
+            )
+            a["pronunciation_focus"] = pronunciation_focus(
+                a, a["reference_timestamps"], a["timestamps"]
             )
             a["phase"] = "phones"
         else:

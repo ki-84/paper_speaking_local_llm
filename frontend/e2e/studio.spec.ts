@@ -11,7 +11,8 @@ test.beforeEach(async ({ page }) => {
     page.getByRole("button", { name: /Interface test: a small change/ }),
   ).toBeVisible();
   const ls = await (await page.request.get("/api/lessons")).json();
-  await page.request.put(`/api/lessons/${ls[0].id}/progress`, {
+  const interfaceLesson = ls.find((lesson: any) => lesson.data.title === "Interface test: a small change");
+  await page.request.put(`/api/lessons/${interfaceLesson.id}/progress`, {
     data: { chapter_id: "test-chapter", turn_index: 0 },
   });
   await page
@@ -25,6 +26,21 @@ test.beforeEach(async ({ page }) => {
       )
       .first(),
   ).toBeVisible();
+});
+test("Japanese paper search shows titles, abstracts, and a selectable paper", async ({ page }) => {
+  await page.getByRole("button", { name: "論文を探す" }).click();
+  await expect(page.getByRole("heading", { name: "次に読みたい論文を探す。" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "初めて見る物をつかむロボット", exact: true })).toBeVisible();
+  await expect(page.getByText("未知の物をつかむ学習について読めます。")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ロボットが新しい物をつかむ研究" })).toBeVisible();
+  await page.getByRole("button", { name: "この論文で教材を作る" }).first().click();
+  await expect.poll(async () => {
+    const lessons = await (await page.request.get("/api/lessons")).json();
+    return lessons.some((lesson: any) => lesson.data.title === "A Robot That Learns to Grasp");
+  }).toBeTruthy();
+  await page.getByLabel("どんな論文を読みたいですか？").fill("触覚を使うロボットの論文");
+  await page.getByRole("button", { name: "日本語で論文を探す" }).click();
+  await expect(page.getByRole("heading", { name: "「触覚を使うロボットの論文」の検索結果" })).toBeVisible();
 });
 test("source, audio, question hints, and saved position", async ({ page }) => {
   await page.getByRole("button", { name: "Source 1" }).click();
@@ -87,7 +103,7 @@ test("browser microphone saves a real recording and guards navigation", async ({
     ),
   ).toBeVisible();
   const response = await page.request.get("/api/lessons");
-  const lesson = (await response.json())[0];
+  const lesson = (await response.json()).find((item: any) => item.data.title === "Interface test: a small change");
   const detail = await (
     await page.request.get(`/api/lessons/${lesson.id}`)
   ).json();

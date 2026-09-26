@@ -15,6 +15,8 @@ LAN browser ── HTTPS :8443 Caddy ── 127.0.0.1:8190 FastAPI
 - `voices.py`/`revoice.py`: Aidenと米国英語の女性音声Mayaの設定、旧Ryan音声の段階的な再生成とASR照合。新音声が検証を通るまで旧音声を使い、置換後も履歴に元ファイルを保持します。
 - `quality.py`: 引用IDと数値の機械的検査、短文チェック、真の編集距離による単語照合。
 - `discovery.py`: 30日/差分の収集、分野分散・好みを考慮した最大10候補、全文の分割読解、根拠を持つ推薦、日次上限・滞留抑制。
+- `paper_search.py`: 日本語の自由入力をローカルモデルでarXiv検索語に変換し、要旨の関連性で候補を絞り、日本語の題名・要旨要約を区切り保存。検索候補は本文未検証と明示します。
+- `recommendation_ja.py`: 本文を読んで選んだ既存推薦の題名・要旨・理由・注意点をローカルモデルで日本語化し、原文の変更時は作り直します。
 - `practice.py`: 録音品質、内容認識、音素比較、文強勢、母音の相対エネルギー、理解/英語を分ける返答、間隔反復。
 - `runtime.py`/`speech_actor.py`: 排他的なモデル切替、VRAM空き確認、完全ローカルの固定モデル、所有する子プロセスだけを停止。CustomVoiceとVoiceDesignを必要に応じて入れ替えます。
 - `worker.py`/`db.py`: SQLiteの即時トランザクションでジョブ重複を防ぎ、優先順に処理。heartbeat90秒で中断ジョブを回収。
@@ -60,6 +62,7 @@ Museの推論部分は通常2048トークン、短い分類・フィードバッ
 | GET/DELETE | `/api/attempts/{id}` | 評価・録音削除 |
 | GET | `/api/reviews`, `/api/recommendations` | 復習・推薦 |
 | POST | `/api/discover` | 探索開始 |
+| POST/GET | `/api/paper-searches` | 日本語の希望から検索を開始・履歴と結果を取得 |
 | POST | `/api/recommendations/{id}/feedback` | 興味・既読 |
 | GET | `/api/jobs` | 保存済みの処理状態 |
 | POST | `/api/jobs/{id}/{pause,resume,retry,cancel}` | 処理制御 |

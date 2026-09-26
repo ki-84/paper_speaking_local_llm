@@ -43,7 +43,7 @@ import "./style.css";
 type Page = "library" | "discover" | "review" | "jobs" | "settings" | "learn";
 const tabs: [Page, string, typeof BookOpen][] = [
   ["library", "My library", BookOpen],
-  ["discover", "Find a paper", Compass],
+  ["discover", "論文を探す", Compass],
   ["review", "Practice again", RotateCcw],
   ["jobs", "In the making", Activity],
   ["settings", "Settings", Settings],
@@ -67,6 +67,8 @@ function App() {
     [jobs, setJobs] = useState<Row[]>([]),
     [recs, setRecs] = useState<Row[]>([]),
     [reviews, setReviews] = useState<Row[]>([]);
+  const [searches, setSearches] = useState<any[]>([]),
+    [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState<any>(null),
     [version, setVersion] = useState(0),
     [error, setError] = useState(""),
@@ -101,13 +103,15 @@ function App() {
       api<Row[]>("/jobs"),
       api<Row[]>("/recommendations"),
       api<Row[]>("/reviews"),
+      api<any[]>("/paper-searches"),
     ])
-      .then(([l, p, j, r, v]) => {
+      .then(([l, p, j, r, v, s]) => {
         setLessons(l);
         setPapers(p);
         setJobs(j);
         setRecs(r);
         setReviews(v);
+        setSearches(s);
       })
       .catch((e) => setError(e.message));
   }, [signed, version]);
@@ -149,6 +153,8 @@ function App() {
     navigate("learn");
   };
   const busy = jobs.filter((j) => ["queued", "running"].includes(j.state));
+  const latestSearch = searches[0];
+  const searchRunning = latestSearch && ["queued", "running", "paused"].includes(latestSearch.state);
   if (checking)
     return (
       <div className="loading">
@@ -422,24 +428,80 @@ function App() {
         {page === "discover" && (
           <>
             <PageHeading
-              eyebrow="FOLLOW YOUR CURIOSITY"
-              title="Find your next idea."
-              description="Papers from across AI, chosen for what they can teach you."
+              eyebrow="読みたいテーマから探す"
+              title="次に読みたい論文を探す。"
+              description="日本語で興味を入力すると、関連するAI論文を日本語の題名と要約で選べます。"
             />
+            <section className="prompt-search">
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (searchQuery.trim()) act(() => post("/paper-searches", { query: searchQuery.trim() }));
+                }}
+              >
+                <label htmlFor="paper-search-query">どんな論文を読みたいですか？</label>
+                <textarea
+                  id="paper-search-query"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  maxLength={600}
+                  rows={3}
+                  placeholder="例：ロボットが初めて見る物をつかむための学習方法を知りたい"
+                />
+                <div className="actions">
+                  <button className="primary" type="submit" disabled={!!searchRunning || searchQuery.trim().length < 3}>
+                    <Compass size={16} /> 日本語で論文を探す
+                  </button>
+                  <small>検索語の作成と日本語訳はローカルモデルで行います。論文情報はarXivから取得します。</small>
+                </div>
+              </form>
+            </section>
+            {latestSearch && (
+              <section className="search-section">
+                <h2>「{latestSearch.query}」の検索結果</h2>
+                {searchRunning && (
+                  <p className="search-progress">検索・日本語化を進めています。完成した候補から表示します。 {Math.round(100 * latestSearch.progress)}%</p>
+                )}
+                {latestSearch.state === "failed" && (
+                  <p className="job-error">検索を完了できませんでした。{latestSearch.error}</p>
+                )}
+                {latestSearch.state === "completed" && !latestSearch.results.length && (
+                  <p>該当する論文が見つかりませんでした。別の言葉でお試しください。</p>
+                )}
+                {latestSearch.results.map((paper: any) => (
+                  <article className="recommendation" key={paper.paper_id}>
+                    <div className="card-meta"><Badge>要旨から選定</Badge><span>{paper.published?.slice(0, 10)} · {paper.source_id}{paper.version}</span></div>
+                    <h3>{paper.title_ja}</h3>
+                    <p>{paper.summary_ja}</p>
+                    <div className="learning-box"><strong>希望との関連</strong><p>{paper.fit_ja}</p></div>
+                    <details>
+                      <summary>原題・英語の要旨</summary>
+                      <strong>{paper.title}</strong><p>{paper.abstract}</p>
+                    </details>
+                    <div className="actions">
+                      <button className="primary" onClick={() => act(() => post(`/papers/${paper.paper_id}/lessons`))}>
+                        この論文で教材を作る <ArrowRight size={16} />
+                      </button>
+                      <a className="text-button" href={paper.url} target="_blank" rel="noreferrer">原論文を見る <ExternalLink size={14} /></a>
+                    </div>
+                  </article>
+                ))}
+              </section>
+            )}
+            <h2>本文を確認したおすすめ</h2>
             <div className="discovery-banner">
               <Compass size={24} />
               <p>
-                We read the paper before we recommend it.
+                こちらは論文の本文を読んで選んだ候補です。
                 <small>
-                  New papers become lessons automatically. You can guide what
-                  comes next.
+                  毎日の自動探索を、今すぐ実行することもできます。
                 </small>
               </p>
               <button
                 className="primary"
                 onClick={() => act(() => post("/discover"))}
               >
-                <RefreshCw size={16} /> Look for papers
+                <RefreshCw size={16} /> 新しい論文を探す
               </button>
             </div>
             {recs.length ? (
@@ -448,18 +510,20 @@ function App() {
                   <article className="recommendation" key={r.id}>
                     <div className="card-meta">
                       <Badge state={r.state}>
-                        {r.state.replaceAll("_", " ")}
+                        {r.state === "selected" ? "教材化中" : r.state === "recommended" ? "おすすめ" : "見送り候補"}
                       </Badge>
                       <span>{r.day}</span>
                     </div>
-                    <h3>{r.title}</h3>
-                    <p>{r.data.why}</p>
+                    <h3>{r.data.ja?.title || "日本語の題名を準備中…"}</h3>
+                    <p>{r.data.ja?.summary || "要旨を日本語にしています。"}</p>
                     <div className="learning-box">
-                      <strong>You will learn</strong>
-                      <p>{r.data.learn}</p>
+                      <strong>なぜ面白いか</strong>
+                      <p>{r.data.ja?.why || "日本語の説明を準備中です。"}</p>
+                      <strong>学べること</strong>
+                      <p>{r.data.ja?.learn || "日本語の説明を準備中です。"}</p>
                     </div>
                     <details>
-                      <summary>Read the evidence ({r.data.source_ids?.length || 0})</summary>
+                      <summary>論文中の根拠を見る ({r.data.source_ids?.length || 0})</summary>
                       <div className="actions">
                       {r.data.source_ids?.map((sid: string, i: number) => (
                         <button
@@ -471,29 +535,31 @@ function App() {
                               .catch((e) => setError(e.message))
                           }
                         >
-                          <FileText size={12} /> Evidence {i + 1}
+                          <FileText size={12} /> 根拠 {i + 1}
                         </button>
                       ))}
                       </div>
                     </details>
-                    {r.data.cautions?.length > 0 && (
+                    {r.data.ja?.cautions?.length > 0 && (
                       <details>
-                        <summary>Things to keep in mind</summary>
+                        <summary>読むときの注意点</summary>
                         <ul>
-                          {r.data.cautions.map((c: string, i: number) => (
+                          {r.data.ja.cautions.map((c: string, i: number) => (
                             <li key={i}>{c}</li>
                           ))}
                         </ul>
                       </details>
                     )}
+                    <details><summary>原題・英語の要旨</summary><strong>{r.title}</strong><p>{JSON.parse(r.paper_data).abstract}</p></details>
                     <div className="actions">
                       <button
                         className="primary"
+                        disabled={!r.data.ja?.title}
                         onClick={() =>
                           act(() => post(`/papers/${r.paper_id}/lessons`))
                         }
                       >
-                        Make a lesson <ArrowRight size={16} />
+                        この論文で教材を作る <ArrowRight size={16} />
                       </button>
                       <button
                         className={`secondary ${r.feedback === "interested" ? "active" : ""}`}
@@ -505,7 +571,7 @@ function App() {
                           )
                         }
                       >
-                        <Bookmark size={16} /> More like this
+                        <Bookmark size={16} /> 興味あり
                       </button>
                       <button
                         className="text-button"
@@ -517,7 +583,7 @@ function App() {
                           )
                         }
                       >
-                        Not for me
+                        興味なし
                       </button>
                       <button
                         className="text-button"
@@ -529,9 +595,7 @@ function App() {
                           )
                         }
                       >
-                        {r.feedback === "read"
-                          ? "Marked as read"
-                          : "Mark as read"}
+                        {r.feedback === "read" ? "既読" : "既読にする"}
                       </button>
                       <a
                         className="text-button"
@@ -539,7 +603,7 @@ function App() {
                         rel="noreferrer"
                         href={JSON.parse(r.paper_data).url}
                       >
-                        Read the paper <ExternalLink size={14} />
+                        原論文を見る <ExternalLink size={14} />
                       </a>
                     </div>
                   </article>
@@ -548,8 +612,8 @@ function App() {
             ) : (
               <Empty
                 icon={Compass}
-                title="A little discovery goes a long way."
-                text="Start a search. We will read promising papers and explain why they are worth your time."
+                title="おすすめを準備しています。"
+                text="上の入力欄から、読みたいテーマの論文を日本語で探せます。"
               />
             )}
           </>
@@ -572,6 +636,10 @@ function App() {
                           ? "A new lesson"
                           : j.kind === "discover"
                             ? "Finding good papers"
+                            : j.kind === "paper_search"
+                              ? "日本語の希望から論文を検索"
+                            : j.kind === "recommendation_ja"
+                              ? "推薦を日本語に翻訳"
                             : j.kind === "practice"
                               ? "Your recording"
                               : j.kind === "revoice"

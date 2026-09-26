@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db, lessons, papers, practice, translation
+from . import config, db, lessons, papers, practice, recommendation_ja, translation
 from .runtime import gpu_info
 
 
@@ -532,6 +532,9 @@ def recommendations():
         row["data"].pop("reading_notes", None)
         row["data"].pop("selection_notes", None)
         row["data"].pop("assessment", None)
+        ja = row["data"].get("ja")
+        if ja and ja.get("source_digest") and ja["source_digest"] != recommendation_ja.source_digest(row):
+            row["data"].pop("ja", None)
     return rows
 
 
@@ -546,6 +549,47 @@ def feedback(ident: str, body: Feedback):
     ):
         raise HTTPException(404, "Recommendation not found")
     return {"ok": True}
+
+
+class PaperSearchRequest(BaseModel):
+    query: str = Field(min_length=3, max_length=600)
+
+
+@app.post("/api/paper-searches", dependencies=[Depends(auth)])
+def start_paper_search(body: PaperSearchRequest):
+    query = body.query.strip()
+    if len(query) < 3:
+        raise HTTPException(422, "読みたい論文について日本語で入力してください。")
+    target = hashlib.sha256(query.encode()).hexdigest()
+    active = db.one(
+        "SELECT * FROM jobs WHERE kind='paper_search' AND state IN ('queued','running','paused') ORDER BY created DESC LIMIT 1"
+    )
+    if active:
+        if active["target"] == target:
+            return {"job_id": active["id"]}
+        raise HTTPException(409, "先の論文検索が進行中です。完了後に次の検索を始められます。")
+    return {"job_id": db.enqueue("paper_search", target, {"query": query}, priority=7)}
+
+
+@app.get("/api/paper-searches", dependencies=[Depends(auth)])
+def paper_searches():
+    rows = db.all(
+        "SELECT * FROM jobs WHERE kind='paper_search' ORDER BY created DESC LIMIT 8"
+    )
+    return [
+        {
+            "id": row["id"],
+            "query": row["payload"]["query"],
+            "state": row["state"],
+            "stage": row["stage"],
+            "progress": row["progress"],
+            "error": row["error"],
+            "results": [r for r in row["checkpoint"].get("results", []) if r.get("title_ja")],
+            "found": row["checkpoint"].get("found"),
+            "created": row["created"],
+        }
+        for row in rows
+    ]
 
 
 @app.post("/api/discover", dependencies=[Depends(auth)])

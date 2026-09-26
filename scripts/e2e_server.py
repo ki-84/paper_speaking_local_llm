@@ -108,6 +108,46 @@ try:
             ),
         ),
     )
+    search_paper = {
+        "source_id": "2609.12345", "version": "v1",
+        "title": "A Robot That Learns to Grasp",
+        "abstract": "We study a robot that learns to grasp new objects in a controlled test.",
+        "url": "https://arxiv.org/abs/2609.12345v1",
+        "categories": ["cs.RO"], "published": "2026-09-20T00:00:00Z",
+    }
+    search_pid = papers.register(search_paper)
+    search_job = db.enqueue(
+        "paper_search", "ui-search", {"query": "初めて見る物をつかむロボット"}, priority=7
+    )
+    db.patch_job(
+        search_job, state="completed", progress=1,
+        checkpoint={"phase": "done", "results": [search_paper | {
+            "paper_id": search_pid,
+            "title_ja": "初めて見る物をつかむロボット",
+            "summary_ja": "ロボットが新しい物をつかむ方法を調べます。条件を決めた実験で確かめます。",
+            "fit_ja": "未知の物をつかむ学習について読めます。",
+        }]},
+    )
+    db.execute(
+        "INSERT INTO recommendations VALUES (?,?,?,?,?,?)",
+        (
+            db.uid(), search_pid, "2026-09-26", "recommended",
+            db.dumps({
+                "easy_english": True,
+                "why": "A robot learns to grasp new objects.",
+                "learn": "You can study how it learns.",
+                "cautions": ["The test is controlled."],
+                "source_ids": [],
+                "ja": {
+                    "title": "ロボットが新しい物をつかむ研究",
+                    "summary": "ロボットが新しい物をつかむ方法を調べます。",
+                    "why": "初めての物をつかむ方法が面白いです。",
+                    "learn": "ロボットの学習方法を学べます。",
+                    "cautions": ["条件を決めた実験です。"],
+                },
+            }), None,
+        ),
+    )
     uvicorn.run("paperspeak.api:app", host="127.0.0.1", port=8195, log_level="warning")
 finally:
     shutil.rmtree(config.DATA, ignore_errors=True)

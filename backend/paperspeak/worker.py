@@ -17,6 +17,8 @@ from . import (
     papers,
     phoneme_probe,
     practice,
+    paper_search,
+    recommendation_ja,
     revoice,
     translation,
 )
@@ -67,12 +69,14 @@ def run():
     thread = threading.Thread(target=heartbeat, daemon=True)
     thread.start()
     translation.schedule_backfill()
+    recommendation_ja.schedule()
     revoice.schedule()
     last_schedule = 0
     try:
         while not stopped.is_set():
             if time.time() - last_schedule > 60:
                 discovery.schedule()
+                recommendation_ja.schedule()
                 revoice.schedule()
                 last_schedule = time.time()
             job = db.claim(owner)
@@ -96,6 +100,10 @@ def run():
                     done = practice.practice_step(job, runtime)
                 elif job["kind"] == "translate":
                     done = translation.translation_step(job, runtime)
+                elif job["kind"] == "paper_search":
+                    done = paper_search.step(job, runtime)
+                elif job["kind"] == "recommendation_ja":
+                    done = recommendation_ja.step(job, runtime)
                 elif job["kind"] == "revoice":
                     done = revoice.step(job, runtime)
                 elif job["kind"] == "benchmark":

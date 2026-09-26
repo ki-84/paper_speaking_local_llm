@@ -594,6 +594,37 @@ main {
   color: var(--muted);
   font-size: 14px;
 }
+.prompt-search {
+  background: #f1f4ea;
+  border: 1px solid #dbe4d1;
+  border-radius: 8px;
+  padding: 25px;
+  margin: 0 0 34px;
+}
+.prompt-search label {
+  font-size: 15px;
+  color: var(--ink);
+}
+.prompt-search textarea {
+  min-height: 90px;
+  resize: vertical;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.prompt-search .actions {
+  align-items: center;
+}
+.prompt-search small,
+.search-progress {
+  color: var(--muted);
+  font-size: 12px;
+}
+.search-section {
+  margin-bottom: 42px;
+}
+.search-section h2 {
+  overflow-wrap: anywhere;
+}
 .discovery-banner {
   display: flex;
   align-items: center;

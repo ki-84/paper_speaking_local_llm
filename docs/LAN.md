@@ -11,6 +11,8 @@
 
 HTTPS警告の一時的な回避だけでは、ブラウザによってマイクが使えません。[getUserMediaは安全なコンテキストを必要とします](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)。Caddyの[ローカルHTTPS](https://caddyserver.com/docs/automatic-https#local-https)のCAを信頼する手順です。
 
+MacのChromeで録音中になっても声が入らない場合は、教材画面の **Check microphone** を押し、話したときに **Input level** が動くか確認します。動かなければ画面の **Microphone** で「MacBook Air Microphone」など実際に使う入力を選び、再度確認してください。[macOSの「システム設定 → サウンド → 入力」](https://support.apple.com/en-asia/guide/mac-help/mchl9777ee30/mac)でも入力デバイスと入力レベルを確認できます。[「プライバシーとセキュリティ → マイク」](https://support.apple.com/en-my/guide/mac-help/mchla1b1e1fe/mac)でChromeを許可し、必要ならChromeを再起動します。[Chromeの「設定 → プライバシーとセキュリティ → サイトの設定 → マイク」](https://support.google.com/chrome/answer/2693767?co=GENIE.Platform%3DDesktop&hl=en-IO)でも標準マイクとこのサイトの許可を確認できます。入力レベルが動いてから録音します。
+
 LinuxのIPをルーターで固定することを勧めます。IP/名前が変わる場合は `PAPERSPEAK_LAN_HOST=新しいIP ./studio start` とします。実行中のプロセスには反映されないため先に停止してください。Caddyは新しい名前/IPの証明書を発行します。同じCAを保持していれば再インポートは不要です。
 
 接続できない場合は `./studio doctor` を確認します。ホストのファイアウォールを使用している場合、利用LANからTCP8443への接続を許可します。ルーターのポート転送は不要です。APIの8190と推論の8191はLANに公開しません。

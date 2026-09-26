@@ -70,6 +70,11 @@ test("Japanese aid keeps English and the source visible", async ({ page }) => {
 test("browser microphone saves a real recording and guards navigation", async ({
   page,
 }) => {
+  await page.getByRole("button", { name: "Check microphone" }).click();
+  await expect(page.getByRole("progressbar", { name: "Microphone input level" })).toBeVisible();
+  await expect.poll(() => page.getByRole("progressbar", { name: "Microphone input level" }).evaluate((meter: HTMLProgressElement) => meter.value)).toBeGreaterThan(0);
+  await expect.poll(() => page.locator("#practice-microphone option").count()).toBeGreaterThan(1);
+  await page.getByRole("button", { name: "Stop mic check" }).click();
   await page.getByRole("button", { name: "Your turn", exact: true }).click();
   await expect(page.getByRole("button", { name: /Done ·/ })).toBeVisible();
   await page.getByRole("button", { name: "Settings", exact: true }).click();

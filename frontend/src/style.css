@@ -1146,6 +1146,39 @@ footer > span:first-child {
   gap: 17px;
   padding: 26px 0 15px;
 }
+.mic-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  padding-bottom: 14px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.mic-check select {
+  max-width: min(100%, 290px);
+  padding: 7px;
+}
+.mic-signal {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  max-width: 420px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  background: #f5f3eb;
+}
+.mic-signal progress {
+  width: 100%;
+  height: 12px;
+  accent-color: #6c9870;
+}
+.mic-signal small {
+  line-height: 1.4;
+  color: #a34e3c;
+}
 .record-button {
   background: #c97856;
   color: white;

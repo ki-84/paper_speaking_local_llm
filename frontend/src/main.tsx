@@ -1082,12 +1082,17 @@ function Learn({
     [seconds, setSeconds] = useState(0),
     [sending, setSending] = useState(false),
     [requestingMic, setRequestingMic] = useState(false),
+    [testingMic, setTestingMic] = useState(false),
+    [micLevel, setMicLevel] = useState(0),
+    [micDevices, setMicDevices] = useState<MediaDeviceInfo[]>([]),
+    [selectedMic, setSelectedMic] = useState(() => localStorage.getItem("paperspeak-microphone") || ""),
+    [activeMic, setActiveMic] = useState(""),
     [pending, setPending] = useState<any>(null),
     [question, setQuestion] = useState<any>(null),
     [hint, setHint] = useState(0);
   const selfAudio = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
-    const busy = recording || requestingMic || sending;
+    const busy = recording || requestingMic || testingMic || sending;
     onRecording(busy);
     const leave = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -1097,12 +1102,89 @@ function Learn({
       window.removeEventListener("beforeunload", leave);
       onRecording(false);
     };
-  }, [recording, requestingMic, sending]);
+  }, [recording, requestingMic, testingMic, sending]);
   const audio = useRef<HTMLAudioElement>(null),
     recorder = useRef<MediaRecorder | null>(null),
     timer = useRef<ReturnType<typeof setInterval> | null>(null),
+    meterTimer = useRef<ReturnType<typeof setInterval> | null>(null),
+    meterContext = useRef<AudioContext | null>(null),
     stream = useRef<MediaStream | null>(null),
     initialized = useRef("");
+  useEffect(() => {
+    navigator.mediaDevices?.enumerateDevices()
+      .then((devices) => setMicDevices(devices.filter((device) => device.kind === "audioinput" && device.deviceId && device.deviceId !== "default")))
+      .catch(() => {});
+  }, []);
+  const stopMeter = () => {
+    if (meterTimer.current) clearInterval(meterTimer.current);
+    meterTimer.current = null;
+    meterContext.current?.close().catch(() => {});
+    meterContext.current = null;
+    setMicLevel(0);
+  };
+  const releaseMic = () => {
+    stopMeter();
+    stream.current?.getTracks().forEach((track) => track.stop());
+    stream.current = null;
+    setTestingMic(false);
+  };
+  const openMic = async () => {
+    const s = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        deviceId: selectedMic ? { exact: selectedMic } : undefined,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+    stream.current = s;
+    const track = s.getAudioTracks()[0];
+    setActiveMic(track?.label || "Microphone");
+    navigator.mediaDevices.enumerateDevices()
+      .then((devices) => setMicDevices(devices.filter((device) => device.kind === "audioinput" && device.deviceId && device.deviceId !== "default")))
+      .catch(() => {});
+    try {
+      const context = new AudioContext();
+      meterContext.current = context;
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 2048;
+      context.createMediaStreamSource(s).connect(analyser);
+      await context.resume();
+      const samples = new Float32Array(analyser.fftSize);
+      meterTimer.current = setInterval(() => {
+        analyser.getFloatTimeDomainData(samples);
+        let power = 0;
+        for (const sample of samples) power += sample * sample;
+        setMicLevel(Math.min(100, Math.round(Math.sqrt(power / samples.length) * 800)));
+      }, 100);
+    } catch {
+      // Recording still works when a browser cannot show a live level.
+      stopMeter();
+    }
+    return s;
+  };
+  const testMic = async () => {
+    if (testingMic) {
+      releaseMic();
+      return;
+    }
+    if (requestingMic || recording || sending) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      onError("Open the secure HTTPS address and trust the studio certificate to use your microphone.");
+      return;
+    }
+    stop();
+    setRequestingMic(true);
+    try {
+      await openMic();
+      setTestingMic(true);
+    } catch (e) {
+      releaseMic();
+      onError((e as Error).message);
+    } finally {
+      setRequestingMic(false);
+    }
+  };
   const load = () =>
     api<Row>(`/lessons/${id}`).then((l) => {
       setLesson(l);
@@ -1152,6 +1234,8 @@ function Learn({
       recorder.current?.state === "recording" && recorder.current.stop();
       stream.current?.getTracks().forEach((t) => t.stop());
       if (timer.current) clearInterval(timer.current);
+      if (meterTimer.current) clearInterval(meterTimer.current);
+      meterContext.current?.close().catch(() => {});
     };
   }, []);
   useEffect(() => {
@@ -1293,6 +1377,7 @@ function Learn({
   };
   const startRecording = async () => {
     if (requestingMic || recording || sending) return;
+    if (testingMic) releaseMic();
     if (pending) {
       onError("Please send or remove your saved recording first.");
       return;
@@ -1306,14 +1391,7 @@ function Learn({
     }
     setRequestingMic(true);
     try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-      stream.current = s;
+      const s = await openMic();
       const type = ["audio/webm;codecs=opus", "audio/mp4"].find((t) =>
         MediaRecorder.isTypeSupported(t),
       );
@@ -1331,7 +1409,7 @@ function Learn({
       };
       r.onstop = async () => {
         if (timer.current) clearInterval(timer.current);
-        s.getTracks().forEach((t) => t.stop());
+        releaseMic();
         setRecording(false);
         const saved = {
           ...target,
@@ -1358,7 +1436,7 @@ function Learn({
         if (Date.now() - start >= 89000 && r.state === "recording") r.stop();
       }, 250);
     } catch (e) {
-      stream.current?.getTracks().forEach((t) => t.stop());
+      releaseMic();
       onError((e as Error).message);
     } finally {
       setRequestingMic(false);
@@ -1658,6 +1736,42 @@ function Learn({
                   >
                     <ChevronRight />
                   </button>
+                </div>
+                <div className="mic-check">
+                  <label htmlFor="practice-microphone">Microphone</label>
+                  <select
+                    id="practice-microphone"
+                    value={selectedMic}
+                    disabled={recording || requestingMic || testingMic || sending}
+                    onChange={(e) => {
+                      setSelectedMic(e.target.value);
+                      localStorage.setItem("paperspeak-microphone", e.target.value);
+                    }}
+                  >
+                    <option value="">System default</option>
+                    {selectedMic && !micDevices.some((device) => device.deviceId === selectedMic) && (
+                      <option value={selectedMic}>Last selected microphone</option>
+                    )}
+                    {micDevices.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || "Microphone"}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="text-button"
+                    disabled={recording || requestingMic || sending}
+                    onClick={testMic}
+                  >
+                    {testingMic ? "Stop mic check" : "Check microphone"}
+                  </button>
+                  {(testingMic || recording) && (
+                    <div className="mic-signal" role="status">
+                      <span>Input level · {activeMic}</span>
+                      <progress aria-label="Microphone input level" max={100} value={micLevel} />
+                      {micLevel === 0 && <small>Say hello. If this bar stays still, choose another mic or check Mac Sound → Input.</small>}
+                    </div>
+                  )}
                 </div>
                 <div className="practice-caption">
                   <span>Listen. Say it. Listen to yourself.</span>

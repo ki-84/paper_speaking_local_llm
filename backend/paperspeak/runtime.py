@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 import hashlib
 import json
 import os
@@ -18,6 +19,10 @@ from . import config, db
 
 class GPUUnavailable(Exception):
     pass
+
+
+class PracticePreempted(Exception):
+    """A saved recording needs the GPU before this background step finishes."""
 
 
 class ModelBudgetError(ValueError):
@@ -67,15 +72,28 @@ class Runtime:
         self.last_used = 0
         self.vision_gpu_override = vision_gpu
         self.vision_gpu = False
+        self.job_kind = None
 
-    def close(self):
+    def practice_waiting(self):
+        if self.job_kind in {None, "practice"}:
+            return False
+        return db.one(
+            "SELECT id FROM jobs WHERE kind='practice' AND state='queued' AND available<=? LIMIT 1",
+            (time.time(),),
+        ) is not None
+
+    def close(self, immediate=False):
         if self.process and self.process.poll() is None:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=20)
-            except subprocess.TimeoutExpired:
+            if immediate:
                 self.process.kill()
-                self.process.wait(timeout=10)
+                self.process.wait(timeout=5)
+            else:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=20)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=10)
         if self.log:
             self.log.close()
         self.process = None
@@ -97,6 +115,8 @@ class Runtime:
         return item
 
     def ensure_llm(self, profile=None):
+        if self.practice_waiting():
+            raise PracticePreempted("Making room for your recording.")
         profile = profile or db.settings()["model_profile"]
         if self.mode == profile and self.process and self.process.poll() is None:
             return
@@ -170,6 +190,9 @@ class Runtime:
         )
         self.mode = profile
         for _ in range(180):
+            if self.practice_waiting():
+                self.close(immediate=True)
+                raise PracticePreempted("Making room for your recording.")
             if self.process.poll() is not None:
                 self.close()
                 raise RuntimeError(
@@ -283,11 +306,23 @@ class Runtime:
             ]
             payload["reasoning_budget_message"] = ""
             payload["grammar"] = grammar
+        if self.practice_waiting():
+            raise PracticePreempted("Making room for your recording.")
         with httpx.Client(timeout=httpx.Timeout(900, connect=10)) as client:
-            response = client.post(
-                f"http://127.0.0.1:{config.LLAMA_PORT}/v1/chat/completions",
-                json=payload,
-            )
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(
+                    client.post,
+                    f"http://127.0.0.1:{config.LLAMA_PORT}/v1/chat/completions",
+                    json=payload,
+                )
+                while True:
+                    try:
+                        response = future.result(timeout=0.5)
+                        break
+                    except FutureTimeout:
+                        if self.practice_waiting():
+                            self.close(immediate=True)
+                            raise PracticePreempted("Making room for your recording.")
             response.raise_for_status()
             body = response.json()
         choice = body["choices"][0]
@@ -407,6 +442,8 @@ class Runtime:
     def speech(self, mode, request):
         if mode not in {"tts", "tts_design", "asr", "phoneme", "stress"}:
             raise ValueError("Unknown speech operation")
+        if self.practice_waiting():
+            raise PracticePreempted("Making room for your recording.")
         environment = "tts" if mode in {"tts", "tts_design"} else "asr"
         if mode == "tts_design":
             self.require_assets("tts-design")
@@ -450,10 +487,18 @@ class Runtime:
         # The actor reserves stdout for the line protocol; library output goes to stderr.
         import select
 
-        ready, _, _ = select.select([self.process.stdout], [], [], 900)
-        if not ready:
-            self.close()
-            raise RuntimeError("Speech processing timed out.")
+        deadline = time.monotonic() + 900
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                self.close()
+                raise RuntimeError("Speech processing timed out.")
+            ready, _, _ = select.select([self.process.stdout], [], [], min(0.5, remaining))
+            if ready:
+                break
+            if self.practice_waiting():
+                self.close(immediate=True)
+                raise PracticePreempted("Making room for your recording.")
         line = self.process.stdout.readline()
         if not line:
             self.close()

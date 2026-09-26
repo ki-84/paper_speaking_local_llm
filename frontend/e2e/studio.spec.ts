@@ -102,6 +102,7 @@ test("browser microphone saves a real recording and guards navigation", async ({
       "Your recording is saved. You can stay here while we check it.",
     ),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your recording is in line…" })).toBeVisible();
   const response = await page.request.get("/api/lessons");
   const lesson = (await response.json()).find((item: any) => item.data.title === "Interface test: a small change");
   const detail = await (

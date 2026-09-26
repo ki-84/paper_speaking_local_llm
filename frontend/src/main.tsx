@@ -1541,7 +1541,9 @@ function Learn({
           <Badge state={lesson.state}>
             {lesson.state === "ready"
               ? "Your lesson is ready"
-              : ['failed','paused','cancelled'].includes(lesson.job?.state)?'Preparation needs your attention':"New chapters are on their way"}
+              : lesson.job?.state === "paused"
+                ? "Preparation paused"
+                : ['failed','cancelled'].includes(lesson.job?.state)?'Preparation needs your attention':"New chapters are on their way"}
           </Badge>
           <a
             target="_blank"
@@ -2081,8 +2083,10 @@ function Assessment({
       <div className="eyebrow">YOUR VOICE, A LITTLE CLEARER</div>
       {attempt.state === "pending" ? (
         <>
-          <h3>Listening carefully…</h3>
+          <h3>{a.phase === "normalize" ? "Your recording is in line…" : a.phase === "transcribe" ? "Listening to your words…" : "Checking sounds and rhythm…"}</h3>
           <p>Your recording is saved. You can stay here while we check it.</p>
+          {a.transcript && <p className="heard"><small>WE HEARD</small>{a.transcript}</p>}
+          {a.word_match != null && <p><strong>{a.word_match}%</strong> words matched · {a.pace_wpm} words per minute. Sound and rhythm feedback is still on its way.</p>}
         </>
       ) : ["failed","cancelled"].includes(attempt.state) ? (
         <>

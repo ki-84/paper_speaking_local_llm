@@ -23,7 +23,7 @@ from . import (
     translation,
 )
 from .quality import QualityHold
-from .runtime import GPUUnavailable, Runtime
+from .runtime import GPUUnavailable, PracticePreempted, Runtime
 
 log = logging.getLogger("paperspeak.worker")
 
@@ -92,6 +92,7 @@ def run():
                     continue
                 runtime.job_id = job["id"]
                 runtime.job_target = job["target"]
+                runtime.job_kind = job["kind"]
                 if job["kind"] == "lesson":
                     done = lessons.lesson_step(job, runtime)
                 elif job["kind"] == "discover":
@@ -137,6 +138,13 @@ def run():
                         checkpoint=cp,
                         error=None,
                     )
+            except PracticePreempted as e:
+                current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
+                if current and current["state"] == "running":
+                    db.patch_job(
+                        job["id"], state="queued", stage=str(e),
+                        available=time.time() + 1, owner=None,
+                    )
             except GPUUnavailable as e:
                 current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
                 if current and current["state"] == "running":
@@ -179,6 +187,9 @@ def run():
                     )
                     db.event("attempt", {"id": job["target"]})
             finally:
+                runtime.job_kind = None
+                runtime.job_id = None
+                runtime.job_target = None
                 fcntl.flock(step_lock, fcntl.LOCK_UN)
     finally:
         stopped.set()

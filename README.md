@@ -30,7 +30,7 @@ React/TypeScript + FastAPI + SQLite WAL + 独立ワーカー + Caddy。推論は
 
 論文解析、英語教材、日本語訳、音声生成、録音評価はこのLinux上のモデルで実行します。日本語訳にも外部の翻訳APIは使いません。自動論文探索にはarXivへの通信が必要です。
 
-論文: Qwen3.8-27B Q8/Q6とMuse-Glimmer-30B Q6を比較し、実教材の修正結果も踏まえ、現在はQwen Q8を暫定採用しています。[採用理由と限界](evaluation/model_decision.json)を保存しています。音声: Qwen3-TTS 1.7B BF16。認識: Qwen3-ASR 1.7BとForcedAligner。音素: Wav2Vec2。文強勢: WhiStress。モデルを切り替えてGPUを共有します。他アプリのGPUプロセスは停止しません。
+論文: Qwen3.8-27B Q8/Q6とMuse-Glimmer-30B Q6を比較し、実教材の修正結果も踏まえ、現在はQwen Q8を暫定採用しています。[採用理由と限界](evaluation/model_decision.json)を保存しています。音声: Qwen3-TTS 1.7B CustomVoice（Aiden）とVoiceDesign（Maya）、ともにBF16。認識: Qwen3-ASR 1.7BとForcedAligner。音素: Wav2Vec2。文強勢: WhiStress。モデルを切り替えてGPUを共有します。他アプリのGPUプロセスは停止しません。
 
 モデルの固定revisionとSHA-256は [models.lock.json](models.lock.json)、Pythonの固定バージョンとハッシュは [locks/](locks/)、ブラウザ依存関係は [package-lock.json](frontend/package-lock.json) に保存します。
 

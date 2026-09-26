@@ -164,6 +164,7 @@ if __name__ == "__main__":
             "qwen-q6",
             "muse-q6",
             "tts",
+            "tts-design",
             "asr",
             "aligner",
             "phoneme",

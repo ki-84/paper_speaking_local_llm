@@ -39,6 +39,11 @@ try {
   await page.request.put(base + api + '/progress', {data: progress});
   await page.locator('.lesson-card').filter({hasText: detail.data.title}).first().click();
   await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[index].text);
+  await expect(page.locator('.player-tools label.inline-label select')).toHaveValue('1');
+  if (chapter.data.turns[index].speaker === 'guide' && chapter.data.turns[index].voice === 'Maya') {
+    await expect(page.locator('.sentence-card .speaker')).toContainText('Maya · your guide');
+    report.checks.new_guide_voice = true;
+  }
   await expect(page.getByRole('button', {name: 'Check microphone'})).toBeVisible();
   await expect(page.getByLabel('Microphone', {exact: true})).toBeVisible();
   report.checks.mic_check_controls = true;

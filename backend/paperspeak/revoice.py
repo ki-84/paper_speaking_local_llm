@@ -39,12 +39,26 @@ def step(job, runtime):
     if not pending:
         db.patch_job(job["id"], progress=1, stage="New guide voice is ready")
         return True
-    turn = pending[0]
+    checkpoint = job["checkpoint"]
+    phase = checkpoint.get("phase", "generate")
+    if phase == "generate":
+        turn = next((t for t in pending if not t.get("voice_candidate")), None)
+        if turn is None:
+            phase = "verify"
+            checkpoint["phase"] = phase
+            db.patch_job(job["id"], checkpoint=checkpoint)
+    if phase == "verify":
+        turn = next((t for t in pending if t.get("voice_candidate")), None)
+        if turn is None:
+            phase = "generate"
+            checkpoint["phase"] = phase
+            db.patch_job(job["id"], checkpoint=checkpoint)
+            turn = next(t for t in pending if not t.get("voice_candidate"))
     done_count = total - len(pending)
     db.patch_job(
         job["id"],
         progress=done_count / max(1, total),
-        stage=f"Refreshing guide voice {done_count + 1}/{total}",
+        stage=f"{'Making' if phase == 'generate' else 'Checking'} Maya's voice {done_count + 1}/{total}",
     )
     candidate = turn.get("voice_candidate")
     if not candidate:

@@ -3,7 +3,7 @@ from pathlib import Path
 from paperspeak import db, papers, revoice
 
 
-def chapter_fixture(database):
+def chapter_fixture(database, count=1):
     pid = papers.register({"source_id": "revoice-test", "version": "v1", "title": "Test paper"})
     lid = db.uid()
     cid = db.uid()
@@ -15,10 +15,10 @@ def chapter_fixture(database):
     (database / "audio" / "original.wav").write_bytes(b"old voice")
     data = {
         "turns": [{
-            "id": "guide-turn", "speaker": "guide", "text": "The old weights stay fixed.",
+            "id": f"guide-turn-{i}", "speaker": "guide", "text": "The old weights stay fixed.",
             "voice": "Ryan", "audio": "audio/original.wav", "audio_verified": True,
             "duration": 3.0,
-        }],
+        } for i in range(count)],
     }
     db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)", (cid, lid, 0, "ready", db.dumps(data)))
     return cid
@@ -67,3 +67,21 @@ def test_revoice_retries_bad_speech_without_replacing_old_voice(database):
     assert turn["voice_candidate_failures"][0]["transcript"] == "Different words."
     db.patch_job(job["id"], state="failed")
     assert revoice.schedule() == []
+
+
+def test_revoice_batches_generation_before_verification(database):
+    cid = chapter_fixture(database, count=2)
+    jid = revoice.schedule()[0]
+    calls = []
+
+    class Voice:
+        def speech(self, mode, request):
+            calls.append(mode)
+            if mode == "tts_design":
+                Path(request["output"]).write_bytes(b"new voice")
+                return {"duration": 2.0}
+            return {"text": "The old weights stay fixed.", "timestamps": []}
+
+    for _ in range(3):
+        assert not revoice.step(db.one("SELECT * FROM jobs WHERE id=?", (jid,)), Voice())
+    assert calls == ["tts_design", "tts_design", "asr"]

@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-25",
+  "selected_profile": "muse-q6",
+  "scope": "Provisional default for this application's paper reading and dialogue generation, based on the installed RTX 5090 configuration; not a universal model ranking.",
+  "evidence": [
+    "data/evaluation/model-comparison.json",
+    "data/evaluation/visual-comparison.json",
+    "data/evaluation/vision-gpu-probe.json",
+    "data/evaluation/json-grammar-smoke.json",
+    "data/evaluation/native-budget-smoke.json"
+  ],
+  "fixed_reference_checks": {
+    "qwen-q8": "34/34",
+    "qwen-q6": "34/34",
+    "muse-q6": "34/34"
+  },
+  "explanation_review": {
+    "reviewer": "Codex source-based review, distinct from the three evaluated models; not a human annotation study",
+    "qwen-q8": "Clear mechanism explanations, but the LoRA illustration can imply that low rank guarantees a small update magnitude and the figure explanation states full rank without the paper's 'typically' qualifier.",
+    "qwen-q6": "The LoRA figure explanation correctly says pretrained weights can be full rank. The diffusion comparison explanation says conditional results can look better without real quality gain, which overstates what the table establishes.",
+    "muse-q6": "The diffusion explanation preserves the distinction between improved sample quality and extra conditioning information. The LoRA explanation still needs the 'typically' qualification for pretrained rank. Its short explanations use technical words that must be defined during the English adjustment stage."
+  },
+  "decision": "Use Muse Q6 provisionally for the next complete generation, prioritizing cautious experimental interpretation over runtime. Retain source review and a separate easy-English rewrite followed by another source review. Existing Qwen evidence notes retain their provenance.",
+  "limitations": [
+    "Three papers and short explanations do not establish broad superiority.",
+    "All three models made wording choices that need review; none bypasses chapter validation.",
+    "A2 suitability is a generation and review target, not a certified CEFR measurement."
+  ],
+  "runtime_update": {
+    "vision": "GPU offload for Muse Q6, after 18 original-image checks plus 6 repeated LoRA checks all passed; maximum 3 supplied images including repeated page fragments. Minimum free VRAM 3812 MiB. Qwen configurations retain CPU vision.",
+    "structured_output": "Native Muse channel grammar; explicit reasoning budget tags because the pinned native handler ignores response_format and does not supply budget delimiters. High strength/2048 thinking tokens for papers; low strength/512 for short feedback and claim mapping.",
+    "quality_workflow": "Concept-first outline, explicit claim coverage with duplicate links, separate claim assignments per dialogue part, source review, English rewrite, and review again. Earlier unready drafts were archived because they repeated facts and introduced notation too early."
+  }
+}

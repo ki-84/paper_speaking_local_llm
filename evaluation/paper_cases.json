@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "description": "Explicit facts transcribed from the original papers, with false-premise checks. No model-generated reference answers.",
+  "cases": [
+    {
+      "id": "transformer", "arxiv": "1706.03762v7", "source_sections": ["3.1", "3.2.1", "Table 2"],
+      "question": "From the paper: How many layers are in each base encoder/decoder stack? What is the base model dimension? Does scaled dot-product attention divide its logits by d_k, sqrt(d_k), or neither? Does the core Transformer use recurrent layers? What WMT 2014 English-to-German BLEU did the big Transformer report in Table 2? Explain why attention scaling matters in four short sentences.",
+      "fields": {"layers":"number", "dimension":"number", "scale":"sqrt(d_k) or d_k or neither", "uses_recurrence":"boolean", "big_en_de_bleu":"number"},
+      "expected": {"layers":6,"dimension":512,"scale":"sqrt(d_k)","uses_recurrence":false,"big_en_de_bleu":28.4},
+      "keywords": ["sqrt", "scal", "6", "512", "28.4"], "image_page": 8
+    },
+    {
+      "id": "diffusion", "arxiv": "2006.11239v2", "source_sections": ["Section 3.2", "Section 4", "Table 1"],
+      "question": "From this paper: how many diffusion steps T are used in the experiments? Does this original paper use a pretrained image autoencoder for latent-space diffusion? What is its reported CIFAR10 FID for the unconditional model in Table 1? Does the simplified training objective predict added noise? Is the neural network based on U-Net? Explain the forward and reverse processes in four short sentences.",
+      "fields": {"steps":"number", "uses_latent_autoencoder":"boolean", "cifar10_fid":"number", "predicts_noise":"boolean", "uses_unet":"boolean"},
+      "expected": {"steps":1000,"uses_latent_autoencoder":false,"cifar10_fid":3.17,"predicts_noise":true,"uses_unet":true},
+      "keywords": ["1000", "1,000", "3.17", "noise", "U-Net"], "image_page": 6
+    },
+    {
+      "id": "lora", "arxiv": "2106.09685v2", "source_sections": ["Abstract", "Section 4.1", "Section 4.2"],
+      "question": "From this paper: are pretrained weight matrices frozen during LoRA training? Does LoRA represent weight updates using a low-rank product? Must the base weight matrix itself be low rank? Does LoRA add inference latency after merging its update? In the GPT-3 175B comparison against full fine-tuning with Adam, by what factors do trainable parameters and GPU memory decrease? Explain the idea in four short sentences with everyday words.",
+      "fields": {"frozen_base":"boolean", "low_rank_update":"boolean", "requires_low_rank_base":"boolean", "extra_latency_after_merge":"boolean", "trainable_reduction":"number", "memory_reduction":"number"},
+      "expected": {"frozen_base":true,"low_rank_update":true,"requires_low_rank_base":false,"extra_latency_after_merge":false,"trainable_reduction":10000,"memory_reduction":3},
+      "keywords": ["10,000", "10000", "3 times", "frozen", "latency", "rank"], "image_page": 1
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+ "version":1,"description":"Figure/table probes read from the supplied original page image only. Expected values transcribed and checked directly from the papers.",
+ "cases":[
+  {"id":"transformer-diagram","arxiv":"1706.03762v7","image_page":3,"keywords":[],"source_sections":["Figure 1"],
+   "question":"Read Figure 1 from the supplied page image. Does the decoder contain a masked multi-head attention block? Does the encoder diagram label its attention as masked? How many Add & Norm boxes appear inside one encoder block and one decoder block? Is positional encoding added at both input embedding paths? Does the encoder output feed attention in the decoder? Explain what the mask does and why it is needed, using four easy sentences and defining mask.",
+   "fields":{"decoder_masked":"boolean","encoder_masked":"boolean","encoder_add_norm":"number","decoder_add_norm":"number","positions_both":"boolean","encoder_to_decoder_attention":"boolean"},
+   "expected":{"decoder_masked":true,"encoder_masked":false,"encoder_add_norm":2,"decoder_add_norm":3,"positions_both":true,"encoder_to_decoder_attention":true}},
+  {"id":"diffusion-table","arxiv":"2006.11239v2","image_page":5,"keywords":[],"source_sections":["Tables 1 and 2"],
+   "question":"Read Tables 1 and 2 from this image. Give the FID of Ours Lsimple, Ours L with fixed isotropic Sigma, conditional StyleGAN2+ADA(v1), and unconditional StyleGAN2+ADA(v1). Does the row with the authors' 3.17 result use class labels? Are the blank dash entries in Table 2 successful measurements of zero? Explain why unconditional and conditional comparisons need care in four very easy sentences, defining these two terms.",
+   "fields":{"ours_simple_fid":"number","ours_bound_fid":"number","conditional_stylegan_fid":"number","unconditional_stylegan_fid":"number","ours_uses_class_labels":"boolean","dashes_mean_zero":"boolean"},
+   "expected":{"ours_simple_fid":3.17,"ours_bound_fid":13.51,"conditional_stylegan_fid":2.67,"unconditional_stylegan_fid":3.26,"ours_uses_class_labels":false,"dashes_mean_zero":false}},
+  {"id":"lora-figure","arxiv":"2106.09685v2","image_page":1,"keywords":[],"source_sections":["Figure 1","Abstract"],
+   "question":"Read Figure 1 and its caption from this page image. Which letter names the low-rank dimension? Which matrix starts at zero, A or B? Is A initialized from a normal distribution? Are A and B trained? Is the blue pretrained weight block trained in this method? Does the abstract's 10000-fold parameter saving refer to every possible model or specifically its GPT-3 175B comparison? Explain why a low-rank update is not the same as requiring low-rank pretrained weights, in four short easy sentences.",
+   "fields":{"rank_letter":"string","zero_matrix":"A or B","a_normal":"boolean","train_a_and_b":"boolean","train_base":"boolean","saving_universal":"boolean"},
+   "expected":{"rank_letter":"r","zero_matrix":"B","a_normal":true,"train_a_and_b":true,"train_base":false,"saving_universal":false}}
+ ]
+}

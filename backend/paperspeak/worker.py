@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import fcntl
+import logging
+import os
+import signal
+import threading
+import time
+
+from . import (
+    benchmark,
+    calibration,
+    config,
+    db,
+    discovery,
+    lessons,
+    papers,
+    phoneme_probe,
+    practice,
+    translation,
+)
+from .quality import QualityHold
+from .runtime import GPUUnavailable, Runtime
+
+log = logging.getLogger("paperspeak.worker")
+
+
+def run():
+    db.init()
+    owner = db.uid()
+    runtime = Runtime()
+    stopped = threading.Event()
+    lock = open(config.DATA / "worker.lock", "w")
+    step_lock = open(config.DATA / "work-step.lock", "a")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit("A PaperSpeak worker is already running.")
+
+    def stop(*_):
+        stopped.set()
+        runtime.close()
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+
+    def heartbeat():
+        while not stopped.wait(10):
+            db.execute(
+                "UPDATE jobs SET heartbeat=? WHERE owner=? AND state='running'",
+                (time.time(), owner),
+            )
+            db.execute(
+                "INSERT INTO cursors VALUES ('worker',?) ON CONFLICT(key) DO UPDATE SET data=excluded.data",
+                (
+                    db.dumps(
+                        {
+                            "pid": os.getpid(),
+                            "heartbeat": time.time(),
+                            "model": runtime.mode,
+                        }
+                    ),
+                ),
+            )
+
+    thread = threading.Thread(target=heartbeat, daemon=True)
+    thread.start()
+    last_schedule = 0
+    try:
+        while not stopped.is_set():
+            if time.time() - last_schedule > 60:
+                discovery.schedule()
+                last_schedule = time.time()
+            job = db.claim(owner)
+            if not job:
+                if runtime.mode and time.monotonic() - runtime.last_used > 180:
+                    runtime.close()
+                stopped.wait(1)
+                continue
+            try:
+                fcntl.flock(step_lock, fcntl.LOCK_EX)
+                current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
+                if not current or current["state"] != "running" or stopped.is_set():
+                    continue
+                runtime.job_id = job["id"]
+                runtime.job_target = job["target"]
+                if job["kind"] == "lesson":
+                    done = lessons.lesson_step(job, runtime)
+                elif job["kind"] == "discover":
+                    done = discovery.discovery_step(job, runtime)
+                elif job["kind"] == "practice":
+                    done = practice.practice_step(job, runtime)
+                elif job["kind"] == "translate":
+                    done = translation.translation_step(job, runtime)
+                elif job["kind"] == "benchmark":
+                    done = benchmark.benchmark_step(job, runtime)
+                elif job["kind"] == "phoneme_probe":
+                    done = phoneme_probe.probe_step(job, runtime)
+                elif job["kind"] == "calibration":
+                    done = calibration.calibration_step(job, runtime)
+                elif job["kind"] == "import":
+                    pid = papers.register_arxiv(job["payload"]["reference"])
+                    papers.ingest(pid)
+                    if job["payload"].get("generate", True):
+                        db.enqueue("lesson", lessons.create(pid))
+                    db.patch_job(
+                        job["id"],
+                        checkpoint={"paper_id": pid},
+                        progress=1,
+                        stage="Paper added",
+                    )
+                    done = True
+                else:
+                    raise ValueError("Unknown job type")
+                current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
+                if current["state"] == "running":
+                    cp = current["checkpoint"]
+                    cp.pop("_failures", None)
+                    db.patch_job(
+                        job["id"],
+                        state="completed" if done else "queued",
+                        owner=None,
+                        checkpoint=cp,
+                        error=None,
+                    )
+            except GPUUnavailable as e:
+                current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
+                if current and current["state"] == "running":
+                    db.patch_job(
+                        job["id"],
+                        state="queued",
+                        stage=str(e),
+                        available=time.time() + 20,
+                        owner=None,
+                    )
+            except Exception as e:
+                log.exception("Job %s step failed", job["id"])
+                current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
+                if (
+                    stopped.is_set()
+                    or not current
+                    or current["state"] in {"paused", "cancelled"}
+                ):
+                    continue
+                cp = current["checkpoint"]
+                failures = cp.get("_failures", 0) + 1
+                cp["_failures"] = failures
+                state = (
+                    "failed"
+                    if isinstance(e, QualityHold) or failures >= 3
+                    else "queued"
+                )
+                db.patch_job(
+                    job["id"],
+                    state=state,
+                    checkpoint=cp,
+                    error=str(e)[:1200],
+                    available=time.time() + min(120, 10 * failures),
+                    owner=None,
+                )
+                if state == "failed" and job["kind"] == "practice":
+                    db.execute(
+                        "UPDATE attempts SET state='failed' WHERE id=?",
+                        (job["target"],),
+                    )
+                    db.event("attempt", {"id": job["target"]})
+            finally:
+                fcntl.flock(step_lock, fcntl.LOCK_UN)
+    finally:
+        stopped.set()
+        runtime.close()
+        db.execute(
+            "UPDATE jobs SET state='queued',owner=NULL WHERE owner=? AND state='running'",
+            (owner,),
+        )
+        lock.close()
+        step_lock.close()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
+    )
+    run()

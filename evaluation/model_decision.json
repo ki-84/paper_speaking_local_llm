@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-25",
+  "selected_profile": "qwen-q8",
+  "scope": "Provisional default for this application's paper reading and dialogue generation, based on the installed RTX 5090 configuration; not a universal model ranking.",
+  "evidence": [
+    "data/evaluation/model-comparison.json",
+    "data/evaluation/visual-comparison.json",
+    "data/evaluation/vision-gpu-probe.json",
+    "data/evaluation/json-grammar-smoke.json",
+    "data/evaluation/native-budget-smoke.json",
+    "evaluation/production_quality.json"
+  ],
+  "fixed_reference_checks": {
+    "qwen-q8": "34/34",
+    "qwen-q6": "34/34",
+    "muse-q6": "34/34"
+  },
+  "explanation_review": {
+    "reviewer": "Codex source-based review, distinct from the three evaluated models; not a human annotation study",
+    "qwen-q8": "Clear mechanism explanations, but the LoRA illustration can imply that low rank guarantees a small update magnitude and the figure explanation states full rank without the paper's 'typically' qualifier.",
+    "qwen-q6": "The LoRA figure explanation correctly says pretrained weights can be full rank. The diffusion comparison explanation says conditional results can look better without real quality gain, which overstates what the table establishes.",
+    "muse-q6": "The diffusion explanation preserves the distinction between improved sample quality and extra conditioning information. The LoRA explanation still needs the 'typically' qualification for pretrained rank. Its short explanations use technical words that must be defined during the English adjustment stage."
+  },
+  "decision": "Use Qwen Q8 provisionally for new paper jobs and learner explanations. Fixed factual checks tie across the candidates, but the production Muse draft repeatedly retained dense notation and misleading beginner definitions. Qwen revisions removed notation and clarified the mechanism more reliably in this run. Source review, a separate English rewrite and another source review remain required.",
+  "limitations": [
+    "Three papers and short explanations do not establish broad superiority.",
+    "All three models made wording choices that need review; none bypasses chapter validation.",
+    "A2 suitability is a generation and review target, not a certified CEFR measurement."
+  ],
+  "runtime_update": {
+    "vision": "GPU offload for Muse Q6, after 18 original-image checks plus 6 repeated LoRA checks all passed; maximum 3 supplied images including repeated page fragments. Minimum free VRAM 3812 MiB. Qwen configurations retain CPU vision.",
+    "structured_output": "Native Muse channel grammar; explicit reasoning budget tags because the pinned native handler ignores response_format and does not supply budget delimiters. High strength/2048 thinking tokens for papers; low strength/512 for short feedback and claim mapping.",
+    "quality_workflow": "Concept-first outline, explicit claim coverage with duplicate links, separate claim assignments per dialogue part, source review, English rewrite, and review again. Earlier unready drafts were archived because they repeated facts and introduced notation too early."
+  },
+  "production_limits": [
+    "This was a sequential production revision, not a controlled head-to-head experiment: Qwen inherited earlier work and specific review findings.",
+    "The opening chapter also received independent Codex corrections for module scope, parameter count, and missing prerequisite definitions. This is not a human evaluation and does not establish fully autonomous teaching quality.",
+    "Qwen retains CPU vision to keep its tested VRAM configuration stable. Muse GPU vision remains available when that profile is selected.",
+    "The second Qwen-generated LoRA chapter also stopped on unsupported statements. Qwen Q8 remains provisional; fixed factual benchmark accuracy does not establish autonomous long-form teaching quality."
+  ]
+}

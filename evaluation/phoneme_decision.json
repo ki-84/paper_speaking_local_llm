@@ -1,0 +1,32 @@
+{
+  "selected": "phoneme",
+  "status": "sound comparison only; no pronunciation grade",
+  "evidence": "data/evaluation/phoneme-comparison.json",
+  "samples": 100,
+  "speakers": 10,
+  "baseline": {
+    "tp": 13,
+    "fp": 84,
+    "tn": 867,
+    "fn": 0,
+    "abstain_positive": 49,
+    "abstain_negative": 914,
+    "precision": 0.13402061855670103,
+    "recall_including_abstentions": 0.20967741935483872,
+    "false_positive_rate": 0.08832807570977919,
+    "coverage": 0.5002594706798131
+  },
+  "alternative": {
+    "tp": 39,
+    "fp": 257,
+    "tn": 1169,
+    "fn": 6,
+    "abstain_positive": 17,
+    "abstain_negative": 439,
+    "precision": 0.13175675675675674,
+    "recall_including_abstentions": 0.6290322580645161,
+    "false_positive_rate": 0.18022440392706873,
+    "coverage": 0.7633627400103788
+  },
+  "reason": "The TIMIT recognizer increases coverage and detects more annotated errors but also doubles the false-positive rate on the shared inventory. Neither reaches adequate precision for error labels. Keep the original recognizer for side-by-side estimated sounds, with low-confidence results withheld. This comparison is against canonical phone labels and is not an evaluation of every possible natural accent or of the synthesized-reference comparison used by the app."
+}

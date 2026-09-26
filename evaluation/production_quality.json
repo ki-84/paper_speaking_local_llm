@@ -1,0 +1,57 @@
+{
+  "case": "First LoRA chapter: source review, verified audio and practice integration",
+  "scope": "Source-based production observations; not a blinded human study or a controlled head-to-head score",
+  "rubric": [
+    "Full fine-tuning updates model parameters; copying a model is not the learning mechanism.",
+    "Distinguish per-task weight storage from training memory for gradients and optimizer state.",
+    "The up-to-threefold hardware claim requires adaptive optimizers and its stated reason.",
+    "Rank is not matrix size or numerical update magnitude; omit unnecessary rank details in this opening if not required.",
+    "Define weights/parameters, frozen, matrices and any optimizer terms plainly before relying on them.",
+    "Explain conditional generation and input/target sequences in words; literal set notation is not required for semantic coverage.",
+    "Keep the roughly 175-billion-parameter GPT-3 example and its deployment context.",
+    "Use short spoken sentences and keep claims tied to appropriate evidence."
+  ],
+  "observations": [
+    {
+      "model": "muse-q6",
+      "status": "held before publication",
+      "evidence": "data/evaluation/muse-production-chapter-before-qwen-revision.json",
+      "notes": "Repeated corrections retained dense notation and inadequate beginner definitions. One reviewer suggestion incorrectly treated rank as matrix size; a later review caught it. Generic examples and accurate paraphrases were sometimes over-rejected."
+    },
+    {
+      "model": "qwen-q8",
+      "status": "First chapter published after source review; 63 of 63 utterances passed audio checks; HTTPS read/answer integration and real browser playback passed",
+      "evidence": "data/evaluation/qwen-chapter-before-independent-review.json",
+      "limitations": "Sequential revision with inherited work, not a controlled model comparison. Two final prerequisite definitions were supplied by Codex and rechecked before audio generation."
+    }
+  ],
+  "acceptance": {
+    "ready_chapters": 1,
+    "total_chapters": 54,
+    "turns": 63,
+    "audio_seconds": 235.12,
+    "evidence": [
+      "data/evaluation/real-pipeline.json",
+      "data/evaluation/production-browser.json"
+    ],
+    "remaining": "Other chapters and the automatic candidate batch are still being generated; physical second-PC microphone and 72-hour observation are not complete."
+  },
+  "followup": {
+    "recorded": 1790289461.116969,
+    "chapter": 2,
+    "initial_result": "Stopped before publication after repeated source review failures.",
+    "issues_observed": [
+      "Unsupported judgments about prompt fragility and scaling were introduced during whole-chapter rewrites.",
+      "Several background explanations blurred factorized representation, full update shape, and relationships to frozen weights.",
+      "The final spoken text included wording about source fragments."
+    ],
+    "response": "Preserve the failed draft, record independent source-based findings, repair only indicated sentences and their immediate context, then repeat full evidence review.",
+    "evidence": [
+      "data/evaluation/chapter2-before-local-repairs.json",
+      "data/evaluation/production-recovery.json"
+    ],
+    "limits": "This follow-up also uses independent Codex findings; it does not establish fully autonomous scientific teaching quality.",
+    "current_result": "The second chapter passed source review and all 49 speech checks; it is now available. The third chapter is being generated.",
+    "remaining": "This does not establish fully autonomous long-form teaching quality; the second chapter also received independent Codex findings."
+  }
+}

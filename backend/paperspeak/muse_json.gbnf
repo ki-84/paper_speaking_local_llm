@@ -1,0 +1,10 @@
+# Muse emits its recipient before the final JSON answer. Keep reasoning in its
+# native channel and constrain only the final answer's syntax.
+root ::= (" to=self<|message|>" thought "<|eom|><|start|>assistant")* " to=user<|message|>" object "<|eot|>"
+thought ::= ([^<] | "<" [^|] | "<|" [^e] | "<|e" [^o] | "<|eo" [^mt] | "<|eom" [^|] | "<|eom|" [^>] | "<|eot" [^|] | "<|eot|" [^>])*
+object ::= "{" ws (string ":" ws value ("," ws string ":" ws value)*)? "}" ws
+array ::= "[" ws (value ("," ws value)*)? "]" ws
+value ::= object | array | string | number | ("true" | "false" | "null") ws
+string ::= "\"" ([^"\\\x00-\x1f] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4}))* "\"" ws
+number ::= "-"? ("0" | [1-9] [0-9]*) ("." [0-9]+)? ([eE] [+-]? [0-9]+)? ws
+ws ::= [ \t\n\r]{0,32}

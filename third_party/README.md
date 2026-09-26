@@ -1,0 +1,1 @@
+The WhiStress inference architecture in `backend/paperspeak/speech_actor.py` is adapted from [SLP-RL/WhiStress](https://github.com/slp-rl/WhiStress). Its MIT notice is retained in [WhiStress-LICENSE](WhiStress-LICENSE). Model weights and other installed packages keep their own upstream licenses. Their exact revisions and hashes are recorded in `models.lock.json` and `locks/`.

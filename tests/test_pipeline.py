@@ -107,7 +107,7 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
         config,
         "manifest",
         lambda: {
-            "models": {"qwen-q8": {"revision": "fixed"}, "tts": {"revision": "fixed"}}
+            "models": {"qwen-q8": {"revision": "fixed"}, "tts": {"revision": "fixed"}, "tts-design": {"revision": "fixed"}}
         },
     )
     lid = lessons.create(pid)
@@ -182,7 +182,7 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
             raise AssertionError(prompt[:80])
 
         def speech(self, mode, request):
-            if mode == "tts":
+            if mode in {"tts", "tts_design"}:
                 self.tts_calls += 1
                 sf.write(request["output"], np.zeros(1600), 16000)
                 return {"duration": 0.1}
@@ -204,6 +204,7 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
     assert provider.tts_calls == 2 and all(
         t["audio_verified"] for t in chapter["data"]["turns"]
     )
+    assert {t["voice"] for t in chapter["data"]["turns"]} == {"Maya"}
     paths = [config.safe_path(t["audio"]) for t in chapter["data"]["turns"]]
     next_lid = lessons.create(pid)
     assert next_lid != lid

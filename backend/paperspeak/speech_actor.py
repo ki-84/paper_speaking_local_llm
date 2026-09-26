@@ -44,37 +44,49 @@ def run(request):
     if phoneme_profile not in {"phoneme", "phoneme-timit"}:
         raise ValueError("Unknown phoneme profile")
     clear_for(op + ":" + phoneme_profile if op == "phoneme" else op)
-    if op == "tts":
+    if op in {"tts", "tts_design"}:
         from qwen_tts import Qwen3TTSModel
 
         seed = int(request.get("seed", 2026))
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
-        instruction = "Speak in clear, warm American English. Use a calm teaching pace, natural phrasing, and gentle expression. Do not rush. No background sounds."
+        instruction = request.get("instruction") or "Speak in clear, warm American English. Use a calm teaching pace, natural phrasing, and gentle expression. Do not rush. No background sounds."
+        model_key = "tts" if op == "tts" else "tts-design"
         if "model" not in CACHE:
             CACHE["model"] = Qwen3TTSModel.from_pretrained(
-                str(models / "tts"),
+                str(models / model_key),
                 device_map="cuda:0",
                 dtype=torch.bfloat16,
                 attn_implementation="sdpa",
             )
-        wavs, sr = CACHE["model"].generate_custom_voice(
-            text=request["text"],
-            language="English",
-            speaker=request.get("voice", "Aiden"),
-            instruct=instruction,
-            non_streaming_mode=True,
-            max_new_tokens=2048,
-        )
+        common = {
+            "text": request["text"],
+            "language": "English",
+            "instruct": instruction,
+            "non_streaming_mode": True,
+            "max_new_tokens": 2048,
+        }
+        if op == "tts":
+            wavs, sr = CACHE["model"].generate_custom_voice(
+                speaker=request.get("voice", "Aiden"), **common
+            )
+        else:
+            wavs, sr = CACHE["model"].generate_voice_design(**common)
         path = Path(request["output"])
         path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(path, wavs[0], sr, subtype="PCM_16")
-        settings = json.loads((models / "tts/generation_config.json").read_text())
+        settings = json.loads((models / model_key / "generation_config.json").read_text())
+        model_record = json.loads((root / "models.lock.json").read_text())["models"][model_key]
         settings.update(
             seed=seed,
             max_new_tokens=2048,
             non_streaming_mode=True,
             speaker=request.get("voice", "Aiden"),
+            model=model_key,
+            model_revision=model_record["revision"],
+            model_sha256=next(
+                f["sha256"] for f in model_record["files"] if f["file"] == "model.safetensors"
+            ),
             language="English",
             instruction=instruction,
             dtype="bfloat16",

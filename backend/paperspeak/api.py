@@ -302,7 +302,7 @@ class Progress(BaseModel):
     chapter_id: str
     turn_index: int = Field(ge=0)
     role: Literal["both", "host", "guide"] = "both"
-    speed: float = Field(default=0.9, ge=0.5, le=1.5)
+    speed: float = Field(default=1.0, ge=0.5, le=1.5)
     subtitles: bool = True
 
 

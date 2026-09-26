@@ -6,7 +6,7 @@ import math
 import re
 import time
 
-from . import config, db, papers, translation
+from . import config, db, papers, translation, voices
 from .quality import (
     QualityHold,
     dialogue_for_model,
@@ -595,7 +595,13 @@ def lesson_step(job, runtime):
         db.save_chapter(chapter)
         return False
     if chapter["state"] == "audio":
-        index = next((i for i, t in enumerate(c["turns"]) if not t.get("audio")), None)
+        # Keep one TTS model loaded while creating each role's sentences.
+        index = next(
+            (i for i, t in enumerate(c["turns"]) if not t.get("audio") and t["speaker"] == "host"),
+            None,
+        )
+        if index is None:
+            index = next((i for i, t in enumerate(c["turns"]) if not t.get("audio")), None)
         if index is None:
             chapter["state"] = "audio_review"
             db.save_chapter(chapter)
@@ -605,28 +611,30 @@ def lesson_step(job, runtime):
             f"Making voices: chapter {ordinal + 1}, sentence {index + 1}/{len(c['turns'])}",
             progress,
         )
-        voice = "Aiden" if turn["speaker"] == "host" else "Ryan"
-        key = hashlib.sha256(
-            (
-                turn["id"]
-                + turn["text"]
-                + voice
-                + config.manifest()["models"]["tts"]["revision"]
-            ).encode()
-        ).hexdigest()
+        guide = turn["speaker"] != "host"
+        voice = voices.GUIDE_VOICE if guide else voices.HOST_VOICE
+        key = (
+            voices.guide_audio_key(turn)
+            if guide
+            else hashlib.sha256(
+                (
+                    turn["id"]
+                    + turn["text"]
+                    + voice
+                    + config.manifest()["models"]["tts"]["revision"]
+                ).encode()
+            ).hexdigest()
+        )
         path = config.DATA / "audio" / (key + ".wav")
         metadata_path = path.with_suffix(".json")
         if not path.exists() or not metadata_path.exists():
-            result = runtime.speech(
-                "tts",
-                {
-                    "text": turn["text"],
-                    "voice": voice,
-                    "output": str(path),
-                    "seed": (int(key[:8], 16) + turn.get("audio_generation", 0))
-                    % (2**31),
-                },
+            seed = (int(key[:8], 16) + turn.get("audio_generation", 0)) % (2**31)
+            request = (
+                voices.guide_request(turn, path, seed)
+                if guide
+                else {"text": turn["text"], "voice": voice, "output": str(path), "seed": seed}
             )
+            result = runtime.speech("tts_design" if guide else "tts", request)
             turn["duration"] = result["duration"]
             turn["tts_settings"] = result.get("generation_settings", {})
             turn["audio_generation"] = turn.get("audio_generation", 0) + 1

@@ -574,6 +574,8 @@ function App() {
                             ? "Finding good papers"
                             : j.kind === "practice"
                               ? "Your recording"
+                              : j.kind === "revoice"
+                                ? "Refreshing Maya's voice"
                               : j.kind === "benchmark"
                                 ? "Comparing paper readers"
                                 : ["calibration","phoneme_probe"].includes(j.kind)
@@ -1070,7 +1072,7 @@ function Learn({
     [chapterId, setChapterId] = useState(""),
     [index, setIndex] = useState(0),
     [role, setRole] = useState("both"),
-    [speed, setSpeed] = useState(0.9),
+    [speed, setSpeed] = useState(1),
     [subtitles, setSubtitles] = useState(true),
     [showJapanese, setShowJapanese] = useState(true),
     [playing, setPlaying] = useState(false),
@@ -1216,7 +1218,7 @@ function Learn({
             ),
           );
         setRole(l.progress?.role || "both");
-        setSpeed(l.progress?.speed || 0.9);
+        setSpeed(l.progress?.speed === 0.9 ? 1 : (l.progress?.speed ?? 1));
         setSubtitles(l.progress?.subtitles ?? true);
         setAttempt(null);
       } else if (!chapterId && l.chapters.length)
@@ -1294,12 +1296,16 @@ function Learn({
       }).catch(() => {});
     }
   }, [chapterId, index, role, speed, subtitles]);
+  const spokenRate = speed * (turn?.voice === "Ryan" ? 1.2 : 1);
   useEffect(() => {
-    if (audio.current) audio.current.playbackRate = speed;
-  }, [speed]);
+    if (audio.current) {
+      audio.current.preservesPitch = true;
+      audio.current.playbackRate = spokenRate;
+    }
+  }, [spokenRate]);
   useEffect(() => {
     if (playing && audio.current && turn?.audio_verified) {
-      audio.current.playbackRate = speed;
+      audio.current.playbackRate = spokenRate;
       audio.current.play().catch((e) => {
         setPlaying(false);
         onError(e.message);
@@ -1322,7 +1328,7 @@ function Learn({
     setMode(m);
     setPlaying(true);
     if (audio.current) {
-      audio.current.playbackRate = speed;
+      audio.current.playbackRate = spokenRate;
       audio.current.play().catch((e) => {
         setPlaying(false);
         onError(e.message);
@@ -1603,7 +1609,7 @@ function Learn({
                     >
                       {[0.65, 0.8, 0.9, 1, 1.1, 1.25].map((s) => (
                         <option key={s} value={s}>
-                          {s}×
+                          {s}×{s === 1 ? " · Natural" : ""}
                         </option>
                       ))}
                     </select>
@@ -1621,11 +1627,11 @@ function Learn({
                   <div className="sentence-top">
                     <span className="speaker">
                       <span className={`avatar ${turn?.speaker}`}>
-                        {turn?.speaker === "host" ? "A" : "R"}
+                        {turn?.speaker === "host" ? "A" : (turn?.voice || "Maya")[0]}
                       </span>
                       {turn?.speaker === "host"
                         ? "Aiden · the curious host"
-                        : "Ryan · your guide"}
+                        : `${turn?.voice || "Maya"} · your guide`}
                     </span>
                     <span>
                       {index + 1} / {turns.length}
@@ -1784,7 +1790,7 @@ function Learn({
                     >
                       <option value="both">Both voices</option>
                       <option value="host">Aiden</option>
-                      <option value="guide">Ryan</option>
+                      <option value="guide">Maya</option>
                     </select>
                   </label>
                 </div>

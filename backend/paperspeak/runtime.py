@@ -405,16 +405,18 @@ class Runtime:
         return result
 
     def speech(self, mode, request):
-        if mode not in {"tts", "asr", "phoneme", "stress"}:
+        if mode not in {"tts", "tts_design", "asr", "phoneme", "stress"}:
             raise ValueError("Unknown speech operation")
-        environment = "tts" if mode == "tts" else "asr"
+        environment = "tts" if mode in {"tts", "tts_design"} else "asr"
+        if mode == "tts_design":
+            self.require_assets("tts-design")
         if (
             self.mode != environment
             or not self.process
             or self.process.poll() is not None
         ):
             self.close()
-            required = ["tts"] if environment == "tts" else ["asr", "aligner"]
+            required = (["tts"] if mode == "tts" else ["tts-design"]) if environment == "tts" else ["asr", "aligner"]
             for key in required:
                 self.require_assets(key)
             if gpu_info()["free_mib"] < 8000:

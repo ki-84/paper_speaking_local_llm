@@ -35,7 +35,7 @@ try {
   if (!chapter) throw new Error('No verified chapter is ready.');
   const index = chapter.data.turns.findIndex(t => t.kind === 'paper' && t.source_ids?.length);
   if (index < 0) throw new Error('No paper claim with original evidence.');
-  const progress = {chapter_id: chapter.id, turn_index: index, role: 'both', speed: 0.9, subtitles: true};
+  const progress = {chapter_id: chapter.id, turn_index: index, role: 'both', speed: 1, subtitles: true};
   await page.request.put(base + api + '/progress', {data: progress});
   await page.locator('.lesson-card').filter({hasText: detail.data.title}).first().click();
   await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[index].text);

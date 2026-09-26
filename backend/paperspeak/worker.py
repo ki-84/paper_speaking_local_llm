@@ -17,6 +17,7 @@ from . import (
     papers,
     phoneme_probe,
     practice,
+    revoice,
     translation,
 )
 from .quality import QualityHold
@@ -66,11 +67,13 @@ def run():
     thread = threading.Thread(target=heartbeat, daemon=True)
     thread.start()
     translation.schedule_backfill()
+    revoice.schedule()
     last_schedule = 0
     try:
         while not stopped.is_set():
             if time.time() - last_schedule > 60:
                 discovery.schedule()
+                revoice.schedule()
                 last_schedule = time.time()
             job = db.claim(owner)
             if not job:
@@ -93,6 +96,8 @@ def run():
                     done = practice.practice_step(job, runtime)
                 elif job["kind"] == "translate":
                     done = translation.translation_step(job, runtime)
+                elif job["kind"] == "revoice":
+                    done = revoice.step(job, runtime)
                 elif job["kind"] == "benchmark":
                     done = benchmark.benchmark_step(job, runtime)
                 elif job["kind"] == "phoneme_probe":

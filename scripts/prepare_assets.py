@@ -23,6 +23,10 @@ SPECS = {
         "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
         "0c0e3051f131929182e2c023b9537f8b1c68adfe",
     ),
+    "tts-design": (
+        "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "5ecdb67327fd37bb2e042aab12ff7391903235d3",
+    ),
     "asr": ("Qwen/Qwen3-ASR-1.7B", "7278e1e70fe206f11671096ffdd38061171dd6e5"),
     "aligner": (
         "Qwen/Qwen3-ForcedAligner-0.6B",

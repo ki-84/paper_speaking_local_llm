@@ -19,7 +19,7 @@ DEFAULTS = {
     "categories": ["cs.AI", "cs.LG", "cs.CL", "cs.CV", "cs.RO", "cs.SD", "stat.ML"],
     "interests": "Learn important ideas across AI, including language, vision, audio, robotics and learning.",
     "model_profile": "qwen-q8",
-    "speed": 0.9,
+    "speed": 1.0,
     "subtitles": True,
     "role": "both",
     "max_auto_backlog": 1,

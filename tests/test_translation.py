@@ -121,3 +121,21 @@ def test_japanese_large_number_unit_must_keep_the_value():
     bad = {"items": [{"id": "turn", "japanese": "GPT-3は約175億個のパラメータを使います。"}]}
     with pytest.raises(ValueError, match="number"):
         translation.check_result(bad, [("turn", english)])
+
+
+def test_japanese_compound_units_match_english_quantities():
+    english = "Base has 125 million and large has 355 million parameters."
+    good = {"items": [{"id": "turn", "japanese": "baseは1億2500万、largeは3億5,500万個のパラメータです。"}]}
+    assert translation.check_result(good, [("turn", english)])
+    bad = {"items": [{"id": "turn", "japanese": "baseは1億2500万、largeは3億5000万個のパラメータです。"}]}
+    with pytest.raises(ValueError, match="number"):
+        translation.check_result(bad, [("turn", english)])
+
+
+def test_hyphenated_english_large_number_matches_japanese_unit():
+    english = "That is huge for a 175-billion parameter model."
+    good = {"items": [{"id": "turn", "japanese": "1750億パラメータのモデルには大きいです。"}]}
+    assert translation.check_result(good, [("turn", english)])
+    bad = {"items": [{"id": "turn", "japanese": "175億パラメータのモデルには大きいです。"}]}
+    with pytest.raises(ValueError, match="number"):
+        translation.check_result(bad, [("turn", english)])

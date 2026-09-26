@@ -8,6 +8,21 @@ import soundfile as sf
 from paperspeak import config, db, lessons, papers, translation
 
 
+def test_duplicate_claims_do_not_require_evidence_from_another_chapter():
+    canonical = {"id": "n1", "claim": "One mechanism", "source_ids": ["paper:H1"]}
+    duplicate = {"id": "n2", "claim": "The same mechanism", "source_ids": ["paper:P3"]}
+    claims, sources = lessons.selected_sources(
+        {"claim_ids": ["n1", "n2"], "evidence_claim_ids": ["n1"]},
+        [{"claims": [canonical, duplicate]}],
+        [
+            {"id": "paper:H1", "data": {"text": "One mechanism"}},
+            {"id": "paper:P3", "data": {"text": "The same mechanism"}},
+        ],
+    )
+    assert claims == [canonical]
+    assert [s["id"] for s in sources] == ["paper:H1"]
+
+
 def test_local_repair_preserves_other_sentences_and_needs_review(database):
     sid = "source"
     evidence = [{"id": sid, "data": {"text": "The old weights stay fixed."}}]

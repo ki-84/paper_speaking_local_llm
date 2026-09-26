@@ -23,20 +23,32 @@ NUMBER_UNITS = {
 }
 NUMBER_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_.])-?\d+(?:,\d{3})*(?:\.\d+)?(?:[eE][+-]?\d+)?"
-    r"(?:\s*(?:trillion|billion|million|thousand|百万|兆|億|万|千)(?![A-Za-z]))?",
+    r"(?:[\s-]*(?:trillion|billion|million|thousand|百万|兆|億|万|千)(?![A-Za-z]))?",
     re.IGNORECASE,
 )
+COMPOUND_JAPANESE_NUMBER = re.compile(
+    r"(?<![A-Za-z0-9_.])-?\d+(?:,\d{3})*(?:\.\d+)?(?:兆|億|万|千)"
+    r"(?:\d+(?:,\d{3})*(?:\.\d+)?(?:億|万|千))+"
+)
+JAPANESE_NUMBER_PART = re.compile(r"(-?\d+(?:,\d{3})*(?:\.\d+)?)(兆|億|万|千)")
 
 
 def numeric_values(text):
     """Compare quantities, including 175 billion and 1750億, by their value."""
     text = unicodedata.normalize("NFKC", text)
     values = set()
+    compound_spans = []
+    for match in COMPOUND_JAPANESE_NUMBER.finditer(text):
+        parts = JAPANESE_NUMBER_PART.findall(match.group())
+        values.add(sum(Decimal(n.replace(",", "")) * NUMBER_UNITS[unit] for n, unit in parts))
+        compound_spans.append(match.span())
     for match in NUMBER_PATTERN.finditer(text):
+        if any(start <= match.start() < end for start, end in compound_spans):
+            continue
         token = match.group().strip()
         unit = next((u for u in NUMBER_UNITS if token.lower().endswith(u)), None)
         if unit:
-            token = token[: -len(unit)].strip()
+            token = token[: -len(unit)].rstrip(" -")
         values.add(Decimal(token.replace(",", "")) * NUMBER_UNITS.get(unit, 1))
     return values
 

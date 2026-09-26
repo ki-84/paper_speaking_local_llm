@@ -188,11 +188,14 @@ def apply_local_repairs(chapter, result, allowed, evidence):
 
 
 def selected_sources(chapter, notes, sources):
-    claims = [
-        c for n in notes for c in n["claims"] if c["id"] in chapter.get("claim_ids", [])
-    ]
+    # Duplicate claims share a canonical teaching slot. The full claim_ids
+    # list is for coverage bookkeeping; review only the distinct assigned
+    # claims whose original sources are actually in this chapter's evidence.
     chosen = set(chapter.get("evidence_claim_ids", chapter.get("claim_ids", [])))
-    ids = {sid for c in claims if c["id"] in chosen for sid in c["source_ids"]}
+    claims = [
+        c for n in notes for c in n["claims"] if c["id"] in chosen
+    ]
+    ids = {sid for c in claims for sid in c["source_ids"]}
     selected = [s for s in sources if s["id"] in ids]
     # A chapter's evidence must fit without silently truncating it.
     if sum(len(s["data"]["text"]) for s in selected) > 55000:

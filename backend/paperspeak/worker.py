@@ -65,6 +65,7 @@ def run():
 
     thread = threading.Thread(target=heartbeat, daemon=True)
     thread.start()
+    translation.schedule_backfill()
     last_schedule = 0
     try:
         while not stopped.is_set():

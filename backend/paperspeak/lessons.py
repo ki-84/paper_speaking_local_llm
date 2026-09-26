@@ -6,7 +6,7 @@ import math
 import re
 import time
 
-from . import config, db, papers
+from . import config, db, papers, translation
 from .quality import (
     QualityHold,
     dialogue_for_model,
@@ -318,6 +318,19 @@ def lesson_step(job, runtime):
     c = chapter["data"]
     ordinal = chapter["ordinal"]
     progress = 0.3 + 0.7 * ordinal / max(1, len(chapters))
+    if chapter["state"] == "translation":
+        count = len(translation.items_for(chapter, lesson))
+        done = sum(
+            bool(translation.translated(chapter, key, english))
+            for key, english in translation.items_for(chapter, lesson)
+        )
+        stage(f"Translating chapter {ordinal + 1}: {done}/{count}", progress)
+        if translation.translate_batch(chapter, lesson, runtime):
+            chapter["state"] = "ready"
+            c["ready_at"] = time.time()
+            db.save_chapter(chapter)
+            db.event("chapter", {"id": chapter["id"]})
+        return False
     claims, evidence = selected_sources(c, data["notes"], sources)
     context = source_context(evidence)
     evidence_ids = {s["id"] for s in evidence}
@@ -699,8 +712,7 @@ def lesson_step(job, runtime):
             (i for i, t in enumerate(c["turns"]) if not t.get("audio_verified")), None
         )
         if index is None:
-            chapter["state"] = "ready"
-            c["ready_at"] = time.time()
+            chapter["state"] = "translation"
             db.save_chapter(chapter)
             db.event("chapter", {"id": chapter["id"]})
             return False

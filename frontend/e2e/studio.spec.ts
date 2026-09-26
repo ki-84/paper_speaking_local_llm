@@ -60,7 +60,7 @@ test("source, audio, question hints, and saved position", async ({ page }) => {
   });
 });
 test("Japanese aid keeps English and the source visible", async ({ page }) => {
-  await page.getByRole("button", { name: "日本語訳を表示" }).click();
+  await expect(page.getByRole("button", { name: "日本語訳を隠す" })).toBeVisible();
   await page.getByRole("button", { name: "Next sentence" }).click();
   await expect(page.getByText("元の重みは固定されたままです。").first()).toBeVisible();
   await expect(page.locator(".spoken-sentence")).toHaveText("The old weights stay fixed.");

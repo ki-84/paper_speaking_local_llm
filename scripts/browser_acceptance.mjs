@@ -41,7 +41,6 @@ try {
   await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[index].text);
   const translated = chapter.data.translation?.items?.['turn:' + chapter.data.turns[index].id];
   if (translated?.english === chapter.data.turns[index].text) {
-    await page.getByRole('button', {name: '日本語訳を表示'}).click();
     await expect(page.locator('.sentence-translation')).toHaveText(translated.japanese);
     await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[index].text);
     report.checks.local_japanese_aid = true;
@@ -65,7 +64,7 @@ try {
   report.checks.position_restored = true;
   await page.locator('.question').first().click();
   await page.getByRole('button', {name: 'A little help'}).click();
-  await expect(page.locator('.hint').first()).toHaveText(chapter.data.questions[0].hints[0]);
+  await expect(page.locator('.hint').first()).toContainText(chapter.data.questions[0].hints[0]);
   report.checks.real_question_hint = true;
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({path: path.join(root, 'data/evaluation/production-study.png'), fullPage: true});

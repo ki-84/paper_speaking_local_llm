@@ -1,4 +1,4 @@
-"""Optional, checkpointed Japanese reading aid for finished English chapters."""
+"""Checkpointed local Japanese translation for English learning chapters."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import unicodedata
 from decimal import Decimal
 
 from . import db
+
 NUMBER_UNITS = {
     "trillion": Decimal(10) ** 12,
     "billion": Decimal(10) ** 9,
@@ -92,22 +93,13 @@ def check_result(result, batch):
     return output
 
 
-def translation_step(job, runtime):
-    chapter = db.one("SELECT * FROM chapters WHERE id=?", (job["target"],))
-    if not chapter or chapter["state"] != "ready":
-        raise ValueError("Only a finished chapter can be translated.")
-    lesson = db.one("SELECT * FROM lessons WHERE id=?", (chapter["lesson_id"],))
+def translate_batch(chapter, lesson, runtime):
+    """Translate one saved batch; return whether every item is now translated."""
     items = items_for(chapter, lesson)
     pending = [(key, en) for key, en in items if not translated(chapter, key, en)]
     if not pending:
-        db.patch_job(job["id"], progress=1, stage="Japanese reading aid is ready")
         return True
     batch = pending[:8]
-    db.patch_job(
-        job["id"],
-        progress=(len(items) - len(pending)) / max(1, len(items)),
-        stage=f"Translating {len(items) - len(pending) + 1}–{len(items) - len(pending) + len(batch)} of {len(items)}",
-    )
     prompt = (
         "Translate each English item into natural, clear Japanese for an adult learning this paper. "
         "Keep the exact meaning, uncertainty, comparisons, names and written Arabic numbers. "
@@ -133,4 +125,34 @@ def translation_step(job, runtime):
         record["items"][key] = {"english": english, "japanese": output[key]}
     db.save_chapter(chapter)
     db.event("chapter", {"id": chapter["id"]})
-    return False
+    return complete(chapter, lesson)
+
+
+def translation_step(job, runtime):
+    """Backfill a chapter that was published before translations were required."""
+    chapter = db.one("SELECT * FROM chapters WHERE id=?", (job["target"],))
+    if not chapter or chapter["state"] != "ready":
+        raise ValueError("Only a finished chapter can be translated.")
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (chapter["lesson_id"],))
+    items = items_for(chapter, lesson)
+    remaining = sum(not translated(chapter, key, en) for key, en in items)
+    if remaining:
+        db.patch_job(
+            job["id"],
+            progress=(len(items) - remaining) / max(1, len(items)),
+            stage=f"Translating {len(items) - remaining + 1}–{min(len(items), len(items) - remaining + 8)} of {len(items)}",
+        )
+    done = translate_batch(chapter, lesson, runtime)
+    if done:
+        db.patch_job(job["id"], progress=1, stage="Japanese reading aid is ready")
+    return done
+
+
+def schedule_backfill():
+    """Queue old ready chapters once, without touching lessons or recordings."""
+    queued = []
+    for chapter in db.all("SELECT * FROM chapters WHERE state='ready' ORDER BY rowid"):
+        lesson = db.one("SELECT * FROM lessons WHERE id=?", (chapter["lesson_id"],))
+        if lesson and not complete(chapter, lesson):
+            queued.append(db.enqueue("translate", chapter["id"], priority=9))
+    return queued

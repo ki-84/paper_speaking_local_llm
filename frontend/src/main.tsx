@@ -1072,7 +1072,7 @@ function Learn({
     [role, setRole] = useState("both"),
     [speed, setSpeed] = useState(0.9),
     [subtitles, setSubtitles] = useState(true),
-    [showJapanese, setShowJapanese] = useState(false),
+    [showJapanese, setShowJapanese] = useState(true),
     [playing, setPlaying] = useState(false),
     [loop, setLoop] = useState(false),
     [mode, setMode] = useState<"one" | "chapter" | "all">("one");
@@ -1440,7 +1440,6 @@ function Learn({
                 onClick={() => {
                   stop();
                   setChapterId(c.id);
-                  setShowJapanese(false);
                   setIndex(0);
                   setAttempt(null);
                   setQuestion(null);
@@ -1452,7 +1451,7 @@ function Learn({
                   <small>
                     {c.state === "ready"
                       ? `${c.data.turns.length} sentences · ${Math.round(c.data.turns.reduce((n: number, t: any) => n + (t.duration || 0), 0) / 60)} min`
-                      : ({draft:"Writing the talk",review:"Checking the ideas",revise:"Improving the talk",english:"Making the English clear",questions:"Adding questions",audio:"Making the voices",audio_review:"Checking the voices"} as Record<string,string>)[c.state] || "Getting ready"}
+                      : ({draft:"Writing the talk",review:"Checking the ideas",revise:"Improving the talk",english:"Making the English clear",questions:"Adding questions",audio:"Making the voices",audio_review:"Checking the voices",translation:"Preparing Japanese"} as Record<string,string>)[c.state] || "Getting ready"}
                   </small>
                 </div>
                 {c.state === "ready" && <Check size={13} />}
@@ -1474,6 +1473,9 @@ function Learn({
                   {japanese("focus", chapter?.data.focus) && <p className="japanese-aid" lang="ja">{japanese("focus", chapter?.data.focus)}</p>}
                   {chapter?.translation_job && ["queued", "running", "paused"].includes(chapter.translation_job.state) && (
                     <p className="subtle">日本語訳を準備しています。完成した文から表示します。</p>
+                  )}
+                  {ready && !japanese("title", chapter?.data.title) && !chapter?.translation_job && (
+                    <p className="subtle">日本語訳を準備しています。</p>
                   )}
                   {chapter?.translation_job?.state === "failed" && (
                     <button className="text-button" onClick={() => post(`/jobs/${chapter.translation_job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>

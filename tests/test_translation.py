@@ -51,6 +51,43 @@ def test_japanese_translation_resumes_from_saved_batches(database, client):
     assert not translation.complete(db.one("SELECT * FROM chapters WHERE id=?", (ident,)), lesson)
 
 
+def test_new_chapter_is_not_published_before_japanese_is_complete(database):
+    ident = chapter_fixture()
+    chapter = db.one("SELECT * FROM chapters WHERE id=?", (ident,))
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (chapter["lesson_id"],))
+    lesson["data"]["phase"] = "chapters"
+    db.save_lesson(lesson)
+    db.execute("UPDATE chapters SET state='translation' WHERE id=?", (ident,))
+    jid = db.enqueue("lesson", lesson["id"])
+
+    class Translator:
+        def ask(self, prompt, **kwargs):
+            values = json.loads(prompt.split("ITEMS: ", 1)[1])
+            return {"items": [{"id": x["id"], "japanese": "訳です。" + x["english"]} for x in values]}
+
+    job = db.one("SELECT * FROM jobs WHERE id=?", (jid,))
+    assert not lessons.lesson_step(job, Translator())
+    partial = db.one("SELECT * FROM chapters WHERE id=?", (ident,))
+    assert partial["state"] == "translation"
+    assert not translation.complete(partial, lesson)
+    for _ in range(4):
+        lessons.lesson_step(job, Translator())
+        current = db.one("SELECT * FROM chapters WHERE id=?", (ident,))
+        if current["state"] == "ready":
+            break
+    assert current["state"] == "ready"
+    assert translation.complete(current, lesson)
+
+
+def test_existing_ready_chapters_are_queued_once_for_translation(database):
+    ident = chapter_fixture()
+    first = translation.schedule_backfill()
+    second = translation.schedule_backfill()
+    assert len(first) == len(second) == 1
+    assert first[0] == second[0]
+    assert db.one("SELECT kind,target,state FROM jobs WHERE id=?", (first[0],))["target"] == ident
+
+
 def test_bad_translation_cannot_replace_english_or_saved_work(database):
     ident = chapter_fixture()
     job_id = db.enqueue("translate", ident)

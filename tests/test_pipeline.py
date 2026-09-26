@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pytest
 import soundfile as sf
-from paperspeak import config, db, lessons, papers
+from paperspeak import config, db, lessons, papers, translation
 
 
 def test_local_repair_preserves_other_sentences_and_needs_review(database):
@@ -171,6 +171,14 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
                         }
                     ]
                 }
+            if prompt.startswith("Translate each English item"):
+                items = json.loads(prompt.split("ITEMS: ", 1)[1])
+                return {
+                    "items": [
+                        {"id": item["id"], "japanese": "訳です。" + item["english"]}
+                        for item in items
+                    ]
+                }
             raise AssertionError(prompt[:80])
 
         def speech(self, mode, request):
@@ -192,6 +200,7 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
     assert l["state"] == "ready"
     chapter = db.one("SELECT * FROM chapters WHERE lesson_id=?", (lid,))
     assert chapter["state"] == "ready"
+    assert translation.complete(chapter, l)
     assert provider.tts_calls == 2 and all(
         t["audio_verified"] for t in chapter["data"]["turns"]
     )

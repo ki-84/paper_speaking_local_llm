@@ -34,12 +34,14 @@ def test_japanese_translation_resumes_from_saved_batches(database, client):
         def ask(self, prompt, **kwargs):
             values = json.loads(prompt.split("ITEMS: ", 1)[1])
             assert kwargs["thinking"] is False
+            assert [x["id"] for x in values] == [str(i) for i in range(1, len(values) + 1)]
             return {"items": [{"id": x["id"], "japanese": "日本語訳: " + x["english"]} for x in values]}
 
     runtime = Translator()
     assert not translation.translation_step(job, runtime)
     first = db.one("SELECT * FROM chapters WHERE id=?", (ident,))
     assert len(first["data"]["translation"]["items"]) == 8
+    assert "turn:t0" in first["data"]["translation"]["items"]
     while not translation.translation_step(job, runtime):
         pass
     complete = db.one("SELECT * FROM chapters WHERE id=?", (ident,))

@@ -100,12 +100,15 @@ def translate_batch(chapter, lesson, runtime):
     if not pending:
         return True
     batch = pending[:8]
+    # Long chapter/turn IDs are easy for a model to mistype. Exchange short
+    # per-batch IDs, then save translations under the original stable keys.
+    request = [(str(i + 1), english) for i, (_, english) in enumerate(batch)]
     prompt = (
         "Translate each English item into natural, clear Japanese for an adult learning this paper. "
         "Keep the exact meaning, uncertainty, comparisons, names and written Arabic numbers. "
         "Do not add new scientific claims or explanations. Translate every item once, preserving its ID exactly. "
         'Return {"items":[{"id":"same ID","japanese":"日本語訳"}]}.\nITEMS: '
-        + json.dumps([{"id": key, "english": en} for key, en in batch], ensure_ascii=False)
+        + json.dumps([{"id": key, "english": en} for key, en in request], ensure_ascii=False)
     )
     result = runtime.ask(
         prompt,
@@ -117,12 +120,12 @@ def translate_batch(chapter, lesson, runtime):
         thinking=False,
         max_tokens=3000,
     )
-    output = check_result(result, batch)
+    output = check_result(result, request)
     record = chapter["data"].setdefault("translation", {"items": {}})
     record["model"] = lesson["data"].get("model", "qwen-q8")
     record["updated"] = time.time()
-    for key, english in batch:
-        record["items"][key] = {"english": english, "japanese": output[key]}
+    for (key, english), (short_id, _) in zip(batch, request):
+        record["items"][key] = {"english": english, "japanese": output[short_id]}
     db.save_chapter(chapter)
     db.event("chapter", {"id": chapter["id"]})
     return complete(chapter, lesson)

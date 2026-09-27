@@ -8,7 +8,7 @@ import httpx
 import imageio_ffmpeg
 import pytest
 
-from paperspeak import config, db, papers, video, youtube
+from paperspeak import config, db, papers, video, video_overlay, youtube
 from paperspeak.runtime import PracticePreempted
 
 
@@ -50,6 +50,45 @@ def test_speaker_change_adds_one_second_of_silence_without_subtitles(database):
     assert "00:00:05,000 --> 00:00:06,000" in subtitles["ja"]
     assert "00:00:02,000 --> 00:00:03,000" not in subtitles["en"]
     assert ass.count("Dialogue:") == 8
+
+
+def test_long_bilingual_captions_fit_between_the_characters_without_truncation():
+    english = ("This careful experiment compares the small update matrices with full fine-tuning "
+               "on the same model, task, and training setup, so the chart supports only this narrower claim.")
+    japanese = ("この慎重な実験では、同じモデル、同じ課題、同じ学習条件で、小さな更新行列とモデル全体の再学習を比較します。"
+                "したがって、この図が裏付けるのは、ここで述べた範囲に限られます。")
+    layout = video_overlay.layout_captions(english, japanese)
+    assert len(layout["english"]) <= 3 and len(layout["japanese"]) <= 3
+    assert " ".join(layout["english"]) == english
+    assert "".join(layout["japanese"]) == japanese
+    assert all(video_overlay._width(line, layout["en_size"]) <= video_overlay.CAPTION_WIDTH
+               for line in layout["english"])
+    assert all(video_overlay._width(line, layout["ja_size"]) <= video_overlay.CAPTION_WIDTH
+               for line in layout["japanese"])
+    assert layout["ja_top"] + len(layout["japanese"]) * layout["ja_size"] * 1.17 <= 1070
+
+
+def test_wav_lip_sync_closes_during_pauses_and_only_marks_the_speaker(database):
+    import numpy as np
+
+    path = database / "audio" / "speech.wav"
+    samples = np.zeros(24000 * 3, dtype="<i2")
+    first = np.arange(24000, dtype=np.float32)
+    samples[24000:48000] = (6500 * np.sin(first * 2 * np.pi * 230 / 24000)).astype("<i2")
+    with wave.open(str(path), "wb") as output:
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(24000)
+        output.writeframes(samples.tobytes())
+    states = video_overlay.mouth_states(path, 72000)
+    assert states[0][2] == 0 and states[-1][2] == 0
+    assert any(state > 0 and 24000 <= start < 48000 for start, _, state in states)
+    config_ = video_overlay.character_manifest()["layout"]
+    events = video_overlay.mouth_events("guide", path, 72000, 0, config_)
+    assert events and all("\\pos(" in event for event in events)
+    assert all(float(event.split(",")[1].rsplit(":", 1)[1]) >= .90 for event in events)
+    host_events = video_overlay.mouth_events("host", path, 72000, 0, config_)
+    assert events[0] != host_events[0]
 
 
 def test_transient_chromium_capture_retries_without_leaving_partial_file(tmp_path, monkeypatch):

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <!-- Aiden: original pixel-art engineer and listener, drawn on a 64px grid. -->
+  <path fill="#293b55" d="M4 63v-7h4v-5h5v-5h7v-3h24v3h7v5h5v5h4v7z"/>
+  <path fill="#477196" d="M8 63V53h7v-5h9l8 8 8-8h9v5h7v10z"/>
+  <path fill="#6b9bbb" d="M8 57h6v6H8zm42 0h6v6h-6zM15 50h8l8 9-4 4H15zm26 0h8v13H37l-4-4z"/>
+  <path fill="#283f55" d="M24 44h16l-8 13z"/>
+  <path fill="#e9e6d8" d="M27 45h10l-5 7z"/>
+  <path fill="#b47758" d="M24 39h16v10H24z"/>
+  <path fill="#e4a47b" d="M27 39h10v9H27z"/>
+  <path fill="#4a352c" d="M18 15h3v-5h5V7h19v4h4v7h-4v21h-5v5h-4v-6H27v6h-5v-6h-5V21h-3v-6z"/>
+  <path fill="#876148" d="M17 14h6v-4h20v3h4v5h-5v-3h-5v3H22v4h-5z"/>
+  <path fill="#d6936d" d="M20 21h24v16h-3v5H23v-5h-3z"/>
+  <path fill="#efb78c" d="M22 21h20v16h-3v3H25v-3h-3z"/>
+  <path fill="#b47758" d="M18 27h3v8h-3zm25 0h3v8h-3zM28 34h7v2h-7z"/>
+  <path fill="#4a352c" d="M23 25h8v2h-8zm11 0h8v2h-8zM26 29h3v3h-3zm9 0h3v3h-3z"/>
+  <path fill="#fff4df" d="M27 29h1v1h-1zm9 0h1v1h-1z"/>
+  <path fill="#8c5546" d="M29 38h7v1h-7z"/>
+  <path fill="#d5af73" d="M43 48h6v3h-6zM15 48h6v3h-6z"/>
+  <path fill="#88b5ca" d="M12 54h3v7h-3zm37 0h3v7h-3z"/>
+</svg>

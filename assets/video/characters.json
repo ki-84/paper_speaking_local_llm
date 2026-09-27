@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "layout": {
+    "footer_top": 810,
+    "avatar_top": 10,
+    "avatar_width": 225,
+    "avatar_height": 245,
+    "avatar_inset": 34,
+    "portrait_size": 210,
+    "name_top": 1035
+  },
+  "guide": {
+    "name": "MAYA",
+    "role": "TEACHER",
+    "side": "left",
+    "sprite": "maya.svg",
+    "skin": "#f6c49b",
+    "mouth": "#743b43",
+    "mouth_box": [28, 37, 10, 4],
+    "eyes": [[26, 28], [36, 28]]
+  },
+  "host": {
+    "name": "AIDEN",
+    "role": "HOST",
+    "side": "right",
+    "sprite": "aiden.svg",
+    "skin": "#efb78c",
+    "mouth": "#744538",
+    "mouth_box": [28, 37, 10, 4],
+    "eyes": [[26, 29], [36, 29]]
+  }
+}

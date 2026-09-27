@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <!-- Maya: original pixel-art teacher, drawn on a 64px grid. The mouth is animated separately. -->
+  <path fill="#25423e" d="M4 63V56h4v-5h5v-5h7v-4h25v4h7v5h5v5h3v7z"/>
+  <path fill="#3b8278" d="M8 63V53h6v-5h9l9 10 9-10h9v5h6v10z"/>
+  <path fill="#63aa95" d="M8 56h5v7H8zm42 0h6v7h-6zM14 50h7l8 9-5 4H14zm29 0h7v13H40l-5-4z"/>
+  <path fill="#dcefe4" d="M24 45h16l-8 13z"/>
+  <path fill="#9d5341" d="M24 39h16v10H24z"/>
+  <path fill="#d28b68" d="M27 39h10v9H27z"/>
+  <path fill="#422837" d="M14 17h4v-6h5V7h19v3h5v5h3v25h-5v6h-5v-8H22v8h-5v-5h-4V25h1z"/>
+  <path fill="#75404a" d="M18 12h5V8h18v3h5v6h3v7h-3v-4h-5v-4H22v4h-4v20h-4V21h4z"/>
+  <path fill="#e9ac84" d="M21 19h22v19h-3v4H24v-4h-3z"/>
+  <path fill="#f6c49b" d="M23 19h18v17h-3v4H26v-4h-3z"/>
+  <path fill="#d28b68" d="M18 27h3v8h-3zm25 0h3v8h-3zM28 34h7v2h-7z"/>
+  <path fill="#422837" d="M18 16h5v4h-5zm22 0h5v4h-5zM22 13h20v4H22zM20 19h4v4h-4zm19 0h4v4h-4z"/>
+  <path fill="#9b5964" d="M22 26h9v8h-9zm11 0h9v8h-9z"/>
+  <path fill="#f0bb91" d="M24 28h6v4h-6zm11 0h5v4h-5z"/>
+  <path fill="#432b39" d="M26 28h3v3h-3zm10 0h3v3h-3zm-4 0h2v2h-2zm-11 0h2v2h-2zm19 0h2v2h-2z"/>
+  <path fill="#fff3dc" d="M27 28h1v1h-1zm10 0h1v1h-1z"/>
+  <path fill="#ba725f" d="M29 38h7v1h-7z"/>
+  <path fill="#28544f" d="M30 55h4v8h-4z"/>
+  <path fill="#f0bc6a" d="M15 53h7v2h-7zm27 0h7v2h-7z"/>
+</svg>

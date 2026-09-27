@@ -6,6 +6,8 @@ import { chromium } from "../frontend/node_modules/playwright-core/index.mjs";
 
 const [input, output] = process.argv.slice(2);
 const scene = JSON.parse(await fs.readFile(input, "utf8"));
+const charactersRoot = new URL("../assets/video/", import.meta.url);
+const characters = JSON.parse(await fs.readFile(new URL("characters.json", charactersRoot), "utf8"));
 const font = execFileSync("fc-match", ["Noto Sans CJK JP", "--format=%{family}"], {encoding:"utf8"});
 if (!font.includes("Noto Sans CJK JP")) throw new Error("Install local fonts-noto-cjk for video slides.");
 const esc = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;")
@@ -26,13 +28,19 @@ const kind = !asset ? "Paper conversation · 論文の会話" : asset.kind === "
   ? `${esc(asset.label)} · Original paper figure · 論文の原図 · p.${esc(asset.page)}`
   : asset.kind === "example" ? "Hypothetical example · 仮の例" : "Teaching diagram · 説明用の補助図";
 const paperSize = Array.from(scene.paper_title || "").length > 90 ? 58 : 76;
+const avatars = (await Promise.all(["guide", "host"].map(async role => {
+  const person = characters[role];
+  const bytes = await fs.readFile(new URL(person.sprite, charactersRoot));
+  return `<div class="avatar ${esc(person.side)}"><img src="data:image/svg+xml;base64,${bytes.toString("base64")}" alt="" /><div class="nameplate">${esc(person.name)} · ${esc(person.role)}</div></div>`;
+}))).join("");
+const footer = `<footer class="captions">${avatars}</footer>`;
 const titleCard = `<main class="title-page"><div class="intro-meta"><span>PaperSpeak</span><span>CHAPTER ${Number(scene.ordinal)+1} / 第${Number(scene.ordinal)+1}章</span></div>
 <div class="intro-copy"><div class="intro-kicker">A PAPER, EXPLAINED IN CONVERSATION · 会話で論文を学ぶ</div>
 <h1 style="font-size:${paperSize}px">${esc(scene.paper_title)}</h1><div class="intro-rule"></div>
-<h2>${esc(scene.chapter_title_en)}</h2><p lang="ja">${esc(scene.chapter_title_ja)}</p></div></main><footer class="captions"></footer>`;
+<h2>${esc(scene.chapter_title_en)}</h2><p lang="ja">${esc(scene.chapter_title_ja)}</p></div></main>${footer}`;
 const lessonSlide = `<header class="top"><div class="titles"><h1>${esc(scene.chapter_title_en)}</h1><p lang="ja">${esc(scene.chapter_title_ja)}</p></div><div class="chapter-number">Chapter ${Number(scene.ordinal)+1}</div></header>
 <main class="figure-zone"><div class="kind">${kind}</div><div class="figure-content">${image || `<div class="empty">${esc(scene.paper_title)}</div>`}
-${asset ? `<aside class="description"><h2>${esc(asset.title_en)}</h2><p class="ja-title" lang="ja">${esc(asset.title_ja)}</p><p>${esc(asset.description_en)}</p><p class="ja-desc" lang="ja">${esc(asset.description_ja)}</p>${(scene.focus || []).map(id => (asset.regions || []).find(r => r.id === id)).filter(Boolean).map(r => `<div class="focus-label">${esc(r.label_en)}<br /><span lang="ja">${esc(r.label_ja)}</span></div>`).join("")}</aside>` : ""}</div></main><footer class="captions"></footer>`;
+${asset ? `<aside class="description"><h2>${esc(asset.title_en)}</h2><p class="ja-title" lang="ja">${esc(asset.title_ja)}</p><p>${esc(asset.description_en)}</p><p class="ja-desc" lang="ja">${esc(asset.description_ja)}</p>${(scene.focus || []).map(id => (asset.regions || []).find(r => r.id === id)).filter(Boolean).map(r => `<div class="focus-label">${esc(r.label_en)}<br /><span lang="ja">${esc(r.label_ja)}</span></div>`).join("")}</aside>` : ""}</div></main>${footer}`;
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><style>
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
 body{background:#f1f3e9;color:#183630;font-family:"Noto Sans CJK JP","Noto Sans",sans-serif}
@@ -56,8 +64,10 @@ body{background:#f1f3e9;color:#183630;font-family:"Noto Sans CJK JP","Noto Sans"
 .focus-label{padding:12px 15px;border-left:6px solid #e88328;background:#fff8e8;font-size:21px;color:#5a3921}
 .empty{font-family:Georgia,serif;font-size:72px;font-style:italic;color:#527065}
 .captions{height:270px;background:#122e2c;position:relative;border-top:7px solid #d99550}
-.captions:before{content:"ENGLISH / 日本語";position:absolute;left:70px;top:12px;color:#a9c7b8;font-size:17px;letter-spacing:.09em}
-.captions:after{content:"PaperSpeak";position:absolute;right:70px;bottom:16px;color:#76998c;font-size:16px;letter-spacing:.1em}
+.avatar{position:absolute;top:10px;width:225px;height:245px;text-align:center;z-index:2}
+.avatar.left{left:34px}.avatar.right{right:34px}
+.avatar img{display:block;width:210px;height:210px;margin:0 auto;image-rendering:pixelated}
+.nameplate{position:absolute;bottom:4px;left:17px;width:190px;border:2px solid #9bbaaa;background:#244843;border-radius:7px;color:#fff;font-size:17px;font-weight:700;line-height:22px}
 .title-page{height:810px;padding:58px 100px 55px;background:radial-gradient(circle at 93% 9%,#64857477 0 0.5%,transparent 35%),linear-gradient(135deg,#e9f0df,#f8f7ee 58%,#e4eade);position:relative;overflow:hidden}
 .title-page:after{content:"";position:absolute;width:640px;height:640px;border:3px solid #8aab8b66;border-radius:50%;right:-200px;top:230px;box-shadow:0 0 0 55px #8aab8b22,0 0 0 115px #8aab8b17;pointer-events:none}
 .intro-meta{display:flex;justify-content:space-between;align-items:center;font-size:23px;font-weight:700;letter-spacing:.15em;color:#315c4d}

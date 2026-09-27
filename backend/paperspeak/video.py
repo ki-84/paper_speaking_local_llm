@@ -4,18 +4,19 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
+import shutil
 import subprocess
 import time
 import wave
 
 import imageio_ffmpeg
 
-from . import config, db, translation, visuals, voices, youtube
+from . import config, db, translation, video_overlay, visuals, voices, youtube
 from .quality import QualityHold, speech_match
 from .runtime import PracticePreempted
 
 log = logging.getLogger(__name__)
-VERSION = "visual-video-4"
+VERSION = "visual-video-5"
 SIZE = (1920, 1080)
 FPS = 30
 SPEAKER_GAP_FRAMES = 24000
@@ -112,6 +113,7 @@ def chapter_manifest(chapter, lesson):
         "turns": turns, "format": {"width": SIZE[0], "height": SIZE[1], "fps": FPS,
             "video": "H.264 High yuv420p", "audio": "AAC-LC stereo 48 kHz", "encode": ENCODE,
             "speaker_gap_frames": SPEAKER_GAP_FRAMES},
+        "characters": video_overlay.character_manifest(),
         "models_used": lesson["data"].get("models_used", {}),
     }
 
@@ -160,6 +162,7 @@ def schedule():
             manifest = {"version": VERSION, "lesson_id": lesson["id"],
                         "video_title": export_title(lesson["data"]["title"]),
                         "encode": ENCODE,
+                        "characters": video_overlay.character_manifest(),
                         "chapter_videos": [{"id": row["id"], "digest": row["input_digest"],
                                              "mp4": row["data"]["mp4"]} for row in current]}
             ident = _insert_export(lesson["id"], "", "full", manifest)
@@ -198,21 +201,37 @@ def _ass_text(value):
     return value.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").replace("\n", "\\N").replace("\r", " ")
 
 
-def _captions(turns):
+def _captions(turns, *, animate=False):
     lines = {"en": [], "ja": []}
     events = []
     cumulative = 0
     index = 0
+    character_config = video_overlay.character_manifest()["layout"] if animate else None
     for turn in turns:
+        start_frame = cumulative
         start = round(cumulative / 24)
         cumulative += turn["frames"]
         end = round(cumulative / 24)
         if turn.get("silence"):
             continue
         index += 1
+        layout = video_overlay.layout_captions(turn["english"], turn["japanese"])
         for lang, key in (("en", "english"), ("ja", "japanese")):
-            lines[lang].append(f"{index}\n{_srt_time(start)} --> {_srt_time(end)}\n{turn[key]}\n")
-            events.append(f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},{'English' if lang == 'en' else 'Japanese'},,0,0,0,,{_ass_text(turn[key])}")
+            wrapped = "\n".join(layout["english" if lang == "en" else "japanese"])
+            lines[lang].append(f"{index}\n{_srt_time(start)} --> {_srt_time(end)}\n{wrapped}\n")
+            top = layout["en_top" if lang == "en" else "ja_top"]
+            size = layout["en_size" if lang == "en" else "ja_size"]
+            events.append(f"Dialogue: 10,{_ass_time(start)},{_ass_time(end)},{'English' if lang == 'en' else 'Japanese'},,0,0,0,,"
+                          f"{{\\an8\\pos(960,{top})\\fs{size}\\q2}}{_ass_text(wrapped)}")
+        if animate:
+            role = turn["speaker"]
+            if role not in {"host", "guide"}:
+                raise ValueError("Video animation has an unknown speaking role.")
+            events.extend(video_overlay.highlight_events(role, start, end, character_config))
+            events.extend(video_overlay.mouth_events(role, config.safe_path(turn["audio"]),
+                                                      turn["frames"], start_frame, character_config))
+    if animate:
+        events.extend(video_overlay.blink_events(round(cumulative / 24), character_config))
     ass = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1920
@@ -222,8 +241,9 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: English,Noto Sans,45,&H00FFFFFF,&H000000FF,&H00332115,&H00000000,1,0,0,0,100,100,0,0,1,2,0,8,85,85,828,1
-Style: Japanese,Noto Sans CJK JP,37,&H00E4F6EA,&H000000FF,&H00332115,&H00000000,1,0,0,0,100,100,0,0,1,2,0,8,85,85,952,1
+Style: English,Noto Sans,45,&H00FFFFFF,&H000000FF,&H00332115,&H00000000,1,0,0,0,100,100,0,0,1,2,0,8,280,280,0,1
+Style: Japanese,Noto Sans CJK JP,37,&H00E4F6EA,&H000000FF,&H00332115,&H00000000,1,0,0,0,100,100,0,0,1,2,0,8,280,280,0,1
+Style: Pixel,Noto Sans,20,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -312,6 +332,29 @@ def _intro_step(job, runtime, manifest, work):
     checkpoint = job["checkpoint"]
     path = work / "title.wav"
     intro = manifest["intro"]
+    if (not checkpoint.get("intro_audio_ready") and not path.is_file()
+            and manifest.get("lesson_id") and manifest.get("chapter_id")):
+        for prior in db.all("SELECT * FROM video_exports WHERE lesson_id=? AND chapter_id=? AND kind='chapter' ORDER BY created DESC",
+                            (manifest["lesson_id"], manifest["chapter_id"])):
+            if prior["id"] == job["target"] or prior["data"].get("manifest", {}).get("intro") != intro:
+                continue
+            older = db.one("SELECT checkpoint FROM jobs WHERE kind='chapter_video' AND target=? ORDER BY created DESC LIMIT 1",
+                           (prior["id"],))
+            old_path = config.DATA / "jobs" / ("video-" + prior["id"]) / "title.wav"
+            old_cp = older["checkpoint"] if older else {}
+            if not old_cp.get("intro_audio_verified") or not old_path.is_file():
+                continue
+            shutil.copy2(old_path, path)
+            frames = _duration_frames(path)
+            if frames != old_cp.get("intro_frames"):
+                path.unlink(missing_ok=True)
+                continue
+            checkpoint = checkpoint | {key: old_cp[key] for key in
+                ("intro_audio_ready", "intro_audio_verified", "intro_frames", "intro_transcript",
+                 "intro_wer", "intro_tts_settings", "intro_asr_settings") if key in old_cp}
+            db.patch_job(job["id"], stage="Reusing checked spoken title", progress=0.1,
+                         checkpoint=checkpoint)
+            return False
     if not checkpoint.get("intro_audio_ready") or not path.is_file():
         attempt = checkpoint.get("intro_attempts", 0)
         seed = (int(digest([intro["english"], intro["tts_revision"]])[:8], 16) + attempt) % (2**31)
@@ -397,7 +440,7 @@ def _chapter_step(job, runtime, export):
     stem = manifest["video_title"]
     paths = {"mp4": output_dir / (stem + ".mp4"), "en_srt": output_dir / (stem + ".en.srt"),
              "ja_srt": output_dir / (stem + ".ja.srt")}
-    captions, ass, duration = _captions(turns)
+    captions, ass, duration = _captions(turns, animate=True)
     paths["en_srt"].write_text(captions["en"], encoding="utf-8")
     paths["ja_srt"].write_text(captions["ja"], encoding="utf-8")
     ass_path = work / "bilingual.ass"
@@ -427,6 +470,7 @@ def _chapter_step(job, runtime, export):
     partial.replace(paths["mp4"])
     _set_export(export, "ready", **{name: str(path.relative_to(config.DATA)) for name, path in paths.items()},
                 title=manifest["video_title"], encode_settings=ENCODE,
+                characters=manifest["characters"],
                 duration=duration, media_duration=actual_duration, bytes=paths["mp4"].stat().st_size,
                 sha256=file_digest(paths["mp4"]),
                 title_narration={"text": manifest["intro"]["english"],
@@ -442,7 +486,10 @@ def _chapter_step(job, runtime, export):
 def _full_step(job, runtime, export):
     manifest = export["data"]["manifest"]
     chapters = [db.one("SELECT * FROM video_exports WHERE id=?", (item["id"],)) for item in manifest["chapter_videos"]]
-    if any(not item or item["state"] != "ready" for item in chapters):
+    if any(not item or item["state"] != "ready" or item["input_digest"] != expected["digest"]
+           or (manifest.get("version") and
+               item["data"].get("manifest", {}).get("version") != manifest["version"])
+           for item, expected in zip(chapters, manifest["chapter_videos"])):
         raise ValueError("All chapter videos must be ready before joining them.")
     work = _work(export)
     output_dir = config.DATA / "videos" / export["lesson_id"] / export["input_digest"][:12]

@@ -10,6 +10,8 @@ python3 scripts/setup.py --llama-bin /path/to/llama-server --models
 
 Node・Caddy・Python依存関係を固定ハッシュで取得します。Node24.21.0、Caddy2.11.4、uv0.12.18です。`npm ci` はpackage-lockを使用します。既存の環境は再利用します。追加比較モデルは以下で取得します。
 
+図のPNG出力には、package-lockで固定したPlaywrightが指定するChromiumをsetupが取得します。日本語にはLinux内の `Noto Sans CJK JP` を使用します。Ubuntuでは `sudo apt install fonts-noto-cjk` で事前に用意してください。Chromiumの共有ライブラリが不足する環境では `.tools/node/bin/node frontend/node_modules/playwright/cli.js install-deps chromium` も必要です。取得後の図の描画はネットワーク要求を遮断して実行し、外部フォントや画像生成APIを使いません。
+
 ```bash
 .venv/bin/python scripts/prepare_assets.py qwen-q6 muse-q6
 ```

@@ -32,6 +32,7 @@ def init_dirs():
     for name in (
         "papers",
         "audio",
+        "visuals",
         "recordings",
         "jobs",
         "logs",

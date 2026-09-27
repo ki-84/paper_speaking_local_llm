@@ -6,29 +6,30 @@ import math
 import re
 import time
 
-from . import config, db, papers, translation, voices
+from . import config, db, papers, translation, voices, visuals, figure_extract
 from .quality import (
     QualityHold,
     dialogue_for_model,
     english_only,
     speech_context,
     speech_match,
+    split_spoken_turns,
     validate_turns,
     word_diff,
 )
 
-VERSION = "paper-radio-1"
+VERSION = visuals.FORMAT
 MAX_SCIENTIFIC_REVISIONS = 8
 
 
-def create(paper_id):
+def create(paper_id, format_version=VERSION):
     paper = db.one("SELECT * FROM papers WHERE id=?", (paper_id,))
     if not paper:
         raise ValueError("Paper not found")
     # A pending revision is reused. Completed revisions are immutable.
     pending = db.one(
-        "SELECT * FROM lessons WHERE paper_id=? AND state NOT IN ('ready','cancelled') ORDER BY created DESC LIMIT 1",
-        (paper_id,),
+        "SELECT * FROM lessons WHERE paper_id=? AND state NOT IN ('ready','cancelled') AND json_extract(data,'$.format')=? ORDER BY created DESC LIMIT 1",
+        (paper_id, format_version),
     )
     if pending:
         return pending["id"]
@@ -39,7 +40,7 @@ def create(paper_id):
         "phase": "ingest",
         "title": paper["title"],
         "model": profile,
-        "format": VERSION,
+        "format": format_version,
         "notes": [],
         "outline": [],
         "model_manifest": config.manifest().get("models", {}).get(profile, {}),
@@ -52,6 +53,16 @@ def create(paper_id):
             "target": "A2 with explained technical terms",
         },
     }
+    # Reuse the reading notes for the exact same stored paper version, never
+    # old dialogue/audio. Every new chapter is reviewed against original sources.
+    prior = db.one("SELECT * FROM lessons WHERE paper_id=? AND json_extract(data,'$.phase') IN ('chapters','complete') ORDER BY created DESC LIMIT 1", (paper_id,))
+    if format_version == VERSION and prior and prior["data"].get("model") == profile:
+        source_ids = {s["id"] for s in db.all("SELECT id FROM sources WHERE paper_id=?", (paper_id,))}
+        notes = prior["data"].get("notes", [])
+        if notes and all(set(c["source_ids"]) <= source_ids for n in notes for c in n["claims"]):
+            data["notes"] = notes
+            data["reading_reuse"] = {"lesson_id": prior["id"], "paper_id": paper_id,
+                                     "source_ids": sorted({sid for n in notes for c in n["claims"] for sid in c["source_ids"]})}
     db.execute(
         "INSERT INTO lessons VALUES (?,?,?,?,?,?)",
         (ident, paper_id, "building", db.dumps(data), now, now),
@@ -134,8 +145,10 @@ def apply_local_repairs(chapter, result, allowed, evidence):
         raise ValueError("A local repair needs at least one replacement.")
     replacements = {}
     for edit in edits:
+        if not isinstance(edit, dict):
+            raise ValueError("Each local repair must be an object with a turn ID and replacements.")
         ident = edit.get("turn_id")
-        turns = edit.get("replacement")
+        turns = split_spoken_turns(edit.get("replacement"))
         if ident not in allowed and isinstance(ident, str) and len(ident) >= 8:
             matches = [key for key in allowed if key.startswith(ident)]
             if len(matches) == 1:
@@ -171,6 +184,10 @@ def apply_local_repairs(chapter, result, allowed, evidence):
         # pass scientific review and speech verification again.
         history.append({"before": old, "replacement": dialogue_for_model(new)})
         for i, turn in enumerate(new):
+            # A wording-only edit must not silently discard its saved figure.
+            # Explicit new/null cues are respected and rechecked below.
+            if "visual" not in turn and old.get("visual"):
+                turn = turn | {"visual": old["visual"]}
             updated.append(
                 dialogue_for_model([turn])[0]
                 | {
@@ -196,11 +213,45 @@ def selected_sources(chapter, notes, sources):
         c for n in notes for c in n["claims"] if c["id"] in chosen
     ]
     ids = {sid for c in claims for sid in c["source_ids"]}
+    if "visuals" in chapter:
+        for ref in chapter["visuals"]:
+            asset = db.one("SELECT data FROM visual_assets WHERE id=?", (ref["asset_id"],))
+            if asset:
+                ids.update(asset["data"].get("source_ids", []))
     selected = [s for s in sources if s["id"] in ids]
     # A chapter's evidence must fit without silently truncating it.
     if sum(len(s["data"]["text"]) for s in selected) > 55000:
         raise ValueError("This chapter needs to be split into smaller topics.")
     return claims, selected
+
+
+def review_images(chapter, evidence):
+    """Give original images explicit citation IDs; teaching aids are not evidence."""
+    result = []
+    allowed = {source["id"] for source in evidence}
+    for asset in visuals.assets(chapter):
+        if asset["kind"] == "original":
+            result.append({
+                "path": asset["data"]["image_path"],
+                "source_ids": [sid for sid in asset["data"]["source_ids"] if sid in allowed],
+            })
+    paths = {item["path"] for item in result}
+    for source in evidence:
+        path = source["data"].get("image_path")
+        if path and path not in paths:
+            result.append({"path": path, "source_ids": [
+                s["id"] for s in evidence if s["data"].get("image_path") == path
+            ]})
+            paths.add(path)
+    return result[:2]
+
+
+def questions_ready(chapter):
+    data = chapter["data"]
+    review = data.get("question_review", {})
+    return (bool(data.get("questions")) and review.get("passed") is True
+            and review.get("version") == "question-meaning-1"
+            and review.get("digest") == figure_extract.digest(data["questions"]))
 
 
 def lesson_step(job, runtime):
@@ -217,7 +268,12 @@ def lesson_step(job, runtime):
         stage("Reading the paper", 0.02)
         paper = papers.ingest(lesson["paper_id"])
         data["title"] = paper["title"]
-        save(lesson, "notes")
+        save(lesson, "figures" if visuals.enabled(lesson) else "notes")
+        return False
+    if phase == "figures":
+        stage("Extracting original figures from the local PDF", 0.03)
+        figure_extract.extract(lesson["paper_id"])
+        save(lesson, "outline" if data.get("reading_reuse") else "notes")
         return False
     sources = db.all(
         "SELECT * FROM sources WHERE paper_id=? ORDER BY rowid", (lesson["paper_id"],)
@@ -297,7 +353,7 @@ def lesson_step(job, runtime):
                         db.uid(),
                         lesson["id"],
                         i,
-                        "draft",
+                        "visuals" if visuals.enabled(lesson) else "draft",
                         db.dumps(
                             spec | {"turns": [], "draft_parts": 0, "revision_round": 0}
                         ),
@@ -324,18 +380,36 @@ def lesson_step(job, runtime):
     if chapter["state"] == "translation":
         count = len(translation.items_for(chapter, lesson))
         done = sum(
-            bool(translation.translated(chapter, key, english))
+            translation.verified(chapter, key, english, lesson)
             for key, english in translation.items_for(chapter, lesson)
         )
-        stage(f"Translating chapter {ordinal + 1}: {done}/{count}", progress)
+        stage(f"Preparing and checking Japanese, chapter {ordinal + 1}: {done}/{count}", progress)
         if translation.translate_batch(chapter, lesson, runtime):
+            if visuals.enabled(lesson) and not visuals.ready(chapter):
+                c["visual_after_review"] = "translation"
+                chapter["state"] = "visual_dialogue_review"
+                db.save_chapter(chapter)
+                return False
+            if visuals.enabled(lesson) and not questions_ready(chapter):
+                chapter["state"] = "question_review"
+                db.save_chapter(chapter)
+                return False
             chapter["state"] = "ready"
             c["ready_at"] = time.time()
             db.save_chapter(chapter)
             db.event("chapter", {"id": chapter["id"]})
         return False
     claims, evidence = selected_sources(c, data["notes"], sources)
+    if chapter["state"] == "visuals":
+        stage(f"Preparing figures and diagrams for chapter {ordinal + 1}", progress)
+        return visuals.prepare_step(chapter, lesson, evidence, runtime)
+    if chapter["state"] == "visual_dialogue_review":
+        stage(f"Checking the talk against the visuals in chapter {ordinal + 1}", progress)
+        return visuals.dialogue_review_step(chapter, lesson, runtime)
     context = source_context(evidence)
+    if chapter["state"] == "visual_draft":
+        stage(f"Explaining the selected figures in chapter {ordinal + 1}", progress)
+        return visuals.draft_missing_step(chapter, lesson, evidence, runtime)
     evidence_ids = {s["id"] for s in evidence}
     unresolved = [
         u
@@ -382,9 +456,14 @@ def lesson_step(job, runtime):
             prompt += "\nAvoid these errors from the previous draft: " + json.dumps(
                 c["validation_errors"]
             )
-        result = runtime.ask(prompt, profile=data["model"], max_tokens=7500)
-        turns = result.get("turns", [])
+        prompt += visuals.dialogue_prompt(chapter)
+        result = runtime.ask(prompt, profile=data["model"], max_tokens=7500,
+                             images=visuals.image_paths(chapter) if visuals.enabled(lesson) else None)
+        turns = split_spoken_turns(result.get("turns", []))
+        visuals.bind_numbered_refs(turns, chapter)
         errors = validate_turns(turns, evidence)
+        if visuals.enabled(lesson):
+            errors += visuals.validate_links(turns, chapter)
         if errors:
             c["validation_errors"] = errors
             db.save_chapter(chapter)
@@ -395,11 +474,12 @@ def lesson_step(job, runtime):
         c["turns"].extend(turns)
         c["draft_parts"] += 1
         if c["draft_parts"] >= c["parts"]:
-            chapter["state"] = "review"
+            chapter["state"] = "visual_draft" if visuals.enabled(lesson) else "review"
         db.save_chapter(chapter)
         return False
     if chapter["state"] == "review":
         stage(f"Checking chapter {ordinal + 1} against the paper", progress)
+        images = review_images(chapter, evidence)
         result = runtime.ask(
             "Act as a skeptical scientific reviewer and an English teacher. Check every statement against the original evidence below. "
             "Check numbers AND their dataset, model configuration, baseline, metric and direction. Check mechanism steps, causality, author claims versus measured results, and limitations. "
@@ -407,10 +487,13 @@ def lesson_step(job, runtime):
             "Check the premises of questions too: a yes/right answer must not endorse a stronger claim hidden in the question. Check background definitions for scientific accuracy, using the glossary as a reference. "
             "Do not confuse learning weights with storing a model copy, training memory with inference memory, matrix rank with overall matrix size, or low rank with a small numerical change. "
             "A factored update still has the full matrix shape when multiplied; its representation uses fewer learned numbers. Relating updates to fixed original weights does not mean the original weights move during training. "
+            "A chosen inner dimension bounds the product's rank; it need not equal its actual rank. Zero initialization makes the initial update zero, not the general rank bound. "
             "Check that statements about one layer or module have not been generalized to the entire model. Require an explanation of used text tokens and task abbreviations, not just their names. "
             "For a beginner, naming a technical term does not explain it: require plain definitions of used terms such as weights, parameters, matrices and optimizer states, and split lists of new symbols into separate spoken sentences. "
             "Judge coverage by scientific meaning, not exact notation: an accurate spoken explanation of context and target token sequences covers dataset-pair notation without reading set-builder symbols aloud. "
             "General background definitions need not be claims made by this paper. Clearly introduced hypothetical examples may use new tasks or objects, but must not suggest the authors tested them. "
+            "An example explicitly introduced with suppose, imagine or made-up may contain hypothetical counts; these are not paper measurements. "
+            "The supplied ORIGINAL images are evidence under the image-to-source mapping below. A cited original figure may support a clearly visible label even when its caption does not repeat that label. Never use a teaching diagram as independent evidence. "
             "List only actual unresolved errors or missing explanations in issues; do not list acceptable sentences or optional stylistic preferences. "
             "Resolve the reading uncertainties from the supplied evidence or ensure the dialogue clearly says what cannot be established. Never pass a chapter that presents an unresolved value or condition as known. "
             'Return {"passed":true,"issues":[{"turn_id":"ID","reason":"specific problem","suggestion":"correction"}],"missing_claim_ids":["unexplained claim IDs"]}. '
@@ -424,18 +507,15 @@ def lesson_step(job, runtime):
             + "\nCHAPTER: "
             + json.dumps(dialogue_for_model(c["turns"]))
             + "\nORIGINAL EVIDENCE:\n"
-            + context,
+            + context
+            + "\nORIGINAL IMAGE TO SOURCE MAPPING: "
+            + json.dumps([{"image_number": i + 1, "source_ids": item["source_ids"]}
+                          for i, item in enumerate(images)])
+            + ("\nTEACHING AIDS (not independent evidence): " + json.dumps(visuals.catalogue(chapter), ensure_ascii=False)
+               + "\nCheck their spoken scientific meaning against original evidence. A separate visual review checks exact spatial references and highlighted regions."
+               if visuals.enabled(lesson) else ""),
             profile=data["model"],
-            images=[
-                config.safe_path(p)
-                for p in list(
-                    dict.fromkeys(
-                        s["data"]["image_path"]
-                        for s in evidence
-                        if s["data"].get("image_path")
-                    )
-                )[:2]
-            ],
+            images=[config.safe_path(item["path"]) for item in images],
         )
         c["review"] = result
         if (
@@ -444,7 +524,7 @@ def lesson_step(job, runtime):
             and not result.get("missing_claim_ids")
         ):
             c["scientific_review"] = result
-            chapter["state"] = "questions" if c.get("english_polished") else "english"
+            chapter["state"] = ("visual_dialogue_review" if visuals.enabled(lesson) else "questions") if c.get("english_polished") else "english"
         else:
             if c["revision_round"] >= MAX_SCIENTIFIC_REVISIONS:
                 db.save_chapter(chapter)
@@ -468,12 +548,16 @@ def lesson_step(job, runtime):
             + "\nREQUIRED TERMS: "
             + json.dumps(data.get("glossary", []))
             + "\nPREVIOUS VALIDATION: "
-            + json.dumps(c.get("validation_errors", [])),
+            + json.dumps(c.get("validation_errors", []))
+            + visuals.dialogue_prompt(chapter),
             profile=data["model"],
             max_tokens=14000,
         )
-        turns = result.get("turns", [])
+        turns = split_spoken_turns(result.get("turns", []))
+        visuals.bind_numbered_refs(turns, chapter)
         errors = validate_turns(turns, evidence)
+        if visuals.enabled(lesson):
+            errors += visuals.validate_links(turns, chapter)
         if errors:
             c["validation_errors"] = errors
             db.save_chapter(chapter)
@@ -512,12 +596,17 @@ def lesson_step(job, runtime):
                 + "\nVALIDATION: "
                 + json.dumps(c.get("validation_errors", []))
                 + "\nEVIDENCE:\n"
-                + context,
+                + context + visuals.dialogue_prompt(chapter),
                 profile=data["model"],
                 max_tokens=7000,
             )
             try:
                 apply_local_repairs(c, result, targets, evidence)
+                if visuals.enabled(lesson):
+                    visuals.bind_numbered_refs(c["turns"], chapter)
+                    link_errors = visuals.validate_links(c["turns"], chapter)
+                    if link_errors:
+                        raise ValueError("; ".join(link_errors))
             except ValueError as error:
                 c["validation_errors"] = [str(error)]
                 db.save_chapter(chapter)
@@ -542,12 +631,15 @@ def lesson_step(job, runtime):
             + "\nCLAIMS: "
             + json.dumps(claims)
             + "\nEVIDENCE:\n"
-            + context,
+            + context + visuals.dialogue_prompt(chapter),
             profile=data["model"],
             max_tokens=14000,
         )
-        turns = result.get("turns", [])
+        turns = split_spoken_turns(result.get("turns", []))
+        visuals.bind_numbered_refs(turns, chapter)
         errors = validate_turns(turns, evidence)
+        if visuals.enabled(lesson):
+            errors += visuals.validate_links(turns, chapter)
         if errors:
             c["validation_errors"] = errors
             db.save_chapter(chapter)
@@ -569,13 +661,23 @@ def lesson_step(job, runtime):
         result = runtime.ask(
             "Create 3 short spoken comprehension questions for this chapter: one about the main idea, one about how it works, one about a limitation or comparison. "
             "Use very easy English. Provide two progressive hints and a short sample answer. Grade meaning, not memorized wording. "
+            "Ask ONE focused question at a time, at most 24 words. Do not combine a storage-cost question with a limitation question. "
+            "Sample answers should use up to four short sentences. Every grading key point must have been taught in this chapter; do not require new information. "
+            "Questions must stand on their own: ask about the idea, not a figure's position or a currently displayed image. "
+            "Preserve scope exactly: one A/B pair per adapted weight matrix, not two matrices for the whole model. Frozen refers to training, not a ban on merging weights for inference. "
+            "Saying frozen during training is enough; do not add merging or latency to an answer unless this chapter taught it. "
+            "A figure comparing two tasks does not mean the entire paper tests only those tasks. Qualify GPT-3 175B-specific storage costs. "
             'Return {"questions":[{"question":"...","hints":["small hint","more help"],"sample_answer":"...","key_points":["..."],"source_ids":["ID"]}]}.'
             "\nCHAPTER: "
             + json.dumps(dialogue_for_model(c["turns"]))
             + "\nEVIDENCE:\n"
-            + context,
+            + context
+            + "\nPREVIOUS QUESTIONS AND REVIEW: "
+            + json.dumps({"questions":c.get("questions",[]),"review":c.get("question_review",{})}),
             profile=data["model"],
         )
+        if c.get("questions"):
+            c.setdefault("question_history",[]).append({"time":time.time(),"questions":c["questions"],"review":c.get("question_review")})
         c["questions"] = result.get("questions", [])
         if not c["questions"]:
             raise ValueError("Understanding questions were missing")
@@ -593,8 +695,48 @@ def lesson_step(job, runtime):
                 or not set(q.get("source_ids", [])) <= known
             ):
                 raise ValueError("Question has invalid language or evidence")
+            if visuals.enabled(lesson) and len(q["question"].split()) > 28:
+                raise ValueError("Ask one short comprehension question at a time, at most 28 words.")
             q["id"] = db.uid()
-        chapter["state"] = "audio"
+        c["question_generation"] = getattr(runtime,"last_generation",{})
+        chapter["state"] = "question_review" if visuals.enabled(lesson) else "audio"
+        db.save_chapter(chapter)
+        return False
+    if chapter["state"] == "question_review":
+        stage(f"Checking the understanding questions in chapter {ordinal + 1}", progress)
+        result = runtime.ask(
+            "Review these comprehension questions, hints, sample answers and grading key points against the original evidence and checked dialogue. "
+            "Check every claim, question premise, quantity and scope. One A/B pair belongs to each adapted weight matrix; it is not just two matrices for an entire model. "
+            "Keeping base weights fixed during training does not rule out merging the update for inference. "
+            "A figure comparing two datasets does not imply the whole paper tests only those datasets. Qualify costs specific to the GPT-3 175B example. "
+            "Every required grading key point must have been explicitly taught in the checked dialogue. Do not require an untaught fact even if it is true elsewhere in the paper. "
+            "Accept accurate plain explanations; report only actual errors, not style preferences. "
+            'Return {"passed":true,"issues":["specific actual error and the needed correction"]}.\nQUESTIONS: '
+            + json.dumps(c.get("questions",[]))
+            + "\nCHECKED DIALOGUE: " + json.dumps(dialogue_for_model(c["turns"]))
+            + "\nORIGINAL EVIDENCE: " + context,
+            profile=data["model"], max_tokens=3500,
+        )
+        issues = result.get("issues")
+        if (not isinstance(result.get("passed"),bool) or not isinstance(issues,list)
+            or any(not isinstance(x,str) or not x.strip() for x in issues)
+            or result["passed"] != (not issues)):
+            raise ValueError("The question review returned an inconsistent verdict.")
+        too_long = [f"Question {i+1} is too long; ask one focused question with at most 28 words."
+                    for i,q in enumerate(c.get("questions",[])) if len(q["question"].split()) > 28]
+        if too_long:
+            result = result | {"passed":False,"issues":issues+too_long}
+            issues = result["issues"]
+        c["question_review"] = result | {"version":"question-meaning-1","digest":figure_extract.digest(c.get("questions",[])),
+            "time":time.time(),"generation":getattr(runtime,"last_generation",{})}
+        if result["passed"]:
+            chapter["state"] = "audio"
+        else:
+            c["question_review_attempts"] = c.get("question_review_attempts",0)+1
+            chapter["state"] = "questions"
+            db.save_chapter(chapter)
+            if c["question_review_attempts"] >= 3:
+                raise QualityHold("The understanding questions still need correction: " + "; ".join(issues))
         db.save_chapter(chapter)
         return False
     if chapter["state"] == "audio":

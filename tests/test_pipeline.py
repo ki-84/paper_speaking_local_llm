@@ -125,7 +125,7 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
             "models": {"qwen-q8": {"revision": "fixed"}, "tts": {"revision": "fixed"}, "tts-design": {"revision": "fixed"}}
         },
     )
-    lid = lessons.create(pid)
+    lid = lessons.create(pid, format_version="paper-radio-1")
     jid = db.enqueue("lesson", lid)
 
     class ScriptedProvider:

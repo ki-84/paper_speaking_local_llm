@@ -67,7 +67,7 @@ test("source, audio, question hints, and saved position", async ({ page }) => {
   await expect(page.locator(".spoken-sentence")).toHaveText(
     "The old weights stay fixed.",
   );
-  await page.getByRole("button", { name: /What stays fixed/ }).click();
+  await page.locator(".question").filter({ hasText: "What stays fixed" }).click();
   await page.getByRole("button", { name: "A little help" }).click();
   await expect(page.getByText("Think about the old model.")).toBeVisible();
   await page.screenshot({
@@ -83,6 +83,36 @@ test("Japanese aid keeps English and the source visible", async ({ page }) => {
   await page.getByRole("button", { name: "Source 1" }).click();
   await expect(page.getByText("Original evidence for the interface test.")).toBeVisible();
 });
+test("visuals follow speech and keep a pinned figure across reloads", async ({ page }) => {
+  const panel = page.getByRole("region", { name: "Lesson visuals" });
+  await expect(panel.getByRole("heading", { name: "An original figure" })).toBeVisible();
+  await expect(panel.locator(".visual-highlight")).toHaveCount(1);
+  await page.getByRole("button", { name: "Listen to chapter", exact: true }).click();
+  // Exercise the same ended event as continuous audio, without waiting for the fixture audio.
+  await page.locator(".sentence-card audio").dispatchEvent("ended");
+  await expect(panel.getByRole("heading", { name: "What stays fixed" })).toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("button", {name:"Next sentence", exact:true}).click();
+  await expect(panel.getByRole("heading", {name:"What stays fixed", exact:true})).toBeVisible();
+  await expect(panel.locator(".visual-highlight")).toHaveCount(0);
+  await page.getByRole("button", {name:"Previous sentence", exact:true}).click();
+  await panel.getByRole("button", { name: "An original figure 論文の原図" }).click();
+  await expect(panel.getByRole("heading", { name: "An original figure" })).toBeVisible();
+  const lesson = (await (await page.request.get("/api/lessons")).json()).find((l: any) => l.data.title === "Interface test: a small change");
+  await expect.poll(async () => (await (await page.request.get(`/api/lessons/${lesson.id}`)).json()).progress.visual_key).toBe("V1");
+  await page.reload();
+  await page.getByRole("button", { name: /Interface test: a small change/ }).click();
+  await expect(panel.getByRole("heading", { name: "An original figure" })).toBeVisible();
+  await panel.getByRole("button", { name: "Auto · 自動表示" }).click();
+  await expect(panel.getByRole("heading", { name: "What stays fixed" })).toBeVisible();
+  await panel.getByRole("button", { name: "Enlarge · 拡大" }).click();
+  await expect(page.getByRole("dialog", { name: "Enlarged lesson figure" })).toBeVisible();
+  await page.getByLabel("Figure zoom").selectOption("2");
+  await expect.poll(() => page.locator(".visual-zoom-view").evaluate((el) => el.scrollWidth > el.clientWidth)).toBeTruthy();
+  await page.getByRole("button", {name:"Focus here · 注目箇所へ"}).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
 test("recording feedback explains a word to compare in English and Japanese", async ({ page }) => {
   await page.getByRole("button", { name: "Next sentence" }).click();
   await page.getByText("Your earlier recordings (1)").click();
@@ -94,6 +124,19 @@ test("recording feedback explains a word to compare in English and Japanese", as
   await expect(coach.getByText(/聞き比べてください/)).toBeVisible();
   await expect(coach.getByRole("button", { name: "Example · お手本" })).toBeEnabled();
   await expect(coach.getByRole("button", { name: "Your voice · 自分の声" })).toBeEnabled();
+});
+test("play all resets a pinned figure when the next chapter reuses its key", async ({page}) => {
+  const panel = page.getByRole("region", {name:"Lesson visuals"});
+  await panel.getByRole("button", {name:"Pin · この図を固定", exact:true}).click();
+  await page.getByRole("button", {name:"Next sentence", exact:true}).click();
+  await page.getByRole("button", {name:"Play all", exact:true}).click();
+  await page.locator(".sentence-card audio").dispatchEvent("ended");
+  await expect(page.locator(".spoken-sentence")).toHaveText("Can we keep that idea in mind?");
+  await page.locator(".sentence-card audio").dispatchEvent("ended");
+  await expect(page.locator(".chapters button.current")).toContainText("Keep the base");
+  await expect(panel.getByRole("heading", {name:"What stays fixed", exact:true})).toBeVisible();
+  await expect(panel.getByRole("button", {name:"Auto · 自動表示", exact:true})).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", {name:"Pause", exact:true}).click();
 });
 test("browser microphone saves a real recording and guards navigation", async ({
   page,

@@ -46,6 +46,11 @@ def init():
           id TEXT PRIMARY KEY, paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
           kind TEXT NOT NULL, data TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS sources_paper ON sources(paper_id);
+        CREATE TABLE IF NOT EXISTS visual_assets (
+          id TEXT PRIMARY KEY, paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
+          lesson_id TEXT REFERENCES lessons(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL, data TEXT NOT NULL, created REAL NOT NULL);
+        CREATE INDEX IF NOT EXISTS visual_lesson ON visual_assets(lesson_id);
         CREATE TABLE IF NOT EXISTS lessons (
           id TEXT PRIMARY KEY, paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
           state TEXT NOT NULL, data TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL);
@@ -77,7 +82,7 @@ def init():
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY,value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS cursors (key TEXT PRIMARY KEY,data TEXT NOT NULL);
-        PRAGMA user_version=1;
+        PRAGMA user_version=2;
         """)
         for key, value in config.DEFAULTS.items():
             c.execute(

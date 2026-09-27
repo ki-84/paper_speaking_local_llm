@@ -7,7 +7,7 @@ import tempfile
 
 os.environ["PAPERSPEAK_DATA"] = tempfile.mkdtemp(prefix="paperspeak-ui-")
 import uvicorn
-from paperspeak import config, db, lessons, papers, practice
+from paperspeak import config, db, lessons, papers, practice, visual_render
 from paperspeak.quality import word_diff
 
 try:
@@ -65,6 +65,7 @@ try:
             [
                 "The model learns a small change instead of changing every weight.",
                 "The old weights stay fixed.",
+                "Can we keep that idea in mind?",
             ]
         )
     ]
@@ -78,11 +79,46 @@ try:
             "source_ids": [sid],
         }
     ]
+    import pymupdf as fitz
+    original_path = config.DATA / "visuals/ui-original.png"
+    doc = fitz.open()
+    page = doc.new_page(width=600, height=280)
+    page.draw_rect(fitz.Rect(40, 40, 230, 190), color=(0.2, 0.4, 0.3))
+    page.draw_rect(fitz.Rect(350, 40, 540, 190), color=(0.2, 0.4, 0.3))
+    page.insert_text((55, 90), "Old weights", fontsize=22)
+    page.insert_text((365, 90), "New task", fontsize=22)
+    page.insert_text((40, 245), "Figure 1: Interface fixture.", fontsize=16)
+    page.get_pixmap().save(original_path)
+    doc.close()
+    diagram = {
+        "kind": "teaching", "layout": "comparison", "source_ids": [sid],
+        "title_en": "What stays fixed", "title_ja": "固定するもの",
+        "description_en": "Compare the old weights with the new task.",
+        "description_ja": "元の重みと新しいタスクを比べます。",
+        "nodes": [{"id": "old", "en": "Old weights", "ja": "元の重み"},
+                  {"id": "new", "en": "New task", "ja": "新しいタスク"}], "edges": [],
+    }
+    rendered = visual_render.render(diagram)
+    for ident, kind, data in [
+        ("ui-original", "original", {
+            "title_en": "An original figure", "title_ja": "論文の原図",
+            "description_en": "Look at the two boxes.", "description_ja": "二つの箱を見てください。",
+            "image_path": "visuals/ui-original.png", "full_page_path": "visuals/ui-original.png",
+            "label": "Figure 1", "page": 1, "source_ids": [sid],
+            "regions": [{"id": "old", "label_en": "Old weights", "label_ja": "元の重み", "box": [0.066, 0.143, 0.317, 0.536]}],
+        }),
+        ("ui-diagram", "teaching", diagram | rendered),
+    ]:
+        data["review"] = {"passed": True}
+        db.execute("INSERT INTO visual_assets VALUES (?,?,?,?,?,?)", (ident, pid, lid, kind, db.dumps(data), 0))
+    turns[0]["visual"] = {"key": "V1", "focus": ["old"]}
+    turns[1]["visual"] = {"key": "V2", "focus": ["old"]}
     japanese = {
         "title": ("A small change", "小さな変更"),
         "focus": ("Learn what changes.", "何が変わるか学びます。"),
         "turn:test-turn-0": (turns[0]["text"], "モデルはすべての重みを変える代わりに、小さな変更を学びます。"),
         "turn:test-turn-1": (turns[1]["text"], "元の重みは固定されたままです。"),
+        "turn:test-turn-2": (turns[2]["text"], "その考え方を覚えておけますか？"),
         "question:q1": (questions[0]["question"], "何が固定されたままですか？"),
         "hint:q1:0": (questions[0]["hints"][0], "元のモデルについて考えてください。"),
         "hint:q1:1": (questions[0]["hints"][1], "その重みについて考えてください。"),
@@ -100,6 +136,7 @@ try:
                     "title": "A small change",
                     "focus": "Learn what changes.",
                     "turns": turns,
+                    "visuals": [{"key": "V1", "asset_id": "ui-original"}, {"key": "V2", "asset_id": "ui-diagram"}],
                     "questions": questions,
                     "translation": {
                         "model": "fixture",
@@ -109,6 +146,11 @@ try:
             ),
         ),
     )
+    next_chapter = db.one("SELECT * FROM chapters WHERE id='test-chapter'")["data"]
+    next_chapter.update(title="Keep the base", turns=[turns[1] | {"id":"next-turn", "visual":{"key":"V1","focus":["new"]}}],
+                        visuals=[{"key":"V1","asset_id":"ui-diagram"}])
+    next_chapter["translation"]["items"]["turn:next-turn"] = {"english": turns[1]["text"], "japanese":"元の重みは固定されたままです。"}
+    db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)", ("next-chapter", lid, 1, "ready", db.dumps(next_chapter)))
     reference_line = "The old weights stay fixed"
     heard_line = "The old weights stay mixed"
     reference_stamps = [

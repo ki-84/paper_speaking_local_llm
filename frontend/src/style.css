@@ -1272,6 +1272,45 @@ footer > span:first-child {
   border-radius: 8px;
   margin: 20px 0 30px;
 }
+.visual-panel { margin: 16px 0; padding: 20px; border: 1px solid #d6dfcc; border-radius: 12px; background: #fbfcf7; }
+.visual-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.visual-toolbar > strong { margin-right: auto; font-size: 14px; }
+.visual-toolbar > strong span { font-size: 12px; font-weight: 400; }
+.visual-toolbar .active { color: #2d714b; text-decoration: underline; }
+.visual-panel .visual-kind { color: #607d63; text-transform: none; font-size: 11px; margin: 16px 0 6px; }
+.visual-panel h3 { font-size: 20px; margin: 0 0 7px; }
+.visual-panel p { font-size: 13px; line-height: 1.6; }
+.visual-picture { text-align: center; margin: 15px 0; }
+.visual-image-wrap { display: inline-block; position: relative; width: fit-content; max-width: 100%; vertical-align: top; }
+.visual-image-wrap img { display: block; max-width: 100%; max-height: 440px; width: auto; height: auto; border-radius: 5px; }
+.visual-highlight { position: absolute; border: 3px solid #dc9a23; border-radius: 6px; background: #ffe79b22; box-shadow: 0 0 0 2px #fff8; pointer-events: none; }
+.visual-focus-path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.visual-focus-path polyline { fill: none; stroke: #e8a126; stroke-width: 0.007; stroke-linecap: round; stroke-linejoin: round; }
+.visual-choices { display: flex; gap: 10px; overflow-x: auto; margin-top: 16px; padding: 2px; }
+.visual-choices button { display: flex; align-items: center; flex: 0 0 210px; gap: 9px; padding: 8px; border: 1px solid #dae2d2; border-radius: 7px; background: white; text-align: left; color: #334d39; font-size: 11px; }
+.visual-choices button.selected { border-color: #6d9868; background: #edf4e6; }
+.visual-choices img { width: 50px; height: 45px; object-fit: contain; }
+.visual-choices small { display: block; margin-top: 4px; }
+.visual-panel details { margin-top: 10px; font-size: 12px; }
+.visual-terms { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
+.visual-terms dd { margin: 4px 0; color: #65725e; }
+.visual-modal { position: fixed; inset: 0; z-index: 80; overflow: auto; background: #152218dc; padding: 24px; text-align: center; }
+.visual-modal > div { background: #fafcf6; padding: 18px; border-radius: 10px; width: fit-content; max-width: 100%; margin: auto; }
+.visual-modal .visual-toolbar { margin-bottom: 15px; }
+.visual-modal .visual-toolbar > button:last-child { margin-left: auto; }
+.visual-modal label { font-size: 13px; }
+.visual-modal select { margin-left: 8px; }
+.visual-zoom-view { overflow: auto; max-height: calc(100vh - 210px); text-align: left; }
+.visual-image-wrap.large img { max-height: none; width: auto; }
+@media (min-width: 1100px) {
+  .visual-session { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; margin: 16px 0; }
+  .visual-session .visual-panel { margin: 0; padding: 15px; }
+  .visual-session .spoken-practice { position: sticky; top: 20px; }
+  .visual-session .sentence-card { padding: 20px; }
+  .visual-session .spoken-sentence { font-size: 25px; }
+  .visual-session .practice-controls { flex-wrap: wrap; gap: 8px; }
+  .visual-session .visual-toolbar { gap: 8px; }
+}
 .assessment h3 {
   font-family: Georgia, serif;
   font-size: 24px;

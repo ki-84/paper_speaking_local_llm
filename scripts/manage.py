@@ -313,7 +313,7 @@ def main():
 
                     def paths(value):
                         if isinstance(value, str) and value.startswith(
-                            ("papers/", "audio/", "recordings/")
+                            ("papers/", "audio/", "recordings/", "visuals/")
                         ):
                             referenced.add(value)
                         elif isinstance(value, dict):
@@ -323,12 +323,12 @@ def main():
                             for v in value:
                                 paths(v)
 
-                    for table in ("papers", "sources", "chapters", "attempts"):
+                    for table in ("papers", "sources", "chapters", "attempts", "visual_assets"):
                         for row in target.execute(f"SELECT data FROM {table}"):
                             paths(json.loads(row[0]))
                 assets = [
                     p
-                    for directory in ("papers", "audio", "recordings")
+                    for directory in ("papers", "audio", "recordings", "visuals")
                     for p in (config.DATA / directory).rglob("*")
                     if p.is_file()
                 ]

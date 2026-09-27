@@ -428,6 +428,14 @@ class Runtime:
                 ensure_ascii=False,
             )
         )
+        self.last_generation = {
+            "record_path": str(trace.relative_to(config.DATA)),
+            "model": self.mode,
+            "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+            "temperature": payload["temperature"], "top_p": payload["top_p"],
+            "top_k": payload["top_k"], "max_tokens": payload["max_tokens"],
+            "chat_template_kwargs": payload["chat_template_kwargs"],
+        }
         db.event(
             "inference",
             {

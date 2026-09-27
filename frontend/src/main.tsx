@@ -39,6 +39,7 @@ import {
   pendingRecording,
 } from "./api";
 import "./style.css";
+import { VisualPanel } from "./VisualPanel";
 
 type Page = "library" | "discover" | "review" | "jobs" | "settings" | "learn";
 const tabs: [Page, string, typeof BookOpen][] = [
@@ -336,6 +337,7 @@ function App() {
                 {lessons.map((l) => (
                   <button
                     className="lesson-card"
+                    data-lesson-id={l.id}
                     key={l.id}
                     onClick={() => openLesson(l.id)}
                   >
@@ -348,6 +350,7 @@ function App() {
                       <span>{date(l.created)}</span>
                     </div>
                     <h3>{l.data.title}</h3>
+                    <p className="subtle">{l.data.format === "paper-visual-2" ? "Visual lesson · 図付き教材" : "Earlier edition · 旧版"}</p>
                     <div className="card-bottom">
                       <span>
                         <Headphones size={16} />
@@ -1161,6 +1164,11 @@ function Learn({
     [question, setQuestion] = useState<any>(null),
     [hint, setHint] = useState(0);
   const selfAudio = useRef<HTMLAudioElement | null>(null);
+  const [visualMode, setVisualMode] = useState<"auto" | "pinned">("auto");
+  const [visualKey, setVisualKey] = useState<string | null>(null);
+  const selectVisual = (mode: "auto" | "pinned", key: string | null) => {
+    setVisualMode(mode); setVisualKey(key);
+  };
   useEffect(() => {
     const busy = recording || requestingMic || testingMic || sending;
     onRecording(busy);
@@ -1288,6 +1296,7 @@ function Learn({
         setRole(l.progress?.role || "both");
         setSpeed(l.progress?.speed === 0.9 ? 1 : (l.progress?.speed ?? 1));
         setSubtitles(l.progress?.subtitles ?? true);
+        selectVisual(l.progress?.visual_mode || "auto", l.progress?.visual_key || null);
         setAttempt(null);
       } else if (!chapterId && l.chapters.length)
         setChapterId(l.chapters[0].id);
@@ -1335,6 +1344,8 @@ function Learn({
     | undefined;
   const turns = chapter?.data.turns || [];
   const turn = turns[index];
+  const earlierVisual = turns.slice(0, index).reverse().find((t: any) => t.visual)?.visual;
+  const visualCue = turn?.visual || (earlierVisual ? {key: earlierVisual.key, focus: []} : null);
   const ready = chapter?.state === "ready";
   const japanese = (key: string, english?: string) => {
     const item = chapter?.data.translation?.items?.[key];
@@ -1360,10 +1371,12 @@ function Learn({
           role,
           speed,
           subtitles,
+          visual_mode: visualMode,
+          visual_key: visualKey,
         }),
       }).catch(() => {});
     }
-  }, [chapterId, index, role, speed, subtitles]);
+  }, [chapterId, index, role, speed, subtitles, visualMode, visualKey]);
   const spokenRate = speed * (turn?.voice === "Ryan" ? 1.2 : 1);
   useEffect(() => {
     if (audio.current) {
@@ -1420,6 +1433,7 @@ function Learn({
       const next = lesson?.chapters[(i ?? -1) + 1];
       if (next?.state === "ready") {
         setChapterId(next.id);
+        selectVisual("auto", null);
         setIndex(0);
         return;
       }
@@ -1558,7 +1572,7 @@ function Learn({
           >
             Open paper <ExternalLink size={14} />
           </a>
-          {lesson.state === "ready" && (
+          {(lesson.state === "ready" || lesson.data.format !== "paper-visual-2") && (
             <button
               className="text-button"
               onClick={() =>
@@ -1570,7 +1584,7 @@ function Learn({
                   .catch((e) => onError(e.message))
               }
             >
-              Make a new version <RefreshCw size={14} />
+              {lesson.data.format !== "paper-visual-2" ? "Make a visual lesson" : "Make a new version"} <RefreshCw size={14} />
             </button>
           )}
         </div>
@@ -1594,6 +1608,7 @@ function Learn({
                 onClick={() => {
                   stop();
                   setChapterId(c.id);
+                  selectVisual("auto", null);
                   setIndex(0);
                   setAttempt(null);
                   setQuestion(null);
@@ -1605,7 +1620,7 @@ function Learn({
                   <small>
                     {c.state === "ready"
                       ? `${c.data.turns.length} sentences · ${Math.round(c.data.turns.reduce((n: number, t: any) => n + (t.duration || 0), 0) / 60)} min`
-                      : ({draft:"Writing the talk",review:"Checking the ideas",revise:"Improving the talk",english:"Making the English clear",questions:"Adding questions",audio:"Making the voices",audio_review:"Checking the voices",translation:"Preparing Japanese"} as Record<string,string>)[c.state] || "Getting ready"}
+                      : ({visuals:"Preparing figures and diagrams",visual_draft:"Explaining the figures",visual_dialogue_review:"Checking the talk and visuals",draft:"Writing the talk",review:"Checking the ideas",revise:"Improving the talk",english:"Making the English clear",questions:"Adding questions",question_review:"Checking questions",audio:"Making the voices",audio_review:"Checking the voices",translation:"Preparing Japanese"} as Record<string,string>)[c.state] || "Getting ready"}
                   </small>
                 </div>
                 {c.state === "ready" && <Check size={13} />}
@@ -1693,6 +1708,9 @@ function Learn({
                     <RotateCcw size={17} />
                   </button>
                 </div>
+                <div className={chapter?.data.visuals?.length ? "visual-session" : "audio-session"}>
+                <VisualPanel references={chapter?.data.visuals || []} assets={lesson.visuals || []} cue={visualCue} mode={visualMode} selected={visualKey} onSelect={selectVisual} onSource={(sid) => api<Row>(`/sources/${encodeURIComponent(sid)}`).then(setSource).catch((e) => onError(e.message))} />
+                <div className="spoken-practice">
                 <div className="sentence-card">
                   <div className="sentence-top">
                     <span className="speaker">
@@ -1812,6 +1830,8 @@ function Learn({
                   >
                     <ChevronRight />
                   </button>
+                </div>
+                </div>
                 </div>
                 <div className="mic-check">
                   <label htmlFor="practice-microphone">Microphone</label>

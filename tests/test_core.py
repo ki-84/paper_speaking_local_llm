@@ -6,6 +6,26 @@ from paperspeak import config, db, lessons, papers
 from paperspeak.quality import changed_spoken_number, validate_turns, word_diff
 
 
+def test_benchmark_and_method_word_breaks_do_not_hide_changed_names_or_numbers():
+    from paperspeak.quality import speech_match
+    assert speech_match("MultiNLI-matched and WikiSQL.", "Multi NLI matched and Wiki SQL.")[1]
+    assert speech_match("PrefixEmbed and PrefixLayer.", "Prefix embed and prefix layer.")[1]
+    assert not speech_match("PrefixEmbed uses two tables.", "Prefix layer uses two tables.")[1]
+    assert not speech_match("WikiSQL uses two tables.", "Wiki SQL uses three tables.")[1]
+    assert not speech_match("MultiNLI-matched.", "Multi NLI mismatched.")[1]
+
+
+def test_spoken_ordinals_preserve_powers_and_still_reject_wrong_numbers():
+    from paperspeak.quality import speech_match
+    script = "That position follows because 175 billion is roughly 1.75 times 10 to the 11th."
+    assert speech_match(script, script.replace("11th", "eleventh"))[1]
+    assert not speech_match(script, script.replace("11th", "twelfth"))[1]
+    assert not speech_match(script, script.replace("1.75", "175"))[1]
+    assert speech_match("The 21st step.", "The twenty-first step.")[1]
+    long = "We reach the eleventh step after we finish each part of the earlier process in the usual order."
+    assert not speech_match(long, long.replace("eleventh", "twelfth"))[1]
+
+
 @pytest.mark.parametrize(
     "value",
     [

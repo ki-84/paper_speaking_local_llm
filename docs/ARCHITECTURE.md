@@ -10,8 +10,10 @@ LAN browser ── HTTPS :8443 Caddy ── 127.0.0.1:8190 FastAPI
 
 - `backend/paperspeak/papers.py`: arXiv ID/版、取得間隔・キャッシュ・再試行、HTML節・数式・図表の抽出、PDF全ページの画像と本文。
 - `planning.py`: 根拠ノートを概念ごとの学習目標へ割り当てます。同一条件の重複だけをまとめ、各主張と教材の対応を保存します。
+- `figure_extract.py`: PDFのキャプションとベクター・写真の範囲から原図候補を描画します。不確かな範囲はページ全体へ戻します。
+- `visuals.py` / `visual_render.py`: 章の図の計画、ローカルQwenでの画像確認、英日SVG/PNG、図と会話の対応検証を保存します。原図と補助図の出典を区別し、補助図を新たな根拠として登録しません。
 - `lessons.py`: 根拠ノート→概念構成→分割対話→原文再検査→英語の調整→再検査→質問→TTS→ASR照合→日本語訳。段階ごと・音声一文ごとに保存。
-- `translation.py`: ローカルモデルで会話・問題・用語を区切って翻訳し、数値を照合します。旧版の完成章も起動時に翻訳待ちへ登録します。
+- `translation.py`: ローカルモデルで会話・問題・用語を区切って翻訳し、数値を照合します。図付き教材では英日の意味も8項目ずつ審査し、ダイジェストと修正履歴を保存します。旧版の完成章も起動時に翻訳待ちへ登録します。
 - `voices.py`/`revoice.py`: Aidenと米国英語の女性音声Mayaの設定、旧Ryan音声の段階的な再生成とASR照合。新音声が検証を通るまで旧音声を使い、置換後も履歴に元ファイルを保持します。
 - `quality.py`: 引用IDと数値の機械的検査、短文チェック、真の編集距離による単語照合。
 - `discovery.py`: 30日/差分の収集、分野分散・好みを考慮した最大10候補、全文の分割読解、根拠を持つ推薦、日次上限・滞留抑制。
@@ -27,7 +29,7 @@ LAN browser ── HTTPS :8443 Caddy ── 127.0.0.1:8190 FastAPI
 
 論文の `(source_id,version)` を一意に保存します。教材は論文とは別IDの版です。完成した版は上書きせず、新しい版を作ります。出典IDは元のHTML断片またはPDFページ/断片に対応します。生成・評価時のモデルmanifestを教材/録音に記録します。
 
-`papers`, `sources`, `lessons`, `chapters`, `attempts`, `reviews`, `recommendations`, `jobs`, `events`, `settings`, `sessions`, `cursors` が主要テーブルです。音声/ページ画像/録音のファイルはDBに相対パスを保存します。
+`papers`, `sources`, `lessons`, `chapters`, `visual_assets`, `attempts`, `reviews`, `recommendations`, `jobs`, `events`, `settings`, `sessions`, `cursors` が主要テーブルです。音声/ページ画像/図/録音のファイルはDBに相対パスを保存します。
 
 原文にある文字列を引用した場合は照合し、一致しない引用文を引用として保存しません。要約の主張は別のレビュー段階で原文に照らします。完成判定は単にJSONを返したことではなく、検証エラーがないこと、質問が整うこと、全音声が照合済みであること、日本語訳の全項目がそろうことです。
 
@@ -54,9 +56,9 @@ Museの推論部分は通常2048トークン、短い分類・フィードバッ
 | GET | `/api/papers`, `/api/lessons` | 保存一覧 |
 | POST | `/api/papers/import`, `/api/papers/upload` | arXiv・PDF登録 |
 | POST | `/api/papers/{id}/lessons` | 教材の作成/新しい版 |
-| GET | `/api/lessons/{id}` | 章・録音・進捗 |
+| GET | `/api/lessons/{id}` | 章・図一覧・録音・進捗 |
 | POST | `/api/chapters/{id}/translation` | 旧版完成章の訳を手動再投入 |
-| PUT | `/api/lessons/{id}/progress` | 再開位置 |
+| PUT | `/api/lessons/{id}/progress` | 再開位置・図のauto/pinnedと選択キー |
 | GET | `/api/sources/{id}`, `/api/files/{path}` | 原文・音声 |
 | POST | `/api/attempts` | 録音、client_idによる安全な再送 |
 | GET/DELETE | `/api/attempts/{id}` | 評価・録音削除 |

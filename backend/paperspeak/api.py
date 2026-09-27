@@ -251,7 +251,7 @@ def generate_lesson(ident: str):
 @app.get("/api/lessons", dependencies=[Depends(auth)])
 def list_lessons():
     return db.all(
-        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE j.kind='lesson' AND j.target=l.id ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l ORDER BY created DESC"
+        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE j.kind='lesson' AND j.target=l.id ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l ORDER BY created DESC"
     )
 
 
@@ -263,6 +263,7 @@ def get_lesson(ident: str):
     l["chapters"] = db.all(
         "SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (ident,)
     )
+    l["visuals"] = db.all("SELECT * FROM visual_assets WHERE lesson_id=? ORDER BY created,id", (ident,))
     l["paper"] = db.one("SELECT * FROM papers WHERE id=?", (l["paper_id"],))
     l["attempts"] = db.all(
         "SELECT * FROM attempts WHERE lesson_id=? ORDER BY created DESC", (ident,)
@@ -304,14 +305,20 @@ class Progress(BaseModel):
     role: Literal["both", "host", "guide"] = "both"
     speed: float = Field(default=1.0, ge=0.5, le=1.5)
     subtitles: bool = True
+    visual_mode: Literal["auto", "pinned"] = "auto"
+    visual_key: str | None = Field(default=None, max_length=20)
 
 
 @app.put("/api/lessons/{ident}/progress", dependencies=[Depends(auth)])
 def progress(ident: str, body: Progress):
-    if not db.one(
-        "SELECT id FROM chapters WHERE id=? AND lesson_id=?", (body.chapter_id, ident)
-    ):
+    chapter = db.one("SELECT * FROM chapters WHERE id=? AND lesson_id=?", (body.chapter_id, ident))
+    if not chapter:
         raise HTTPException(404, "Chapter not found")
+    keys = {v["key"] for v in chapter["data"].get("visuals", [])}
+    if body.visual_mode == "pinned" and body.visual_key not in keys:
+        raise HTTPException(422, "Choose a visual from this chapter.")
+    if body.visual_mode == "auto":
+        body.visual_key = None
     db.execute(
         "INSERT INTO cursors VALUES (?,?) ON CONFLICT(key) DO UPDATE SET data=excluded.data",
         ("lesson:" + ident, db.dumps(body.model_dump())),
@@ -337,6 +344,7 @@ def get_file(path: str):
         "papers",
         "audio",
         "recordings",
+        "visuals",
     }:
         raise HTTPException(404, "File not found")
     return FileResponse(target)

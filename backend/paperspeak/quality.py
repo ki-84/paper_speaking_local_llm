@@ -37,6 +37,7 @@ def dialogue_for_model(turns):
         "kind",
         "source_ids",
         "numeric_visual_check_required",
+        "visual",
     }
     return [{k: v for k, v in turn.items() if k in keys} for turn in turns]
 
@@ -51,6 +52,35 @@ def numbers(text):
         except InvalidOperation:
             pass
     return values
+
+
+def split_spoken_turns(turns):
+    """Keep generated wording, evidence and visual cues; split clear sentence boundaries.
+
+    Abbreviations stay untouched for the normal validation/rewriting step.
+    This runs before audio or translation, never on a published recording.
+    """
+    if not isinstance(turns, list):
+        return turns
+    result = []
+    for turn in turns:
+        if not isinstance(turn, dict) or not isinstance(turn.get("text", ""), str):
+            raise ValueError("Each spoken turn needs a text field.")
+        text = turn.get("text", "")
+        pieces, start = [], 0
+        for match in re.finditer(r"(?<=[.!?])\s+(?=[A-Z])", text):
+            before = text[:match.start()]
+            if re.search(r"\b(?:[A-Z]\.)+$|\b(?:Dr|Mr|Mrs|Ms|Prof|Fig|Eq|vs|al)\.$|\b(?:e\.g|i\.e)\.$", before):
+                continue
+            pieces.append(text[start:match.start()].strip())
+            start = match.end()
+        pieces.append(text[start:].strip())
+        for i, piece in enumerate(pieces):
+            item = turn | {"text": piece}
+            if i and "id" in item:
+                item["id"] = None
+            result.append(item)
+    return result
 
 
 def validate_turns(turns, sources):
@@ -110,7 +140,7 @@ CONTRACTIONS = {
 }
 
 NUMBER_WORDS = set(
-    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion trillion point percent half quarter first second third fourth fifth sixth seventh eighth ninth tenth".split()
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion trillion point percent half quarter first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth thirtieth fortieth fiftieth sixtieth seventieth eightieth ninetieth hundredth thousandth millionth billionth trillionth".split()
 )
 
 
@@ -147,6 +177,11 @@ def words(text):
     text = re.sub(r"\bd[_ -]?ff\b", "dff", text)
     text = re.sub(r"\bfeed[-‐‑ ]?forward\b", "feedforward", text)
     text = re.sub(r"\bhalf[-‐‑ ]?way\b", "halfway", text)
+    # These benchmark names are often transcribed with an audible word break.
+    # Join only these known names; other task names and numbers stay distinct.
+    text = re.sub(r"\bmulti[-‐‑ ]*nli\b", "multinli", text)
+    text = re.sub(r"\bwiki[-‐‑ ]*sql\b", "wikisql", text)
+    text = re.sub(r"\bprefix[-‐‑ ]*(embed|layer)\b", r"prefix\1", text)
     text = re.sub(
         r"\b(zero|one|two|three|four|five|six|seven|eight|nine|ten)[-‐‑ ]?fold\b",
         lambda m: m[1] + " fold",
@@ -155,6 +190,13 @@ def words(text):
     for a, b in CONTRACTIONS.items():
         text = re.sub(r"\b" + re.escape(a) + r"\b", b, text)
     text = text.replace("%", " percent ").replace("&", " and ")
+    # Expand an ordinal before the cardinal-number pass: 11th is eleventh,
+    # never the two tokens "eleven th". Its numerical value remains protected.
+    text = re.sub(
+        r"\b(\d+(?:,\d{3})*)(?:st|nd|rd|th)\b",
+        lambda m: " " + num2words(m[1].replace(",", ""), to="ordinal") + " ",
+        text,
+    )
 
     def expand(m):
         try:

@@ -2,11 +2,12 @@ import json
 
 import pytest
 from paperspeak import db, lessons, papers, translation
+from paperspeak.quality import QualityHold
 
 
 def chapter_fixture():
     pid = papers.register({"source_id": "translation", "version": "v1", "title": "Paper"})
-    lid = lessons.create(pid)
+    lid = lessons.create(pid, format_version="paper-radio-1")
     lesson = db.one("SELECT * FROM lessons WHERE id=?", (lid,))
     lesson["data"]["glossary"] = [{"term": "rank", "meaning": "The number of independent parts."}]
     db.save_lesson(lesson)
@@ -22,6 +23,69 @@ def chapter_fixture():
     }
     db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)", (ident, lid, 0, "ready", db.dumps(data)))
     return ident
+
+
+def visual_translation_fixture():
+    ident = chapter_fixture()
+    chapter = db.one("SELECT * FROM chapters WHERE id=?", (ident,))
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (chapter["lesson_id"],))
+    lesson["data"].update(format="paper-visual-2",glossary=[])
+    english = "The value is 1.75 times 10 to the 11th."
+    chapter["data"] = {"turns":[{"id":"t", "text":english}], "translation":{"items":{
+        "turn:t":{"english":english,"japanese":"値は1.75乗10の11乗です。"}}}}
+    db.save_lesson(lesson); db.save_chapter(chapter)
+    return chapter, lesson, english
+
+
+class MeaningError:
+    def ask(self, prompt, **kwargs):
+        assert prompt.startswith("Check that every Japanese")
+        return {"passed":False,"issues":[{"id":"1","reason":"Multiplication was changed into exponentiation."}]}
+
+
+def test_visual_translation_requires_meaning_review_and_resumes_corrections(database):
+    chapter, lesson, english = visual_translation_fixture()
+    assert not translation.complete(chapter,lesson)
+    assert not translation.translate_batch(chapter,lesson,MeaningError())
+    saved = db.one("SELECT * FROM chapters WHERE id=?",(chapter["id"],))
+    assert "turn:t" not in saved["data"]["translation"]["items"]
+    assert saved["data"]["translation"]["history"][0]["before"]["japanese"] == "値は1.75乗10の11乗です。"
+
+    class Correct:
+        def ask(self, prompt, **kwargs):
+            if prompt.startswith("Translate"):
+                assert "Multiplication was changed" in prompt
+                return {"items":[{"id":"1","japanese":"値は1.75×10の11乗です。"}]}
+            return {"passed":True,"issues":[]}
+
+    assert not translation.translate_batch(saved,lesson,Correct())
+    assert translation.translated(saved,"turn:t",english)
+    assert not translation.verified(saved,"turn:t",english,lesson)
+    from paperspeak.runtime import PracticePreempted
+    class Interrupted:
+        def ask(self, *args, **kwargs):
+            raise PracticePreempted("Recording first")
+    with pytest.raises(PracticePreempted):
+        translation.translate_batch(saved,lesson,Interrupted())
+    assert saved["data"]["translation"]["meaning_retries"]["turn:t"] == 1
+    assert translation.translated(saved,"turn:t",english) == "値は1.75×10の11乗です。"
+    assert translation.translate_batch(saved,lesson,Correct())
+    saved["data"]["translation"]["items"]["turn:t"]["japanese"] = "値は1.75乗10の11乗です。"
+    assert not translation.complete(saved,lesson)
+    assert saved["data"]["turns"][0]["text"] == english
+
+
+def test_visual_translation_holds_after_three_unresolved_meaning_checks(database):
+    chapter, lesson, english = visual_translation_fixture()
+    for attempt in range(3):
+        chapter["data"]["translation"]["items"]["turn:t"] = {"english":english,"japanese":"値は1.75乗10の11乗です。"}
+        if attempt < 2:
+            assert not translation.translate_batch(chapter,lesson,MeaningError())
+        else:
+            with pytest.raises(QualityHold,match="Japanese meaning still needs attention"):
+                translation.translate_batch(chapter,lesson,MeaningError())
+    assert not translation.complete(chapter,lesson)
+    assert len(chapter["data"]["translation"]["history"]) == 3
 
 
 def test_japanese_translation_resumes_from_saved_batches(database, client):

@@ -126,6 +126,7 @@ if not (TOOLS / "llama-server").exists():
     (TOOLS / "llama-server").symlink_to(llama.resolve())
 env = os.environ | {"PATH": str(TOOLS / "node/bin") + ":" + os.environ.get("PATH", "")}
 run(TOOLS / "node/bin/npm", "ci", "--prefix", "frontend", env=env)
+run(TOOLS / "node/bin/node", "frontend/node_modules/playwright/cli.js", "install", "chromium", env=env)
 run(TOOLS / "node/bin/npm", "run", "build", "--prefix", "frontend", env=env)
 if args.models:
     run(ROOT / ".venv/bin/python", "scripts/prepare_assets.py")

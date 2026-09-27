@@ -1643,15 +1643,15 @@ function Learn({
           {completeVideo?.upload_job?.state === "failed" && <button className="secondary" onClick={() => post(`/jobs/${completeVideo.upload_job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry YouTube upload · アップロード再試行</button>}
         </div>
         {completeVideo?.state === "ready" ? <div className="video-download-panel">
-          <VideoTitleSuggestion title={suggestedVideoTitle(lesson.paper.title)} onError={onError} />
+          <VideoTitleSuggestion title={completeVideo.data.title || suggestedVideoTitle(lesson.paper.title)} onError={onError} />
           <div className="video-links">
-            <a className="primary" href={fileUrl(completeVideo.data.mp4)} download>Download complete MP4 · 全章動画</a>
+            <a className="primary" href={fileUrl(completeVideo.data.mp4)} download={`${completeVideo.data.title || suggestedVideoTitle(lesson.paper.title)}.mp4`}>Download complete MP4 · 全章動画</a>
             <a href={fileUrl(completeVideo.data.en_srt)} download>English SRT</a>
             <a href={fileUrl(completeVideo.data.ja_srt)} download>日本語 SRT</a>
           </div>
         </div> : completeVideo?.job?.state === "failed" ? <button className="secondary" onClick={() => post(`/jobs/${completeVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry complete video · 全章動画を再試行</button> : readyChapterVideo && readyChapterNumber > 0 ? <div className="video-download-panel">
-          <VideoTitleSuggestion title={suggestedVideoTitle(lesson.paper.title, readyChapterNumber)} onError={onError} />
-          <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div>
+          <VideoTitleSuggestion title={readyChapterVideo.data.title || suggestedVideoTitle(lesson.paper.title, readyChapterNumber)} onError={onError} />
+          <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download={`${readyChapterVideo.data.title || suggestedVideoTitle(lesson.paper.title, readyChapterNumber)}.mp4`}>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div>
         </div> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
       </section>}
       {['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/retry`).then(refresh).catch(e=>onError(e.message))}>Resume preparation</button></div>}
@@ -1697,8 +1697,8 @@ function Learn({
               <h2>{chapter?.data.title}</h2>
               <p>{chapter?.data.focus}</p>
               {currentVideo?.state === "ready" && <div className="chapter-video-links">
-                <VideoTitleSuggestion title={suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)} onError={onError} />
-                <a className="secondary" href={fileUrl(currentVideo.data.mp4)} download>Download chapter MP4 · この章の動画</a>
+                <VideoTitleSuggestion title={currentVideo.data.title || suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)} onError={onError} />
+                <a className="secondary" href={fileUrl(currentVideo.data.mp4)} download={`${currentVideo.data.title || suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)}.mp4`}>Download chapter MP4 · この章の動画</a>
                 <a href={fileUrl(currentVideo.data.en_srt)} download>English SRT</a>
                 <a href={fileUrl(currentVideo.data.ja_srt)} download>日本語 SRT</a>
               </div>}

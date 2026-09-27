@@ -15,13 +15,31 @@ from .quality import QualityHold, speech_match
 from .runtime import PracticePreempted
 
 log = logging.getLogger(__name__)
-VERSION = "visual-video-2"
+VERSION = "visual-video-3"
 SIZE = (1920, 1080)
 FPS = 30
+ENCODE = {"video_codec": "libx264", "preset": "medium", "crf": 21,
+          "gop_frames": 120, "b_frames": 3, "audio_codec": "aac", "audio_bitrate": "128k"}
 
 
 def digest(value):
     return hashlib.sha256(db.dumps(value).encode()).hexdigest()
+
+
+def export_title(paper_title, chapter_number=None):
+    """Use the same portable title for the YouTube suggestion and MP4 basename."""
+    title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', " - ", str(paper_title or ""))
+    title = re.sub(r"\s+", " ", title).strip(" .-") or "Paper lesson"
+    suffix = f" — 第{chapter_number}章" if chapter_number is not None else " — 全章"
+    source = title
+    while len(title + suffix) > 100 or len((title + suffix + ".mp4").encode("utf-8")) > 240:
+        title = title[:-1]
+    if title != source:
+        title = title.rstrip(" .-")
+        while len(title + "…" + suffix) > 100 or len((title + "…" + suffix + ".mp4").encode("utf-8")) > 240:
+            title = title[:-1]
+        title = title.rstrip(" .-") + "…"
+    return title + suffix
 
 
 def file_digest(path):
@@ -79,6 +97,7 @@ def chapter_manifest(chapter, lesson):
     return {
         "version": VERSION, "lesson_id": lesson["id"], "chapter_id": chapter["id"],
         "ordinal": chapter["ordinal"], "paper_title": paper_title,
+        "video_title": export_title(paper_title, chapter["ordinal"] + 1),
         "chapter_title_en": chapter["data"]["title"],
         "chapter_title_ja": translation.translated(chapter, "title", chapter["data"]["title"]),
         "intro": {"english": intro_line,
@@ -90,7 +109,7 @@ def chapter_manifest(chapter, lesson):
                       "description_en", "description_ja", "regions", "source_ids")}}
             for key, asset in assets.items()},
         "turns": turns, "format": {"width": SIZE[0], "height": SIZE[1], "fps": FPS,
-            "video": "H.264 High yuv420p", "audio": "AAC-LC stereo 48 kHz"},
+            "video": "H.264 High yuv420p", "audio": "AAC-LC stereo 48 kHz", "encode": ENCODE},
         "models_used": lesson["data"].get("models_used", {}),
     }
 
@@ -137,6 +156,8 @@ def schedule():
                 complete = False
         if complete and len(current) == len(chapters) and lesson["state"] == "ready":
             manifest = {"version": VERSION, "lesson_id": lesson["id"],
+                        "video_title": export_title(lesson["data"]["title"]),
+                        "encode": ENCODE,
                         "chapter_videos": [{"id": row["id"], "digest": row["input_digest"],
                                              "mp4": row["data"]["mp4"]} for row in current]}
             ident = _insert_export(lesson["id"], "", "full", manifest)
@@ -321,9 +342,9 @@ def _chapter_step(job, runtime, export):
                      progress=(index + 1) / (len(scene_items) + 2), checkpoint=cp)
         return False
 
-    output_dir = config.DATA / "videos" / export["lesson_id"]
+    output_dir = config.DATA / "videos" / export["lesson_id"] / export["input_digest"][:12]
     output_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"chapter-{manifest['ordinal'] + 1:02}-{export['input_digest'][:12]}"
+    stem = manifest["video_title"]
     paths = {"mp4": output_dir / (stem + ".mp4"), "en_srt": output_dir / (stem + ".en.srt"),
              "ja_srt": output_dir / (stem + ".ja.srt")}
     captions, ass, duration = _captions(turns)
@@ -344,9 +365,9 @@ def _chapter_step(job, runtime, export):
     _ffmpeg(["-f", "concat", "-safe", "0", "-i", str(video_list),
              "-f", "concat", "-safe", "0", "-i", str(audio_list),
              "-vf", f"fps={FPS},scale={SIZE[0]}:{SIZE[1]},format=yuv420p,ass={ass_path}",
-             "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-profile:v", "high",
-             "-g", "15", "-bf", "2", "-pix_fmt", "yuv420p",
-             "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+             "-c:v", "libx264", "-preset", str(ENCODE["preset"]), "-crf", str(ENCODE["crf"]), "-profile:v", "high",
+             "-g", str(ENCODE["gop_frames"]), "-bf", str(ENCODE["b_frames"]), "-pix_fmt", "yuv420p",
+             "-c:a", "aac", "-b:a", str(ENCODE["audio_bitrate"]), "-ar", "48000", "-ac", "2",
              "-movflags", "+faststart", "-shortest", str(partial)], runtime, partial)
     if not partial.is_file() or partial.stat().st_size < 100000:
         raise RuntimeError("The encoded video is empty.")
@@ -355,6 +376,7 @@ def _chapter_step(job, runtime, export):
         raise RuntimeError(f"Video/audio length mismatch: {actual_duration:.2f}s vs {duration:.2f}s")
     partial.replace(paths["mp4"])
     _set_export(export, "ready", **{name: str(path.relative_to(config.DATA)) for name, path in paths.items()},
+                title=manifest["video_title"], encode_settings=ENCODE,
                 duration=duration, media_duration=actual_duration, bytes=paths["mp4"].stat().st_size,
                 sha256=file_digest(paths["mp4"]),
                 title_narration={"text": manifest["intro"]["english"],
@@ -373,9 +395,10 @@ def _full_step(job, runtime, export):
     if any(not item or item["state"] != "ready" for item in chapters):
         raise ValueError("All chapter videos must be ready before joining them.")
     work = _work(export)
-    output_dir = config.DATA / "videos" / export["lesson_id"]
+    output_dir = config.DATA / "videos" / export["lesson_id"] / export["input_digest"][:12]
     output_dir.mkdir(parents=True, exist_ok=True)
-    stem = "complete-" + export["input_digest"][:12]
+    stem = manifest.get("video_title") or export_title(
+        db.one("SELECT * FROM lessons WHERE id=?", (export["lesson_id"],))["data"]["title"])
     paths = {"mp4": output_dir / (stem + ".mp4"), "en_srt": output_dir / (stem + ".en.srt"),
              "ja_srt": output_dir / (stem + ".ja.srt")}
     playlist = work / "chapters.ffconcat"
@@ -406,6 +429,7 @@ def _full_step(job, runtime, export):
         raise RuntimeError("A chapter is missing or audio/video length changed in the complete video.")
     partial.replace(paths["mp4"])
     _set_export(export, "ready", **{name: str(path.relative_to(config.DATA)) for name, path in paths.items()},
+                title=stem, encode_settings=ENCODE,
                 duration=expected_duration, media_duration=actual_duration,
                 chapter_count=len(chapters), bytes=paths["mp4"].stat().st_size,
                 sha256=file_digest(paths["mp4"]),

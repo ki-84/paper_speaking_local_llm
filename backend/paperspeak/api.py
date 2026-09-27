@@ -276,7 +276,7 @@ def get_lesson(ident: str):
     for video in l["videos"]:
         stored = video["data"]
         video["data"] = {key: stored[key] for key in
-            ("mp4", "en_srt", "ja_srt", "duration", "media_duration", "bytes", "sha256", "encoder", "chapter_count")
+            ("mp4", "en_srt", "ja_srt", "duration", "media_duration", "bytes", "sha256", "encoder", "encode_settings", "chapter_count", "title")
             if key in stored}
         if stored.get("youtube"):
             video["data"]["youtube"] = {key: value for key, value in stored["youtube"].items()

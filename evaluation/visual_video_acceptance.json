@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-09-27T11:58:50+00:00",
+  "generated_at": "2026-09-27T12:12:58.136679+00:00",
   "lesson_id": "78a5f0a45b614188a9acfed52ccb1b83",
-  "scope": "Real LoRA visual lesson, one ready chapter; complete-lesson and live YouTube upload remain pending",
+  "scope": "Real LoRA visual lesson, compressed chapter 1 ready; remaining chapters and actual full-video join pending",
   "chapter_count": 41,
   "ready_chapters": 1,
   "chapter_video": {
-    "export_id": "8cdf878df1134bdfb676a594637c96d6",
+    "export_id": "e94fd89bbca04db2bd66e5275a62660a",
     "state": "ready",
     "duration_seconds": 503.12,
     "resolution": [
@@ -15,11 +15,11 @@
     "fps": 30,
     "video_codec": "H.264 High/yuv420p",
     "audio_codec": "AAC-LC/48kHz stereo",
-    "bytes": 150227963,
-    "sha256": "1a0324e2e2d8027cacc1298caa654b18e67bb11306fe7a3d34cb419684eacd7a",
-    "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-3c9c1895215e.mp4",
-    "english_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-3c9c1895215e.en.srt",
-    "japanese_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-3c9c1895215e.ja.srt",
+    "bytes": 30213589,
+    "sha256": "8fdb2907bbfde41c858b9f2d853541f06fe324f28079e9631237327b4712d86c",
+    "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/0ce1cbb0a0f2/LoRA - Low-Rank Adaptation of Large Language Models — 第1章.mp4",
+    "english_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/0ce1cbb0a0f2/LoRA - Low-Rank Adaptation of Large Language Models — 第1章.en.srt",
+    "japanese_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/0ce1cbb0a0f2/LoRA - Low-Rank Adaptation of Large Language Models — 第1章.ja.srt",
     "burned_captions": [
       "English",
       "Japanese"
@@ -48,13 +48,26 @@
         "seconds": 374.88,
         "visual": "V2"
       }
-    ]
+    ],
+    "suggested_title": "LoRA - Low-Rank Adaptation of Large Language Models — 第1章",
+    "download_basename": "LoRA - Low-Rank Adaptation of Large Language Models — 第1章.mp4",
+    "encode_settings": {
+      "video_codec": "libx264",
+      "preset": "medium",
+      "crf": 21,
+      "gop_frames": 120,
+      "b_frames": 3,
+      "audio_codec": "aac",
+      "audio_bitrate": "128k"
+    },
+    "previous_bytes": 150227963,
+    "size_reduction_percent": 79.9
   },
   "checks": {
-    "python_tests": "129 passed (including checked title narration and video export)",
+    "python_tests": "131 passed",
     "playwright_fixture": "8 passed",
-    "real_lan_browser": "passed: title recommendation copy, bilingual intro SRT, 206 range download, 503.12 s duration, 1920x1080 decode, no external browser requests",
-    "video_frames": "visually checked title card with burned two-line English and Japanese captions and first teaching diagram",
+    "real_lan_browser": "passed: UTF-8 title filename and copy, bilingual intro SRT, 206 range download, 503.12 s duration, 1920x1080 decode, no external browser requests",
+    "video_frames": "visually checked compressed title card, supplementary diagram, original Figure 1 and burned captions",
     "full_join": "synthetic two-chapter join and SRT offsets passed; real complete lesson still pending",
     "youtube_upload": "mocked private resumable upload and duplicate prevention passed; no Google account connected"
   },

@@ -2,6 +2,7 @@ import asyncio
 import subprocess
 import time
 import wave
+from urllib.parse import quote
 
 import httpx
 import imageio_ffmpeg
@@ -29,6 +30,15 @@ def test_burned_subtitles_and_download_tracks_follow_exact_voice_frames():
     assert "00:00:01,000 --> 00:00:02,500" in tracks["ja"]
     assert "Look at A." in ass and "Aを見てください。" in ass
     assert "Style: English" in ass and "Style: Japanese" in ass
+
+
+def test_mp4_basename_matches_a_portable_youtube_title():
+    title = video.export_title("LoRA: Low-Rank Adaptation of Large Language Models", 1)
+    assert title == "LoRA - Low-Rank Adaptation of Large Language Models — 第1章"
+    assert video.export_title("A paper", None) == "A paper — 全章"
+    long = video.export_title("日本語の長い論文名" * 30, 42)
+    assert len(long) <= 100 and len((long + ".mp4").encode()) <= 240
+    assert long.endswith(" — 第42章")
 
 
 def test_title_narration_is_checked_and_precedes_chapter_subtitles(database):
@@ -78,6 +88,30 @@ def test_chapter_exports_are_idempotent_and_complete_video_waits_for_every_chapt
     assert not db.one("SELECT * FROM video_exports WHERE kind='full'")
 
 
+def test_complete_video_is_queued_in_chapter_order_once_every_video_is_ready(database, monkeypatch):
+    ident = lesson_row("auto-join-video")
+    for ordinal in range(2):
+        db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)",
+                   (f"auto-ch{ordinal}", ident, ordinal, "ready", db.dumps({"title": f"Part {ordinal}"})))
+    monkeypatch.setattr(video, "chapter_manifest", lambda chapter, lesson: {
+        "ordinal": chapter["ordinal"], "version": video.VERSION})
+    video.schedule()
+    chapters = db.all("SELECT * FROM video_exports WHERE lesson_id=? AND kind='chapter' ORDER BY created,id", (ident,))
+    assert len(chapters) == 2
+    for chapter in chapters:
+        path = database / "videos" / (chapter["id"] + ".mp4")
+        path.write_bytes(b"complete chapter")
+        db.execute("UPDATE video_exports SET state='ready',data=? WHERE id=?",
+                   (db.dumps(chapter["data"] | {"mp4": str(path.relative_to(database))}), chapter["id"]))
+    video.schedule()
+    video.schedule()
+    full = db.all("SELECT * FROM video_exports WHERE lesson_id=? AND kind='full'", (ident,))
+    assert len(full) == 1 and full[0]["state"] == "queued"
+    assert full[0]["data"]["manifest"]["video_title"] == "Test paper — 全章"
+    assert [part["id"] for part in full[0]["data"]["manifest"]["chapter_videos"]] == [
+        chapter["id"] for chapter in chapters]
+
+
 def test_complete_video_joins_chapters_and_offsets_both_srt_tracks(database):
     ident = lesson_row("join-video")
     clips = []
@@ -109,6 +143,8 @@ def test_complete_video_joins_chapters_and_offsets_both_srt_tracks(database):
     export = db.one("SELECT * FROM video_exports WHERE id=?", (full_id,))
     assert export["state"] == "ready" and export["data"]["chapter_count"] == 2
     assert config.safe_path(export["data"]["mp4"]).stat().st_size > 100000
+    assert config.safe_path(export["data"]["mp4"]).name == "Test paper — 全章.mp4"
+    assert export["data"]["title"] == "Test paper — 全章"
     subtitles = config.safe_path(export["data"]["ja_srt"]).read_text(encoding="utf-8")
     assert "00:00:02,000 --> 00:00:04,000" in subtitles and "赤" in subtitles and "青" in subtitles
 
@@ -197,4 +233,8 @@ def test_video_api_exposes_download_and_requires_google_connection_for_upload(cl
     assert "manifest" not in lesson.json()["videos"][0]["data"]
     download = client.get("/api/files/videos/sample.mp4", headers={"Range": "bytes=0-4"})
     assert download.status_code == 206 and download.content == b"a sma"
+    named = database / "videos" / "LoRA - paper — 第1章.mp4"
+    named.write_bytes(b"chapter file")
+    named_download = client.get("/api/files/videos/" + quote(named.name), headers={"Range": "bytes=0-6"})
+    assert named_download.status_code == 206 and named_download.content == b"chapter"
     assert client.put("/api/youtube/auto-upload", json={"enabled": True}).status_code == 409

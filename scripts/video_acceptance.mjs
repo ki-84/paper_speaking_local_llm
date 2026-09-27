@@ -9,6 +9,7 @@ const {chromium, expect} = require('@playwright/test');
 const id = process.argv[2];
 if (!id) throw new Error('Supply a visual lesson ID.');
 const base = process.env.PAPERSPEAK_URL || 'https://192.168.10.112:8443';
+const fileUrl = relative => '/api/files/' + relative.split('/').map(encodeURIComponent).join('/');
 const report = {lesson_id:id, started:new Date().toISOString(), checks:{}};
 const browser = await chromium.launch();
 const context = await browser.newContext({ignoreHTTPSErrors:true, viewport:{width:1440,height:1100}});
@@ -29,8 +30,8 @@ try {
   const lesson = await (await context.request.get(`${base}/api/lessons/${id}`)).json();
   const video = lesson.videos.find(v => v.kind === 'chapter' && v.state === 'ready');
   if (!video) throw new Error('A completed chapter video is needed.');
-  const openingEn = await (await context.request.get(`${base}/api/files/${video.data.en_srt}`)).text();
-  const openingJa = await (await context.request.get(`${base}/api/files/${video.data.ja_srt}`)).text();
+  const openingEn = await (await context.request.get(base+fileUrl(video.data.en_srt))).text();
+  const openingJa = await (await context.request.get(base+fileUrl(video.data.ja_srt))).text();
   if (!openingEn.split('\n\n')[0].includes('paper titled') || !openingJa.split('\n\n')[0].includes('論文'))
     throw new Error('The spoken opening title needs matching English and Japanese captions.');
   report.checks.spoken_title_has_bilingual_captions = true;
@@ -38,20 +39,24 @@ try {
   const panel = page.getByRole('region',{name:'YouTube video export'});
   await expect(panel).toBeVisible();
   const chapter = lesson.chapters.find(c => c.id === video.chapter_id);
-  const suggestedTitle = `${lesson.paper.title} — 第${chapter.ordinal + 1}章`;
+  const suggestedTitle = video.data.title || `${lesson.paper.title} — 第${chapter.ordinal + 1}章`;
   await expect(panel.getByLabel('推奨タイトル（YouTube用）')).toHaveValue(suggestedTitle);
+  if (video.data.title && !video.data.mp4.endsWith('/' + suggestedTitle + '.mp4'))
+    throw new Error('The stored MP4 filename does not match its suggested title.');
   await context.grantPermissions(['clipboard-read','clipboard-write'], {origin:new URL(base).origin});
   await panel.getByRole('button',{name:'タイトルをコピー'}).click();
   if (await page.evaluate(() => navigator.clipboard.readText()) !== suggestedTitle)
     throw new Error('The suggested YouTube title did not copy.');
   const firstDownload = panel.getByRole('link',{name:/Download first MP4/});
   await expect(firstDownload).toBeVisible();
-  if (await firstDownload.getAttribute('href') !== '/api/files/' + video.data.mp4)
+  if (await firstDownload.getAttribute('href') !== fileUrl(video.data.mp4))
     throw new Error('The content video button does not lead to the completed MP4.');
+  if (await firstDownload.getAttribute('download') !== suggestedTitle + '.mp4')
+    throw new Error('The downloaded filename does not match its suggested title.');
   const download = page.getByRole('link',{name:/Download chapter MP4/});
   await expect(download).toBeVisible();
   const href = await download.getAttribute('href');
-  if (href !== '/api/files/' + video.data.mp4) throw new Error('The displayed download points to the wrong chapter video.');
+  if (href !== fileUrl(video.data.mp4)) throw new Error('The displayed download points to the wrong chapter video.');
   const ranged = await context.request.get(base+href,{headers:{Range:'bytes=0-1023'}});
   if (ranged.status() !== 206 || (await ranged.body()).length !== 1024) throw new Error('LAN video range download failed.');
   report.checks.ranged_https_download = true;

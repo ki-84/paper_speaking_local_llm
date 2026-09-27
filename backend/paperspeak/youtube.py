@@ -95,6 +95,8 @@ def _headers():
 
 
 def _video_title(export):
+    if export["data"].get("title"):
+        return export["data"]["title"]
     lesson = db.one("SELECT * FROM lessons WHERE id=?", (export["lesson_id"],))
     title = lesson["data"]["title"] if lesson else "Paper lesson"
     return (title + " | Easy English and Japanese paper lesson")[:100]

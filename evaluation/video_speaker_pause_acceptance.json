@@ -16,5 +16,20 @@
     "speaker_gap": 0.0,
     "after": 3253.98
   },
-  "result": "passed"
+  "result": "passed",
+  "chapter_1": {
+    "export_id": "23a69561150a4b9c83a3014e762c2e92",
+    "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/482a040d3f47/LoRA - Low-Rank Adaptation of Large Language Models — 第1章.mp4",
+    "bytes": 32322259,
+    "sha256": "12059eb8911e1b9366826c57dc49a25438e4022ae5ac04cc7be71652751ede84",
+    "speaker_changes": 57,
+    "base_speech_seconds": 503.12,
+    "final_video_seconds": 560.12,
+    "decoded_audio_rms": {
+      "before": 1610.48,
+      "speaker_gap": 0.0,
+      "after": 3445.23
+    },
+    "result": "passed"
+  }
 }

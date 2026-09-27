@@ -15,9 +15,10 @@ from .quality import QualityHold, speech_match
 from .runtime import PracticePreempted
 
 log = logging.getLogger(__name__)
-VERSION = "visual-video-3"
+VERSION = "visual-video-4"
 SIZE = (1920, 1080)
 FPS = 30
+SPEAKER_GAP_FRAMES = 24000
 ENCODE = {"video_codec": "libx264", "preset": "medium", "crf": 21,
           "gop_frames": 120, "b_frames": 3, "audio_codec": "aac", "audio_bitrate": "128k"}
 
@@ -109,7 +110,8 @@ def chapter_manifest(chapter, lesson):
                       "description_en", "description_ja", "regions", "source_ids")}}
             for key, asset in assets.items()},
         "turns": turns, "format": {"width": SIZE[0], "height": SIZE[1], "fps": FPS,
-            "video": "H.264 High yuv420p", "audio": "AAC-LC stereo 48 kHz", "encode": ENCODE},
+            "video": "H.264 High yuv420p", "audio": "AAC-LC stereo 48 kHz", "encode": ENCODE,
+            "speaker_gap_frames": SPEAKER_GAP_FRAMES},
         "models_used": lesson["data"].get("models_used", {}),
     }
 
@@ -200,10 +202,14 @@ def _captions(turns):
     lines = {"en": [], "ja": []}
     events = []
     cumulative = 0
-    for index, turn in enumerate(turns, 1):
+    index = 0
+    for turn in turns:
         start = round(cumulative / 24)
         cumulative += turn["frames"]
         end = round(cumulative / 24)
+        if turn.get("silence"):
+            continue
+        index += 1
         for lang, key in (("en", "english"), ("ja", "japanese")):
             lines[lang].append(f"{index}\n{_srt_time(start)} --> {_srt_time(end)}\n{turn[key]}\n")
             events.append(f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},{'English' if lang == 'en' else 'Japanese'},,0,0,0,,{_ass_text(turn[key])}")
@@ -227,6 +233,35 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 def _quote(path):
     return "'" + str(path).replace("'", "'\\''") + "'"
+
+
+def _speaker_timeline(turns, silence_path):
+    """Keep the previous figure on screen during each one-second speaker change."""
+    timeline = []
+    previous = None
+    for turn in turns:
+        if previous and previous["speaker"] != turn["speaker"]:
+            timeline.append({"frames": SPEAKER_GAP_FRAMES, "audio": silence_path,
+                             "scene": previous["scene"], "silence": True})
+        timeline.append(turn)
+        previous = turn
+    return timeline
+
+
+def _silence_file(work):
+    path = work / "speaker-gap.wav"
+    if not path.is_file() or _duration_frames(path) != SPEAKER_GAP_FRAMES:
+        partial = work / "speaker-gap.partial.wav"
+        try:
+            with wave.open(str(partial), "wb") as wav:
+                wav.setnchannels(1)
+                wav.setsampwidth(2)
+                wav.setframerate(24000)
+                wav.writeframes(b"\0\0" * SPEAKER_GAP_FRAMES)
+            partial.replace(path)
+        finally:
+            partial.unlink(missing_ok=True)
+    return str(path.relative_to(config.DATA))
 
 
 def _ffmpeg(args, runtime, partial):
@@ -316,6 +351,7 @@ def _chapter_step(job, runtime, export):
             key = digest([turn["visual_key"], turn["focus"]])[:16]
             turn["scene"] = key
             scenes.setdefault(key, {"asset": assets.get(turn["visual_key"]), "focus": turn["focus"]})
+    turns = _speaker_timeline(turns, _silence_file(work))
     scene_items = list(scenes.items())
     index = job["checkpoint"].get("scene_index", 0)
     if index < len(scene_items):

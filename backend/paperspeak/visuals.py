@@ -186,14 +186,16 @@ def plan(chapter, lesson, evidence, runtime):
             raise ValueError("The visual plan selected an unknown or repeated original figure.")
         seen.add(item["id"])
         for k in ("title", "description"):
-            visual_render.check_pair(item.get(k+"_en"), item.get(k+"_ja"))
+            visual_render.validate_pair(f"Original figure {item['id']} {k}_en/{k}_ja",
+                                        item.get(k+"_en"), item.get(k+"_ja"))
         terms = item.get("terms", [])
         if not isinstance(terms, list) or len(terms) > 12:
             raise ValueError("Use at most twelve figure terms.")
-        for t in terms:
+        for index, t in enumerate(terms, 1):
             if not isinstance(t, dict):
                 raise ValueError("Invalid figure term.")
-            visual_render.check_pair(t.get("en"), t.get("ja"))
+            visual_render.validate_pair(f"Original figure {item['id']} term {index} en/ja",
+                                        t.get("en"), t.get("ja"))
         original = lookup[item["id"]]
         pending.append(("original", original["data"] | {k:item[k] for k in (*TEXT_FIELDS, "terms") if k in item}
                         | {"original_id": original["id"], "review": None, "regions": []}))

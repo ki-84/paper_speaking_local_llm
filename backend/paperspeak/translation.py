@@ -24,10 +24,13 @@ NUMBER_UNITS = {
     "百万": Decimal(10) ** 6,
     "万": Decimal(10) ** 4,
     "千": Decimal(10) ** 3,
+    "b": Decimal(10) ** 9,
+    "m": Decimal(10) ** 6,
+    "k": Decimal(10) ** 3,
 }
 NUMBER_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_.])-?\d+(?:,\d{3})*(?:\.\d+)?(?:[eE][+-]?\d+)?"
-    r"(?:[\s-]*(?:trillion|billion|million|thousand|百万|兆|億|万|千)(?![A-Za-z]))?",
+    r"(?:[\s-]*(?:trillion|billion|million|thousand|百万|兆|億|万|千)(?![A-Za-z])|[KMB](?![A-Za-z]))?",
     re.IGNORECASE,
 )
 COMPOUND_JAPANESE_NUMBER = re.compile(

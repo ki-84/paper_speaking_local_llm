@@ -49,6 +49,16 @@ def test_invalid_japanese_diagram_label_is_saved_for_local_model_repair(database
     assert repaired["data"]["visual_stage"] == "assets" and "visual_candidate" not in repaired["data"]
 
 
+def test_diagram_length_error_names_the_field_to_repair():
+    diagram = spec() | {"description_en": "x" * 141}
+    with pytest.raises(ValueError, match="Diagram description_en/description_ja.*English length 141"):
+        visual_render.validate_spec(diagram, ["source"])
+    diagram = spec()
+    diagram["nodes"][0]["en"] = "x" * 61
+    with pytest.raises(ValueError, match="Diagram node old en/ja.*English length 61"):
+        visual_render.validate_spec(diagram, ["source"])
+
+
 def test_spoken_sentence_split_keeps_visual_cues_and_original_evidence():
     turn = {"id":"a", "speaker":"guide", "kind":"paper", "source_ids":["source"],
             "visual":{"key":"V1","focus":["old"]}, "text":"Look here. This value is 3.5 percent."}

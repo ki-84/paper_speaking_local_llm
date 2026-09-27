@@ -24,6 +24,18 @@ def check_pair(en, ja, limit=240):
         raise ValueError("A visual translation changed a number.")
 
 
+def validate_pair(field, english, japanese, limit=240):
+    """Name the exact field so the local model can repair one bad label."""
+    try:
+        check_pair(english, japanese, limit)
+    except ValueError as error:
+        raise ValueError(
+            f"{field}: {error} "
+            f"English length {len(english) if isinstance(english, str) else 'missing'}; "
+            f"Japanese length {len(japanese) if isinstance(japanese, str) else 'missing'}."
+        ) from error
+
+
 def validate_spec(spec, source_ids):
     if not isinstance(spec, dict):
         raise ValueError("A diagram must be a structured object.")
@@ -32,7 +44,8 @@ def validate_spec(spec, source_ids):
     if spec.get("kind") not in {"teaching", "example"}:
         raise ValueError("Mark a diagram as teaching or a hypothetical example.")
     for key in ("title", "description"):
-        check_pair(spec.get(key + "_en"), spec.get(key + "_ja"), 140 if key == "description" else 72)
+        validate_pair(f"Diagram {key}_en/{key}_ja", spec.get(key + "_en"),
+                      spec.get(key + "_ja"), 140 if key == "description" else 72)
     if len(spec["title_en"]) > 60:
         raise ValueError("Keep the English diagram title under 60 characters.")
     refs = spec.get("source_ids", [])
@@ -50,7 +63,7 @@ def validate_spec(spec, source_ids):
             or key in ids or key == "arrow" or key.startswith("arrow_")):
             raise ValueError("Diagram nodes need distinct short IDs.")
         ids.add(key)
-        check_pair(node.get("en"), node.get("ja"), 60)
+        validate_pair(f"Diagram node {key} en/ja", node.get("en"), node.get("ja"), 60)
         if node.get("matrix") is not None:
             matrix = node["matrix"]
             if (not isinstance(matrix, list) or not 1 <= len(matrix) <= 4
@@ -62,13 +75,13 @@ def validate_spec(spec, source_ids):
     edges = spec.get("edges", [])
     if not isinstance(edges, list) or len(edges) > 10:
         raise ValueError("Too many diagram arrows.")
-    for edge in edges:
+    for i, edge in enumerate(edges, 1):
         if not isinstance(edge, dict):
             raise ValueError("A diagram arrow must be a structured object.")
         if edge.get("from") not in ids or edge.get("to") not in ids or edge["from"] == edge["to"]:
             raise ValueError("An arrow refers to an unknown node.")
         if edge.get("en") or edge.get("ja"):
-            check_pair(edge.get("en"), edge.get("ja"), 16)
+            validate_pair(f"Diagram arrow {i} en/ja", edge.get("en"), edge.get("ja"), 16)
 
 
 def wrap(text, width):

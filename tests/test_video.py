@@ -32,6 +32,26 @@ def test_burned_subtitles_and_download_tracks_follow_exact_voice_frames():
     assert "Style: English" in ass and "Style: Japanese" in ass
 
 
+def test_speaker_change_adds_one_second_of_silence_without_subtitles(database):
+    turns = [
+        {"speaker":"host", "scene":"title", "frames":24000, "english":"Paper title.", "japanese":"論文の題名。"},
+        {"speaker":"host", "scene":"figure-a", "frames":24000, "english":"Look here.", "japanese":"ここを見てください。"},
+        {"speaker":"guide", "scene":"figure-b", "frames":24000, "english":"I see it.", "japanese":"見えました。"},
+        {"speaker":"host", "scene":"figure-c", "frames":24000, "english":"Why?", "japanese":"なぜですか。"},
+    ]
+    silence = video._silence_file(database / "jobs")
+    timeline = video._speaker_timeline(turns, silence)
+    assert [turn.get("silence", False) for turn in timeline] == [False,False,True,False,True,False]
+    assert [turn["scene"] for turn in timeline if turn.get("silence")] == ["figure-a","figure-b"]
+    assert video._duration_frames(config.safe_path(silence)) == 24000
+    subtitles, ass, duration = video._captions(timeline)
+    assert duration == 6
+    assert "00:00:03,000 --> 00:00:04,000" in subtitles["en"]
+    assert "00:00:05,000 --> 00:00:06,000" in subtitles["ja"]
+    assert "00:00:02,000 --> 00:00:03,000" not in subtitles["en"]
+    assert ass.count("Dialogue:") == 8
+
+
 def test_mp4_basename_matches_a_portable_youtube_title():
     title = video.export_title("LoRA: Low-Rank Adaptation of Large Language Models", 1)
     assert title == "LoRA - Low-Rank Adaptation of Large Language Models — 第1章"

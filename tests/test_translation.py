@@ -5,6 +5,12 @@ from paperspeak import db, lessons, papers, translation
 from paperspeak.quality import QualityHold
 
 
+def test_compact_parameter_counts_match_japanese_units():
+    assert translation.numeric_values("A 175B model") == translation.numeric_values("1750億のモデル")
+    assert translation.numeric_values("A 7M model") == translation.numeric_values("700万のモデル")
+    assert translation.numeric_values("3 B matrices") == {3}
+
+
 def chapter_fixture():
     pid = papers.register({"source_id": "translation", "version": "v1", "title": "Paper"})
     lid = lessons.create(pid, format_version="paper-radio-1")

@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-09-27T12:47:53.041351+00:00",
+  "lesson_id": "78a5f0a45b614188a9acfed52ccb1b83",
+  "chapter_number": 2,
+  "export_id": "28cc593fbda84de9ac0bb57b320437ac",
+  "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/562b977c2a8d/LoRA - Low-Rank Adaptation of Large Language Models — 第2章.mp4",
+  "bytes": 23767622,
+  "sha256": "90e8d4140b7988b036da39861acfca10f6a0bad82ae42c560a467398a3de85fa",
+  "speaker_changes": 51,
+  "base_speech_seconds": 380.48,
+  "speaker_gap_seconds": 1,
+  "final_video_seconds": 431.48,
+  "first_change_at_seconds": 10.8,
+  "decoded_audio_rms": {
+    "before": 1793.3,
+    "speaker_gap": 0.0,
+    "after": 3253.98
+  },
+  "result": "passed"
+}

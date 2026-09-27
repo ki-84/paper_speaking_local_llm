@@ -68,7 +68,7 @@ def validate_spec(spec, source_ids):
         raise ValueError("Keep the English diagram title under 60 characters.")
     refs = spec.get("source_ids", [])
     if not isinstance(refs, list) or not refs or any(not isinstance(s, str) for s in refs) or not set(refs) <= set(source_ids):
-        raise ValueError("A teaching diagram must link to original paper evidence.")
+        raise ValueError("A teaching diagram must cite EVIDENCE source IDs; F-number figure IDs are not citations.")
     nodes = spec.get("nodes", [])
     if not isinstance(nodes, list) or not 2 <= len(nodes) <= 8:
         raise ValueError("Use two to eight short diagram nodes.")

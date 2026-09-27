@@ -147,6 +147,7 @@ def plan(chapter, lesson, evidence, runtime):
     current_ids = paper["data"].get("figure_extraction", {}).get("ids")
     if current_ids is not None:
         originals = [a for a in originals if a["id"] in current_ids]
+    evidence_aliases = {f"S{i+1}": source["id"] for i, source in enumerate(evidence)}
     used_original_ids = {
         a["data"].get("original_id") for a in db.all(
             "SELECT * FROM visual_assets WHERE lesson_id=? AND kind='original'",
@@ -171,13 +172,16 @@ def plan(chapter, lesson, evidence, runtime):
         "All titles, descriptions, labels and optional arrow labels need both simple English and natural Japanese with identical meaning and numbers. "
         "Every Japanese field MUST contain Japanese characters; symbols or abbreviations alone, such as A, B, r, LoRA or GPT-3, are not Japanese explanations. Add a short Japanese word such as 行列, 更新, or 手法 where accurate. "
         "Keep English node labels under 45 characters, Japanese under 28; descriptions under 140 characters; arrow labels under 12. "
-        "Cite only original source IDs for supplementary claims. An original description and glossary must stay within its caption until the pixels are reviewed. "
+        "A diagram's source_ids must use S-number IDs from EVIDENCE, never F-number IDs from ORIGINALS. "
+        "F-number IDs only select original figures. Cite evidence for every diagram claim. "
+        "An original description and glossary must stay within its caption until the pixels are reviewed. "
         "Do not add matrix dimensions or numerical results to a glossary unless the supplied evidence explicitly states them. "
         'Return {"originals":[' + json.dumps(original_schema) + '],"diagrams":[' + json.dumps(DIAGRAM_SCHEMA) + ']}.\n'
         + "CHAPTER: " + json.dumps({"title": chapter["data"]["title"], "focus": chapter["data"]["focus"], "ordinal": chapter["ordinal"]})
         + "\nORIGINALS: " + json.dumps(available)
         + "\nORIGINAL FIGURES ALREADY EXPLAINED: " + json.dumps([f"F{i+1}" for i, a in enumerate(originals) if a["id"] in used_original_ids])
-        + "\nEVIDENCE: " + json.dumps([{"id": s["id"], "text": s["data"]["text"]} for s in evidence])
+        + "\nEVIDENCE: " + json.dumps([{"id": f"S{i+1}", "text": s["data"]["text"]} for i, s in enumerate(evidence)])
+        + "\nVALID DIAGRAM SOURCE IDS: " + json.dumps(list(evidence_aliases))
         + "\nPREVIOUS ERRORS: " + json.dumps(chapter["data"].get("visual_errors", []))
         + "\nPREVIOUS CANDIDATE TO REPAIR (if present): " + json.dumps(chapter["data"].get("visual_candidate"), ensure_ascii=False),
         profile=lesson["data"]["model"], max_tokens=6000, system=VISUAL_SYSTEM,
@@ -208,6 +212,9 @@ def plan(chapter, lesson, evidence, runtime):
         pending.append(("original", original["data"] | {k:item[k] for k in (*TEXT_FIELDS, "terms") if k in item}
                         | {"original_id": original["id"], "review": None, "regions": []}))
     for spec in specs:
+        if isinstance(spec, dict) and isinstance(spec.get("source_ids"), list):
+            spec["source_ids"] = [evidence_aliases.get(sid, sid) if isinstance(sid, str) else sid
+                                  for sid in spec["source_ids"]]
         visual_render.validate_spec(spec, [s["id"] for s in evidence])
         pending.append((spec["kind"], {"spec": spec, **{k:spec[k] for k in (*TEXT_FIELDS, "source_ids")}, "review": None}))
     if not pending:

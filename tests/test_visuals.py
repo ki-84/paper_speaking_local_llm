@@ -49,6 +49,32 @@ def test_invalid_japanese_diagram_label_is_saved_for_local_model_repair(database
     assert repaired["data"]["visual_stage"] == "assets" and "visual_candidate" not in repaired["data"]
 
 
+def test_visual_plan_uses_short_evidence_ids_and_saves_real_citations(database):
+    pid = papers.register({"source_id": "short-citations", "version": "1", "title": "A paper"})
+    lid, cid = db.uid(), db.uid()
+    db.execute("INSERT INTO lessons VALUES (?,?,?,?,?,?)",
+               (lid, pid, "building", db.dumps({"format": "paper-visual-2", "model": "qwen-q8"}), 1, 1))
+    db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)",
+               (cid, lid, 0, "visuals", db.dumps({"title": "One idea", "focus": "Learn the idea."})))
+    sid = pid + ":H22"
+    evidence = [{"id": sid, "data": {"text": "Adapter layers add sequential work."}}]
+
+    class Runtime:
+        last_generation = {}
+
+        def ask(self, prompt, **kwargs):
+            assert '"id": "S1"' in prompt
+            assert '"S1"' in prompt.split("VALID DIAGRAM SOURCE IDS: ", 1)[1]
+            return {"originals": [], "diagrams": [spec("S1")]}
+
+    chapter = db.one("SELECT * FROM chapters WHERE id=?", (cid,))
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (lid,))
+    visuals.plan(chapter, lesson, evidence, Runtime())
+    saved = db.one("SELECT * FROM chapters WHERE id=?", (cid,))
+    asset = db.one("SELECT * FROM visual_assets WHERE id=?", (saved["data"]["visuals"][0]["asset_id"],))
+    assert asset["data"]["source_ids"] == [sid]
+
+
 def test_diagram_length_error_names_the_field_to_repair():
     diagram = spec() | {"description_en": "x" * 141}
     with pytest.raises(ValueError, match="Diagram description_en/description_ja.*English length 141"):

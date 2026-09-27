@@ -147,6 +147,11 @@ def plan(chapter, lesson, evidence, runtime):
     current_ids = paper["data"].get("figure_extraction", {}).get("ids")
     if current_ids is not None:
         originals = [a for a in originals if a["id"] in current_ids]
+    used_original_ids = {
+        a["data"].get("original_id") for a in db.all(
+            "SELECT * FROM visual_assets WHERE lesson_id=? AND kind='original'",
+            (lesson["id"],))
+    }
     # Figure catalogue text only. Original pixels are reviewed per chosen figure.
     available = [{"id": f"F{i+1}", "label": a["data"]["label"], "page": a["data"]["page"],
                   "caption": a["data"]["caption_en"][:700]} for i, a in enumerate(originals)]
@@ -154,9 +159,11 @@ def plan(chapter, lesson, evidence, runtime):
                        "description_en": "short explanation", "description_ja": "短い説明",
                        "terms": [{"en": "original English label", "ja": "日本語の説明"}]}
     result = runtime.ask(
-        "Plan the visuals BEFORE writing a spoken lesson about this paper. Choose at most two useful original figures and "
-        "one extra diagram for ideas that the original figures do not explain simply enough. Choose visuals for understanding, not decoration. "
-        "Use zero originals if none are relevant. In the opening chapter, use the paper's main overview figure when it helps introduce the method. "
+        "Plan the visuals BEFORE writing a spoken lesson about this paper. Choose at most one useful original figure and "
+        "one extra diagram only if it explains a different essential idea. Choose visuals for understanding, not decoration. "
+        "Avoid original figures already explained in earlier chapters unless a different part is indispensable for this chapter's new focus. "
+        "Use zero originals if none are relevant. Reserve a paper's main method figure for the chapter that teaches the method. "
+        "A problem or prerequisite chapter should not explain the full method ahead of that chapter; use a focused teaching diagram instead when helpful. "
         "The extra diagram must use two to eight SHORT labelled nodes arranged left to right in rows of three. Arrows mean only the relationship you explicitly explain. "
         "For a comparison, use labelled side-by-side nodes without causal arrows. Never invent experiment results. "
         "For illustrative numbers use kind=example, explicitly say hypothetical, and never suggest that the paper measured them. "
@@ -169,6 +176,7 @@ def plan(chapter, lesson, evidence, runtime):
         'Return {"originals":[' + json.dumps(original_schema) + '],"diagrams":[' + json.dumps(DIAGRAM_SCHEMA) + ']}.\n'
         + "CHAPTER: " + json.dumps({"title": chapter["data"]["title"], "focus": chapter["data"]["focus"], "ordinal": chapter["ordinal"]})
         + "\nORIGINALS: " + json.dumps(available)
+        + "\nORIGINAL FIGURES ALREADY EXPLAINED: " + json.dumps([f"F{i+1}" for i, a in enumerate(originals) if a["id"] in used_original_ids])
         + "\nEVIDENCE: " + json.dumps([{"id": s["id"], "text": s["data"]["text"]} for s in evidence])
         + "\nPREVIOUS ERRORS: " + json.dumps(chapter["data"].get("visual_errors", []))
         + "\nPREVIOUS CANDIDATE TO REPAIR (if present): " + json.dumps(chapter["data"].get("visual_candidate"), ensure_ascii=False),
@@ -177,8 +185,8 @@ def plan(chapter, lesson, evidence, runtime):
     chapter["data"]["visual_candidate"] = result
     db.save_chapter(chapter)
     chosen, specs = result.get("originals", []), result.get("diagrams", [])
-    if not isinstance(chosen, list) or not isinstance(specs, list) or len(chosen) > 2 or len(specs) > 1:
-        raise ValueError("Use at most two original figures and one teaching diagram per chapter.")
+    if not isinstance(chosen, list) or not isinstance(specs, list) or len(chosen) > 1 or len(specs) > 1:
+        raise ValueError("Use at most one original figure and one teaching diagram per chapter.")
     lookup = {f"F{i+1}": a for i, a in enumerate(originals)}
     seen, pending = set(), []
     for item in chosen:
@@ -477,7 +485,7 @@ def draft_missing_step(chapter, lesson, evidence, runtime):
         "Start with a transition from the previous conversation and tell the learner where to look. "
         "Explain what the figure shows, how to read its key parts, why it helps this chapter, and what it does not prove. "
         "Explain required technical terms simply. Prefer qualitative explanations over unnecessary numbers. "
-        "Use 8 to 16 short turns, each ONE sentence with at most 28 words. The host asks specific questions; the guide explains. "
+        "Use 4 to 8 short turns, each ONE sentence with at most 28 words. The host asks specific questions; the guide explains. "
         "Use paper for claims supported by the original sources, background for general definitions, example for explicit hypothetical examples. "
         "Do not repeat earlier explanations or teach unrelated details. Do not invent measured results. "
         "Do not name a different numbered figure in this segment; its explanation is a separate saved step. "

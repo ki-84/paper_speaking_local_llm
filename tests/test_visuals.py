@@ -59,6 +59,12 @@ def test_diagram_length_error_names_the_field_to_repair():
         visual_render.validate_spec(diagram, ["source"])
 
 
+def test_visual_number_word_matches_japanese_digit_without_ignoring_real_mismatch():
+    visual_render.check_pair("LoRA trains two rank-r factors.", "LoRAはランクrの2因子を学習します。")
+    with pytest.raises(ValueError, match="changed a number"):
+        visual_render.check_pair("LoRA trains two rank-r factors.", "LoRAはランクrの3因子を学習します。")
+
+
 def test_spoken_sentence_split_keeps_visual_cues_and_original_evidence():
     turn = {"id":"a", "speaker":"guide", "kind":"paper", "source_ids":["source"],
             "visual":{"key":"V1","focus":["old"]}, "text":"Look here. This value is 3.5 percent."}

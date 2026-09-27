@@ -22,7 +22,7 @@ VERSION = visuals.FORMAT
 MAX_SCIENTIFIC_REVISIONS = 8
 
 
-def create(paper_id, format_version=VERSION):
+def create(paper_id, format_version=VERSION, *, force_new=False):
     paper = db.one("SELECT * FROM papers WHERE id=?", (paper_id,))
     if not paper:
         raise ValueError("Paper not found")
@@ -31,7 +31,7 @@ def create(paper_id, format_version=VERSION):
         "SELECT * FROM lessons WHERE paper_id=? AND state NOT IN ('ready','cancelled') AND json_extract(data,'$.format')=? ORDER BY created DESC LIMIT 1",
         (paper_id, format_version),
     )
-    if pending:
+    if pending and not force_new:
         return pending["id"]
     ident = db.uid()
     now = time.time()
@@ -63,6 +63,19 @@ def create(paper_id, format_version=VERSION):
             data["notes"] = notes
             data["reading_reuse"] = {"lesson_id": prior["id"], "paper_id": paper_id,
                                      "source_ids": sorted({sid for n in notes for c in n["claims"] for sid in c["source_ids"]})}
+            old = prior["data"]
+            claim_ids = [c["id"] for n in notes for c in n["claims"]]
+            if (old.get("learning_goals") and old.get("glossary_checked")
+                and set(old.get("claim_map", {})) == set(claim_ids)):
+                from .planning import PLANNING_VERSION
+                data.update(planning_version=PLANNING_VERSION,
+                            learning_goals=old["learning_goals"],
+                            glossary=old.get("glossary", []),
+                            glossary_checked=True,
+                            glossary_review_index=len(old.get("glossary", [])),
+                            claim_map=old["claim_map"],
+                            planning_index=len(claim_ids))
+                data["planning_reuse"] = {"lesson_id": prior["id"], "claim_count": len(claim_ids)}
     db.execute(
         "INSERT INTO lessons VALUES (?,?,?,?,?,?)",
         (ident, paper_id, "building", db.dumps(data), now, now),
@@ -431,6 +444,12 @@ def lesson_step(job, runtime):
             {"title": x["title"], "focus": x["focus"]}
             for x in data["outline"][:ordinal]
         ]
+        previous_claim_ids = {
+            cid for x in data["outline"][max(0, ordinal - 3):ordinal]
+            for cid in x.get("evidence_claim_ids", [])
+        }
+        previously_taught = [claim["claim"] for note in data["notes"] for claim in note["claims"]
+                             if claim["id"] in previous_claim_ids]
         distinct = [
             claim
             for claim in claims
@@ -450,7 +469,9 @@ def lesson_step(job, runtime):
             "Paper claims MUST cite the given source IDs. Do not label paper claims as background to avoid citations. "
             f"This is part {part + 1} of {c['parts']}. Explain only the ASSIGNED CLAIMS, with clear examples and definitions. Usually write 12-24 turns, adding sentences when needed to keep one idea per sentence. Do not repeat already explained facts. If there are no new assigned claims, give a short worked example or check understanding without restating the whole chapter. "
             'Return {"turns":[{"speaker":"host|guide","text":"one sentence","kind":"paper|background|example|question","source_ids":["ID"]}]}.\n'
-            f"CHAPTER: {c['title']}\nFOCUS: {c['focus']}\nEARLIER CHAPTERS: {json.dumps(earlier)}\nASSIGNED CLAIMS: {json.dumps(assigned)}\nPREVIOUS PARTS:\n{previous}\nEVIDENCE:\n{context}"
+            f"CHAPTER: {c['title']}\nFOCUS: {c['focus']}\nEARLIER CHAPTERS: {json.dumps(earlier)}\n"
+            f"FACTS ALREADY TAUGHT (do not explain again): {json.dumps(previously_taught)}\n"
+            f"ASSIGNED CLAIMS: {json.dumps(assigned)}\nPREVIOUS PARTS:\n{previous}\nEVIDENCE:\n{context}"
         )
         if c.get("validation_errors"):
             prompt += "\nAvoid these errors from the previous draft: " + json.dumps(
@@ -483,6 +504,7 @@ def lesson_step(job, runtime):
         result = runtime.ask(
             "Act as a skeptical scientific reviewer and an English teacher. Check every statement against the original evidence below. "
             "Check numbers AND their dataset, model configuration, baseline, metric and direction. Check mechanism steps, causality, author claims versus measured results, and limitations. "
+            "Check the order and dimensions of matrix products exactly: A times B is generally different from B times A. "
             "Check that background/example labels do not hide unsupported paper claims. Check easy English, explanation of new terms, coherent progression and no repetition. Read any marked numeric_visual_check_required values directly from the supplied images. "
             "Check the premises of questions too: a yes/right answer must not endorse a stronger claim hidden in the question. Check background definitions for scientific accuracy, using the glossary as a reference. "
             "Do not confuse learning weights with storing a model copy, training memory with inference memory, matrix rank with overall matrix size, or low rank with a small numerical change. "
@@ -494,6 +516,7 @@ def lesson_step(job, runtime):
             "General background definitions need not be claims made by this paper. Clearly introduced hypothetical examples may use new tasks or objects, but must not suggest the authors tested them. "
             "An example explicitly introduced with suppose, imagine or made-up may contain hypothetical counts; these are not paper measurements. "
             "The supplied ORIGINAL images are evidence under the image-to-source mapping below. A cited original figure may support a clearly visible label even when its caption does not repeat that label. Never use a teaching diagram as independent evidence. "
+            "Compare the earlier chapters below and flag substantial repeated explanations that add no new detail; allow one brief recap. "
             "List only actual unresolved errors or missing explanations in issues; do not list acceptable sentences or optional stylistic preferences. "
             "Resolve the reading uncertainties from the supplied evidence or ensure the dialogue clearly says what cannot be established. Never pass a chapter that presents an unresolved value or condition as known. "
             'Return {"passed":true,"issues":[{"turn_id":"ID","reason":"specific problem","suggestion":"correction"}],"missing_claim_ids":["unexplained claim IDs"]}. '
@@ -506,6 +529,10 @@ def lesson_step(job, runtime):
             + json.dumps(data.get("glossary", []))
             + "\nCHAPTER: "
             + json.dumps(dialogue_for_model(c["turns"]))
+            + "\nEARLIER CHAPTERS: "
+            + json.dumps([{"title": prior["data"]["title"],
+                           "spoken": [turn["text"] for turn in prior["data"].get("turns", [])]}
+                          for prior in chapters[max(0, ordinal - 2):ordinal]])
             + "\nORIGINAL EVIDENCE:\n"
             + context
             + "\nORIGINAL IMAGE TO SOURCE MAPPING: "

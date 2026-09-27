@@ -11,6 +11,15 @@ from . import config
 from .translation import numeric_values
 
 RENDER_VERSION = 2
+ENGLISH_SMALL_NUMBERS = {
+    word: number for number, word in enumerate(
+        ("zero", "one", "two", "three", "four", "five", "six", "seven",
+         "eight", "nine", "ten", "eleven", "twelve")
+    )
+}
+ENGLISH_NUMBER_WORD = re.compile(
+    r"\b(?:" + "|".join(ENGLISH_SMALL_NUMBERS) + r")\b", re.IGNORECASE
+)
 
 
 def check_pair(en, ja, limit=240):
@@ -20,7 +29,16 @@ def check_pair(en, ja, limit=240):
         raise ValueError("A visual label is too long or its English is not English.")
     if not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", ja):
         raise ValueError("A visual label needs a Japanese explanation.")
-    if numeric_values(en) != numeric_values(ja):
+    english_numbers, japanese_numbers = numeric_values(en), numeric_values(ja)
+    # The model often writes "two" in English and "2" in Japanese. Only expand
+    # number words when the written-digit check differs, so ordinary prose like
+    # "one idea" / "一つの案" keeps its existing behavior.
+    if english_numbers != japanese_numbers:
+        english_numbers |= {
+            ENGLISH_SMALL_NUMBERS[match.group().lower()]
+            for match in ENGLISH_NUMBER_WORD.finditer(en)
+        }
+    if english_numbers != japanese_numbers:
         raise ValueError("A visual translation changed a number.")
 
 

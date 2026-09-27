@@ -216,7 +216,7 @@ def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
     chapter = db.one("SELECT * FROM chapters WHERE lesson_id=?", (lid,))
     assert chapter["state"] == "ready"
     assert translation.complete(chapter, l)
-    assert provider.tts_calls == 2 and all(
+    assert provider.tts_calls == 1 and all(
         t["audio_verified"] for t in chapter["data"]["turns"]
     )
     assert {t["voice"] for t in chapter["data"]["turns"]} == {"Maya"}

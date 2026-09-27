@@ -32,6 +32,10 @@ try {
   await page.locator(`[data-lesson-id="${id}"]`).click();
   const panel = page.getByRole('region',{name:'YouTube video export'});
   await expect(panel).toBeVisible();
+  const firstDownload = panel.getByRole('link',{name:/Download first MP4/});
+  await expect(firstDownload).toBeVisible();
+  if (await firstDownload.getAttribute('href') !== '/api/files/' + video.data.mp4)
+    throw new Error('The content video button does not lead to the completed MP4.');
   const download = page.getByRole('link',{name:/Download chapter MP4/});
   await expect(download).toBeVisible();
   const href = await download.getAttribute('href');

@@ -33,11 +33,13 @@ test("Japanese paper search shows titles, abstracts, and a selectable paper", as
   await expect(page.getByRole("heading", { name: "初めて見る物をつかむロボット", exact: true })).toBeVisible();
   await expect(page.getByText("未知の物をつかむ学習について読めます。")).toBeVisible();
   await expect(page.getByRole("heading", { name: "ロボットが新しい物をつかむ研究" })).toBeVisible();
-  await page.getByRole("button", { name: "この論文で教材を作る" }).first().click();
+  await page.getByRole("button", { name: "この論文で教材とMP4を作る" }).first().click();
+  await expect(page.getByRole("region", { name: "YouTube video export" })).toBeVisible();
   await expect.poll(async () => {
     const lessons = await (await page.request.get("/api/lessons")).json();
     return lessons.some((lesson: any) => lesson.data.title === "A Robot That Learns to Grasp");
   }).toBeTruthy();
+  await page.getByRole("button", { name: "論文を探す" }).click();
   await page.getByLabel("どんな論文を読みたいですか？").fill("触覚を使うロボットの論文");
   await page.getByRole("button", { name: "日本語で論文を探す" }).click();
   await expect(page.getByRole("heading", { name: "「触覚を使うロボットの論文」の検索結果" })).toBeVisible();

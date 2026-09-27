@@ -153,6 +153,15 @@ function App() {
     setActive(id);
     navigate("learn");
   };
+  const createLesson = async (paperId: string) => {
+    try {
+      const result = await post(`/papers/${paperId}/lessons`);
+      refresh();
+      openLesson(result.lesson_id);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   const busy = jobs.filter((j) => ["queued", "running"].includes(j.state));
   const latestSearch = searches[0];
   const searchRunning = latestSearch && ["queued", "running", "paused"].includes(latestSearch.state);
@@ -415,11 +424,9 @@ function App() {
                         </div>
                         <button
                           className="secondary"
-                          onClick={() =>
-                            act(() => post(`/papers/${p.id}/lessons`))
-                          }
+                          onClick={() => createLesson(p.id)}
                         >
-                          Make a lesson
+                          Make a lesson + MP4 · 教材と動画を作る
                         </button>
                       </div>
                     ))}
@@ -482,8 +489,8 @@ function App() {
                       <strong>{paper.title}</strong><p>{paper.abstract}</p>
                     </details>
                     <div className="actions">
-                      <button className="primary" onClick={() => act(() => post(`/papers/${paper.paper_id}/lessons`))}>
-                        この論文で教材を作る <ArrowRight size={16} />
+                      <button className="primary" onClick={() => createLesson(paper.paper_id)}>
+                        この論文で教材とMP4を作る <ArrowRight size={16} />
                       </button>
                       <a className="text-button" href={paper.url} target="_blank" rel="noreferrer">原論文を見る <ExternalLink size={14} /></a>
                     </div>
@@ -558,11 +565,9 @@ function App() {
                       <button
                         className="primary"
                         disabled={!r.data.ja?.title}
-                        onClick={() =>
-                          act(() => post(`/papers/${r.paper_id}/lessons`))
-                        }
+                        onClick={() => createLesson(r.paper_id)}
                       >
-                        この論文で教材を作る <ArrowRight size={16} />
+                        この論文で教材とMP4を作る <ArrowRight size={16} />
                       </button>
                       <button
                         className={`secondary ${r.feedback === "interested" ? "active" : ""}`}
@@ -956,7 +961,7 @@ function AddPaper({
             />
           </label>
           <button disabled={busy} className="primary">
-            {busy ? "Adding…" : "Make my lesson"}
+            {busy ? "Adding…" : "Make my lesson + MP4 · 教材と動画を作る"}
             <ArrowRight size={17} />
           </button>
         </form>
@@ -1348,6 +1353,7 @@ function Learn({
   const visualCue = turn?.visual || (earlierVisual ? {key: earlierVisual.key, focus: []} : null);
   const ready = chapter?.state === "ready";
   const currentVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "chapter" && v.chapter_id === chapterId);
+  const readyChapterVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "chapter" && v.state === "ready");
   const completeVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "full");
   const japanese = (key: string, english?: string) => {
     const item = chapter?.data.translation?.items?.[key];
@@ -1596,9 +1602,11 @@ function Learn({
           <strong>Video for YouTube · 動画を書き出し</strong>
           <p>Figures, English voice, and English/Japanese subtitles are built into the video.</p>
           <p lang="ja">図・英語音声・英語と日本語の字幕を動画に直接入れます。</p>
-          <p className="subtle">{lesson.chapters.filter((c: Row) => c.state === "ready").length} / {lesson.chapters.length} chapters ready · 全章完成後に一本の動画を作ります。</p>
+          <p className="subtle">{lesson.chapters.filter((c: Row) => c.state === "ready").length} / {lesson.chapters.length} chapters ready · 完成した章からMP4を作り、全章完成後に一本へまとめます。</p>
+          <p lang="ja">公開するときは完成したMP4をダウンロードし、YouTube Studioから手動でアップロードできます。</p>
+          <a href="https://studio.youtube.com/" target="_blank" rel="noreferrer">Open YouTube Studio · 手動で公開する <ExternalLink size={14} /></a>
           {lesson.youtube_connected ? <p className="subtle">YouTube: {lesson.youtube_auto_upload ? "automatic private upload is on · 完成後に非公開で自動アップロード" : "automatic upload is off · 自動アップロード停止中"}</p>
-            : <p className="subtle">YouTube upload needs a one-time Google connection on Linux. · 初回のみGoogleアカウントの接続が必要です。</p>}
+            : <p className="subtle">Optional private auto-upload needs a Google connection. · 非公開の自動投稿を使う場合だけGoogle接続が必要です。</p>}
           {lesson.youtube_connected && <button className="text-button" onClick={() => api("/youtube/auto-upload", {method:"PUT",body:JSON.stringify({enabled:!lesson.youtube_auto_upload})}).then(refresh).catch((e) => onError(e.message))}>{lesson.youtube_auto_upload ? "Stop auto-upload · 自動アップロード停止" : "Enable auto-upload · 自動アップロード開始"}</button>}
           {completeVideo?.data.youtube?.url && <a href={completeVideo.data.youtube.url} target="_blank" rel="noreferrer">Open private YouTube video · YouTubeで開く <ExternalLink size={14} /></a>}
           {completeVideo?.upload_job && !completeVideo?.data.youtube?.url && <p className="subtle">{completeVideo.upload_job.stage}{completeVideo.upload_job.error ? ` · ${completeVideo.upload_job.error}` : ""}</p>}
@@ -1608,7 +1616,7 @@ function Learn({
           <a className="primary" href={fileUrl(completeVideo.data.mp4)} download>Download complete MP4 · 全章動画</a>
           <a href={fileUrl(completeVideo.data.en_srt)} download>English SRT</a>
           <a href={fileUrl(completeVideo.data.ja_srt)} download>日本語 SRT</a>
-        </div> : completeVideo?.job?.state === "failed" ? <button className="secondary" onClick={() => post(`/jobs/${completeVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry complete video · 全章動画を再試行</button> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
+        </div> : completeVideo?.job?.state === "failed" ? <button className="secondary" onClick={() => post(`/jobs/${completeVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry complete video · 全章動画を再試行</button> : readyChapterVideo ? <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
       </section>}
       {['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/retry`).then(refresh).catch(e=>onError(e.message))}>Resume preparation</button></div>}
       {!lesson.chapters.length ? (

@@ -1911,3 +1911,11 @@ details li {
     scroll-behavior: auto !important;
   }
 }
+.video-export{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 24px;padding:20px 24px;border:1px solid #c7d8cb;border-radius:18px;background:#ecf2e9}
+.video-export strong{font-size:1.08rem;color:#214a3b}
+.video-export p{margin:5px 0;line-height:1.4}
+.video-export .subtle{font-size:.88rem}
+.video-links,.chapter-video-links{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.video-links a,.chapter-video-links a{white-space:nowrap}
+.chapter-video-links{margin:12px 0}
+@media(max-width:900px){.video-export{align-items:flex-start;flex-direction:column}}

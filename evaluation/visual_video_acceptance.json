@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-09-27T11:08:02Z",
+  "lesson_id": "78a5f0a45b614188a9acfed52ccb1b83",
+  "scope": "Real LoRA visual lesson, one ready chapter; complete-lesson and live YouTube upload remain pending",
+  "chapter_count": 41,
+  "ready_chapters": 1,
+  "chapter_video": {
+    "export_id": "145e4acc8a4b4d2e93519665ba290593",
+    "state": "ready",
+    "duration_seconds": 496.0,
+    "resolution": [
+      1920,
+      1080
+    ],
+    "fps": 30,
+    "video_codec": "H.264 High/yuv420p",
+    "audio_codec": "AAC-LC/48kHz stereo",
+    "bytes": 147812636,
+    "sha256": "f08e5deaccf2d4b99298c1381b8874a27f3d7d933d7ad72f505ce51d189e7f5a",
+    "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-157d460a0b65.mp4",
+    "english_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-157d460a0b65.en.srt",
+    "japanese_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-157d460a0b65.ja.srt",
+    "burned_captions": [
+      "English",
+      "Japanese"
+    ],
+    "checked_sentences": 126,
+    "figure_transitions": [
+      {
+        "seconds": 0.0,
+        "visual": "V3"
+      },
+      {
+        "seconds": 268.16,
+        "visual": "V1"
+      },
+      {
+        "seconds": 367.76,
+        "visual": "V2"
+      }
+    ]
+  },
+  "checks": {
+    "python_tests": "128 passed (video, simulated upload and preemption, backup/restore, bilingual repair)",
+    "playwright_fixture": "8 passed",
+    "real_lan_browser": "passed: 206 range download, 496 s duration, 1920x1080 decode, no external browser requests",
+    "video_frames": "visually checked intro teaching diagram, Figure 1, Figure 2 with matching bilingual burned captions",
+    "full_join": "synthetic two-chapter join and SRT offsets passed",
+    "youtube_upload": "mocked private resumable upload and duplicate prevention passed; no Google account connected"
+  },
+  "daily_discovery_enabled": false,
+  "daily_limit": 0
+}

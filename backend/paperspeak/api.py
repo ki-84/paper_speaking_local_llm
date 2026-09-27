@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db, lessons, papers, practice, recommendation_ja, translation
+from . import config, db, lessons, papers, practice, recommendation_ja, translation, youtube
 from .runtime import gpu_info
 
 
@@ -167,6 +167,8 @@ def status():
         "worker": worker["data"] if worker else None,
         "models": list(config.manifest().get("models", {})),
         "time": time.time(),
+        "youtube_connected": youtube.connected(),
+        "youtube_auto_upload": youtube.automatic(),
     }
 
 
@@ -264,6 +266,23 @@ def get_lesson(ident: str):
         "SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (ident,)
     )
     l["visuals"] = db.all("SELECT * FROM visual_assets WHERE lesson_id=? ORDER BY created,id", (ident,))
+    l["videos"] = db.all("SELECT * FROM video_exports WHERE lesson_id=? ORDER BY created DESC", (ident,))
+    l["youtube_connected"] = youtube.connected()
+    l["youtube_auto_upload"] = youtube.automatic()
+    video_jobs = db.all("SELECT target,kind,id,state,stage,error,progress FROM jobs WHERE kind IN ('chapter_video','full_video','youtube_upload') AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) ORDER BY created DESC", (ident,))
+    video_job_by_export = {}
+    for video_job in video_jobs:
+        video_job_by_export.setdefault((video_job["target"], video_job["kind"]), video_job)
+    for video in l["videos"]:
+        stored = video["data"]
+        video["data"] = {key: stored[key] for key in
+            ("mp4", "en_srt", "ja_srt", "duration", "media_duration", "bytes", "sha256", "encoder", "chapter_count")
+            if key in stored}
+        if stored.get("youtube"):
+            video["data"]["youtube"] = {key: value for key, value in stored["youtube"].items()
+                if key in {"state", "privacy", "bytes_sent", "video_id", "url", "uploaded_at", "error"}}
+        video["job"] = video_job_by_export.get((video["id"], video["kind"] + "_video"))
+        video["upload_job"] = video_job_by_export.get((video["id"], "youtube_upload"))
     l["paper"] = db.one("SELECT * FROM papers WHERE id=?", (l["paper_id"],))
     l["attempts"] = db.all(
         "SELECT * FROM attempts WHERE lesson_id=? ORDER BY created DESC", (ident,)
@@ -284,6 +303,18 @@ def get_lesson(ident: str):
     for chapter in l["chapters"]:
         chapter["translation_job"] = by_chapter.get(chapter["id"])
     return l
+
+
+class YouTubeAutoUpload(BaseModel):
+    enabled: bool
+
+
+@app.put("/api/youtube/auto-upload", dependencies=[Depends(auth)])
+def youtube_auto_upload(body: YouTubeAutoUpload):
+    if body.enabled and not youtube.connected():
+        raise HTTPException(409, "Connect a Google account on the Linux host first.")
+    db.set_setting("youtube_auto_upload", body.enabled)
+    return {"enabled": body.enabled}
 
 
 @app.post("/api/chapters/{ident}/translation", dependencies=[Depends(auth)])
@@ -345,6 +376,7 @@ def get_file(path: str):
         "audio",
         "recordings",
         "visuals",
+        "videos",
     }:
         raise HTTPException(404, "File not found")
     return FileResponse(target)

@@ -13,7 +13,7 @@ import tarfile
 import time
 from pathlib import Path
 
-from paperspeak import config, db
+from paperspeak import config, db, youtube
 from paperspeak.api import credentials, password_required
 from paperspeak.runtime import owned_command
 
@@ -270,6 +270,9 @@ def main():
                     ),
                     "gpu": gpu_info(),
                     "models": list(config.manifest().get("models", {})),
+                    "youtube_connected": youtube.connected(),
+                    "youtube_auto_upload": youtube.automatic(),
+                    "video_exports": db.all("SELECT id,lesson_id,kind,state,created,updated FROM video_exports ORDER BY created DESC LIMIT 10"),
                     "jobs": db.all(
                         "SELECT id,kind,state,stage,error FROM jobs WHERE state!='completed'"
                     ),
@@ -313,7 +316,7 @@ def main():
 
                     def paths(value):
                         if isinstance(value, str) and value.startswith(
-                            ("papers/", "audio/", "recordings/", "visuals/")
+                            ("papers/", "audio/", "recordings/", "visuals/", "videos/")
                         ):
                             referenced.add(value)
                         elif isinstance(value, dict):
@@ -323,12 +326,12 @@ def main():
                             for v in value:
                                 paths(v)
 
-                    for table in ("papers", "sources", "chapters", "attempts", "visual_assets"):
+                    for table in ("papers", "sources", "chapters", "attempts", "visual_assets", "video_exports"):
                         for row in target.execute(f"SELECT data FROM {table}"):
                             paths(json.loads(row[0]))
                 assets = [
                     p
-                    for directory in ("papers", "audio", "recordings", "visuals")
+                    for directory in ("papers", "audio", "recordings", "visuals", "videos")
                     for p in (config.DATA / directory).rglob("*")
                     if p.is_file()
                 ]

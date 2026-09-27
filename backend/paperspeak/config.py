@@ -25,6 +25,7 @@ DEFAULTS = {
     "max_auto_backlog": 1,
     "discovery_last_success": None,
     "pronunciation_calibrated": False,
+    "youtube_auto_upload": False,
 }
 
 
@@ -33,6 +34,7 @@ def init_dirs():
         "papers",
         "audio",
         "visuals",
+        "videos",
         "recordings",
         "jobs",
         "logs",

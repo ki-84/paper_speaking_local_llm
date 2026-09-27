@@ -17,6 +17,38 @@ def spec(sid="source"):
     }
 
 
+def test_invalid_japanese_diagram_label_is_saved_for_local_model_repair(database):
+    pid = papers.register({"source_id":"repair-plan", "version":"1", "title":"A paper"})
+    lid, cid = db.uid(), db.uid()
+    db.execute("INSERT INTO lessons VALUES (?,?,?,?,?,?)",
+               (lid,pid,"building",db.dumps({"format":"paper-visual-2","model":"qwen-q8"}),1,1))
+    db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)",
+               (cid,lid,0,"visuals",db.dumps({"title":"The idea","focus":"Learn the idea","turns":[]})))
+    evidence = [{"id":"source","data":{"text":"The old weights stay fixed."}}]
+    valid = spec()
+    invalid = valid | {"nodes":[valid["nodes"][0] | {"ja":"A"},valid["nodes"][1]]}
+
+    class Runtime:
+        last_generation = {}
+        prompts = []
+
+        def ask(self,prompt,**kwargs):
+            self.prompts.append(prompt)
+            return {"originals":[],"diagrams":[invalid if len(self.prompts)==1 else valid]}
+
+    runtime = Runtime()
+    chapter = db.one("SELECT * FROM chapters WHERE id=?", (cid,))
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (lid,))
+    assert visuals.prepare_step(chapter,lesson,evidence,runtime) is False
+    retry = db.one("SELECT * FROM chapters WHERE id=?", (cid,))
+    assert retry["data"]["visual_plan_attempts"] == 1
+    assert retry["data"]["visual_candidate"]["diagrams"][0]["nodes"][0]["ja"] == "A"
+    assert visuals.prepare_step(retry,lesson,evidence,runtime) is False
+    repaired = db.one("SELECT * FROM chapters WHERE id=?", (cid,))
+    assert "PREVIOUS CANDIDATE TO REPAIR" in runtime.prompts[1]
+    assert repaired["data"]["visual_stage"] == "assets" and "visual_candidate" not in repaired["data"]
+
+
 def test_spoken_sentence_split_keeps_visual_cues_and_original_evidence():
     turn = {"id":"a", "speaker":"guide", "kind":"paper", "source_ids":["source"],
             "visual":{"key":"V1","focus":["old"]}, "text":"Look here. This value is 3.5 percent."}

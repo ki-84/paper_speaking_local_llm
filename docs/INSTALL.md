@@ -12,6 +12,8 @@ Node・Caddy・Python依存関係を固定ハッシュで取得します。Node2
 
 図のPNG出力には、package-lockで固定したPlaywrightが指定するChromiumをsetupが取得します。日本語にはLinux内の `Noto Sans CJK JP` を使用します。Ubuntuでは `sudo apt install fonts-noto-cjk` で事前に用意してください。Chromiumの共有ライブラリが不足する環境では `.tools/node/bin/node frontend/node_modules/playwright/cli.js install-deps chromium` も必要です。取得後の図の描画はネットワーク要求を遮断して実行し、外部フォントや画像生成APIを使いません。
 
+動画のMP4エンコードには、Pythonロックで固定した `imageio-ffmpeg==0.6.0` 内のFFmpegを使います。システムの `ffmpeg` コマンドは不要です。
+
 ```bash
 .venv/bin/python scripts/prepare_assets.py qwen-q6 muse-q6
 ```

@@ -21,6 +21,8 @@ from . import (
     recommendation_ja,
     revoice,
     translation,
+    video,
+    youtube,
 )
 from .quality import QualityHold
 from .runtime import GPUUnavailable, PracticePreempted, Runtime
@@ -71,6 +73,7 @@ def run():
     translation.schedule_backfill()
     recommendation_ja.schedule()
     revoice.schedule()
+    video.schedule()
     last_schedule = 0
     try:
         while not stopped.is_set():
@@ -78,6 +81,7 @@ def run():
                 discovery.schedule()
                 recommendation_ja.schedule()
                 revoice.schedule()
+                video.schedule()
                 last_schedule = time.time()
             job = db.claim(owner)
             if not job:
@@ -113,6 +117,10 @@ def run():
                     done = phoneme_probe.probe_step(job, runtime)
                 elif job["kind"] == "calibration":
                     done = calibration.calibration_step(job, runtime)
+                elif job["kind"] in {"chapter_video", "full_video"}:
+                    done = video.video_step(job, runtime)
+                elif job["kind"] == "youtube_upload":
+                    done = youtube.upload_step(job, runtime)
                 elif job["kind"] == "import":
                     pid = papers.register_arxiv(job["payload"]["reference"])
                     papers.ingest(pid)
@@ -186,6 +194,10 @@ def run():
                         (job["target"],),
                     )
                     db.event("attempt", {"id": job["target"]})
+                if state == "failed" and job["kind"] in {"chapter_video", "full_video"}:
+                    export = db.one("SELECT * FROM video_exports WHERE id=?", (job["target"],))
+                    if export:
+                        video._set_export(export, "failed", error=str(e)[:1200])
             finally:
                 runtime.job_kind = None
                 runtime.job_id = None

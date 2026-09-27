@@ -162,6 +162,7 @@ def plan(chapter, lesson, evidence, runtime):
         "For illustrative numbers use kind=example, explicitly say hypothetical, and never suggest that the paper measured them. "
         "Each node may optionally contain a small matrix of strings (at most 4 by 4), but use short labels so it fits. "
         "All titles, descriptions, labels and optional arrow labels need both simple English and natural Japanese with identical meaning and numbers. "
+        "Every Japanese field MUST contain Japanese characters; symbols or abbreviations alone, such as A, B, r, LoRA or GPT-3, are not Japanese explanations. Add a short Japanese word such as 行列, 更新, or 手法 where accurate. "
         "Keep English node labels under 45 characters, Japanese under 28; descriptions under 140 characters; arrow labels under 12. "
         "Cite only original source IDs for supplementary claims. An original description and glossary must stay within its caption until the pixels are reviewed. "
         "Do not add matrix dimensions or numerical results to a glossary unless the supplied evidence explicitly states them. "
@@ -169,9 +170,12 @@ def plan(chapter, lesson, evidence, runtime):
         + "CHAPTER: " + json.dumps({"title": chapter["data"]["title"], "focus": chapter["data"]["focus"], "ordinal": chapter["ordinal"]})
         + "\nORIGINALS: " + json.dumps(available)
         + "\nEVIDENCE: " + json.dumps([{"id": s["id"], "text": s["data"]["text"]} for s in evidence])
-        + "\nPREVIOUS ERRORS: " + json.dumps(chapter["data"].get("visual_errors", [])),
+        + "\nPREVIOUS ERRORS: " + json.dumps(chapter["data"].get("visual_errors", []))
+        + "\nPREVIOUS CANDIDATE TO REPAIR (if present): " + json.dumps(chapter["data"].get("visual_candidate"), ensure_ascii=False),
         profile=lesson["data"]["model"], max_tokens=6000, system=VISUAL_SYSTEM,
     )
+    chapter["data"]["visual_candidate"] = result
+    db.save_chapter(chapter)
     chosen, specs = result.get("originals", []), result.get("diagrams", [])
     if not isinstance(chosen, list) or not isinstance(specs, list) or len(chosen) > 2 or len(specs) > 1:
         raise ValueError("Use at most two original figures and one teaching diagram per chapter.")
@@ -211,6 +215,7 @@ def plan(chapter, lesson, evidence, runtime):
         chapter["data"]["visuals"] = refs
         chapter["data"]["visual_stage"] = "assets"
         chapter["data"].pop("visual_errors", None)
+        chapter["data"].pop("visual_candidate", None)
         conn.execute("UPDATE chapters SET data=? WHERE id=?", (db.dumps(chapter["data"]), chapter["id"]))
 
 

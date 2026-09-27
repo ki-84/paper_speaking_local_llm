@@ -1,6 +1,7 @@
 import asyncio
 import subprocess
 import time
+import wave
 
 import httpx
 import imageio_ffmpeg
@@ -28,6 +29,41 @@ def test_burned_subtitles_and_download_tracks_follow_exact_voice_frames():
     assert "00:00:01,000 --> 00:00:02,500" in tracks["ja"]
     assert "Look at A." in ass and "Aを見てください。" in ass
     assert "Style: English" in ass and "Style: Japanese" in ass
+
+
+def test_title_narration_is_checked_and_precedes_chapter_subtitles(database):
+    title = "Today, we will study the paper titled A Small Paper. Let's begin."
+    manifest = {"ordinal": 0, "paper_title": "A Small Paper", "intro": {
+        "english": title, "japanese": "今日は小さな論文を学びます。",
+        "voice": "Aiden", "tts_revision": "test"}}
+    job_id = db.enqueue("chapter_video", "title-test")
+
+    class Runtime:
+        def speech(self, mode, request):
+            if mode == "tts":
+                with wave.open(request["output"], "wb") as output:
+                    output.setnchannels(1)
+                    output.setsampwidth(2)
+                    output.setframerate(24000)
+                    output.writeframes(b"\0\0" * 48000)
+                return {"generation_settings": {"model": "local-test"}}
+            return {"text": title, "generation_settings": {"model": "asr-test"}}
+
+    work = database / "jobs" / "title-test"
+    work.mkdir()
+    assert not video._intro_step(db.one("SELECT * FROM jobs WHERE id=?", (job_id,)), Runtime(), manifest, work)
+    assert not video._intro_step(db.one("SELECT * FROM jobs WHERE id=?", (job_id,)), Runtime(), manifest, work)
+    job = db.one("SELECT * FROM jobs WHERE id=?", (job_id,))
+    assert video._intro_step(job, Runtime(), manifest, work)
+    assert job["checkpoint"]["intro_frames"] == 48000
+    assert job["checkpoint"]["intro_transcript"] == title
+    tracks, _, duration = video._captions([
+        {"frames": 48000, "english": title, "japanese": manifest["intro"]["japanese"]},
+        {"frames": 24000, "english": "The first idea.", "japanese": "最初の考えです。"},
+    ])
+    assert duration == 3
+    assert "00:00:00,000 --> 00:00:02,000" in tracks["en"]
+    assert "00:00:02,000 --> 00:00:03,000" in tracks["ja"]
 
 
 def test_chapter_exports_are_idempotent_and_complete_video_waits_for_every_chapter(database, monkeypatch):

@@ -58,6 +58,33 @@ function Badge({
 }) {
   return <span className={`badge ${state}`}>{children}</span>;
 }
+
+function suggestedVideoTitle(paperTitle: string, chapterNumber?: number) {
+  const suffix = chapterNumber === undefined ? " — 全章" : ` — 第${chapterNumber}章`;
+  const title = paperTitle.replace(/\s+/g, " ").trim() || "Paper lesson";
+  const limit = 100 - Array.from(suffix).length;
+  const characters = Array.from(title);
+  return (characters.length > limit
+    ? characters.slice(0, limit - 1).join("").trimEnd() + "…"
+    : title) + suffix;
+}
+
+function VideoTitleSuggestion({ title, onError }: { title: string; onError: (message: string) => void }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => setCopied(false), [title]);
+  return <div className="video-title-suggestion">
+    <label>推奨タイトル（YouTube用）<textarea value={title} rows={2} readOnly onFocus={(event) => event.currentTarget.select()} /></label>
+    <button className="secondary" onClick={async () => {
+      try {
+        await navigator.clipboard.writeText(title);
+        setCopied(true);
+      } catch {
+        onError("Could not copy the title. Select the title and copy it manually.");
+      }
+    }}>{copied ? "コピーしました" : "タイトルをコピー"}</button>
+  </div>;
+}
+
 function App() {
   const [signed, setSigned] = useState(false),
     [checking, setChecking] = useState(true);
@@ -1352,9 +1379,12 @@ function Learn({
   const earlierVisual = turns.slice(0, index).reverse().find((t: any) => t.visual)?.visual;
   const visualCue = turn?.visual || (earlierVisual ? {key: earlierVisual.key, focus: []} : null);
   const ready = chapter?.state === "ready";
-  const currentVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "chapter" && v.chapter_id === chapterId);
+  const chapterVideos = (lesson?.videos as Row[] || []).filter((v) => v.kind === "chapter" && v.chapter_id === chapterId);
+  const currentVideo = chapterVideos.find((v) => v.state === "ready") || chapterVideos[0];
   const readyChapterVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "chapter" && v.state === "ready");
-  const completeVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "full");
+  const readyChapterNumber = readyChapterVideo ? (lesson?.chapters.findIndex((c: Row) => c.id === readyChapterVideo.chapter_id) ?? -1) + 1 : 0;
+  const completeVideos = (lesson?.videos as Row[] || []).filter((v) => v.kind === "full");
+  const completeVideo = completeVideos.find((v) => v.state === "ready") || completeVideos[0];
   const japanese = (key: string, english?: string) => {
     const item = chapter?.data.translation?.items?.[key];
     return item?.english === english ? item.japanese as string : null;
@@ -1612,11 +1642,17 @@ function Learn({
           {completeVideo?.upload_job && !completeVideo?.data.youtube?.url && <p className="subtle">{completeVideo.upload_job.stage}{completeVideo.upload_job.error ? ` · ${completeVideo.upload_job.error}` : ""}</p>}
           {completeVideo?.upload_job?.state === "failed" && <button className="secondary" onClick={() => post(`/jobs/${completeVideo.upload_job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry YouTube upload · アップロード再試行</button>}
         </div>
-        {completeVideo?.state === "ready" ? <div className="video-links">
-          <a className="primary" href={fileUrl(completeVideo.data.mp4)} download>Download complete MP4 · 全章動画</a>
-          <a href={fileUrl(completeVideo.data.en_srt)} download>English SRT</a>
-          <a href={fileUrl(completeVideo.data.ja_srt)} download>日本語 SRT</a>
-        </div> : completeVideo?.job?.state === "failed" ? <button className="secondary" onClick={() => post(`/jobs/${completeVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry complete video · 全章動画を再試行</button> : readyChapterVideo ? <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
+        {completeVideo?.state === "ready" ? <div className="video-download-panel">
+          <VideoTitleSuggestion title={suggestedVideoTitle(lesson.paper.title)} onError={onError} />
+          <div className="video-links">
+            <a className="primary" href={fileUrl(completeVideo.data.mp4)} download>Download complete MP4 · 全章動画</a>
+            <a href={fileUrl(completeVideo.data.en_srt)} download>English SRT</a>
+            <a href={fileUrl(completeVideo.data.ja_srt)} download>日本語 SRT</a>
+          </div>
+        </div> : completeVideo?.job?.state === "failed" ? <button className="secondary" onClick={() => post(`/jobs/${completeVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry complete video · 全章動画を再試行</button> : readyChapterVideo && readyChapterNumber > 0 ? <div className="video-download-panel">
+          <VideoTitleSuggestion title={suggestedVideoTitle(lesson.paper.title, readyChapterNumber)} onError={onError} />
+          <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div>
+        </div> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
       </section>}
       {['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/retry`).then(refresh).catch(e=>onError(e.message))}>Resume preparation</button></div>}
       {!lesson.chapters.length ? (
@@ -1661,6 +1697,7 @@ function Learn({
               <h2>{chapter?.data.title}</h2>
               <p>{chapter?.data.focus}</p>
               {currentVideo?.state === "ready" && <div className="chapter-video-links">
+                <VideoTitleSuggestion title={suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)} onError={onError} />
                 <a className="secondary" href={fileUrl(currentVideo.data.mp4)} download>Download chapter MP4 · この章の動画</a>
                 <a href={fileUrl(currentVideo.data.en_srt)} download>English SRT</a>
                 <a href={fileUrl(currentVideo.data.ja_srt)} download>日本語 SRT</a>

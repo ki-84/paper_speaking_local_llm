@@ -25,6 +25,14 @@ if (asset?.image_path) {
 const kind = !asset ? "Paper conversation · 論文の会話" : asset.kind === "original"
   ? `${esc(asset.label)} · Original paper figure · 論文の原図 · p.${esc(asset.page)}`
   : asset.kind === "example" ? "Hypothetical example · 仮の例" : "Teaching diagram · 説明用の補助図";
+const paperSize = Array.from(scene.paper_title || "").length > 90 ? 58 : 76;
+const titleCard = `<main class="title-page"><div class="intro-meta"><span>PaperSpeak</span><span>CHAPTER ${Number(scene.ordinal)+1} / 第${Number(scene.ordinal)+1}章</span></div>
+<div class="intro-copy"><div class="intro-kicker">A PAPER, EXPLAINED IN CONVERSATION · 会話で論文を学ぶ</div>
+<h1 style="font-size:${paperSize}px">${esc(scene.paper_title)}</h1><div class="intro-rule"></div>
+<h2>${esc(scene.chapter_title_en)}</h2><p lang="ja">${esc(scene.chapter_title_ja)}</p></div></main><footer class="captions"></footer>`;
+const lessonSlide = `<header class="top"><div class="titles"><h1>${esc(scene.chapter_title_en)}</h1><p lang="ja">${esc(scene.chapter_title_ja)}</p></div><div class="chapter-number">Chapter ${Number(scene.ordinal)+1}</div></header>
+<main class="figure-zone"><div class="kind">${kind}</div><div class="figure-content">${image || `<div class="empty">${esc(scene.paper_title)}</div>`}
+${asset ? `<aside class="description"><h2>${esc(asset.title_en)}</h2><p class="ja-title" lang="ja">${esc(asset.title_ja)}</p><p>${esc(asset.description_en)}</p><p class="ja-desc" lang="ja">${esc(asset.description_ja)}</p>${(scene.focus || []).map(id => (asset.regions || []).find(r => r.id === id)).filter(Boolean).map(r => `<div class="focus-label">${esc(r.label_en)}<br /><span lang="ja">${esc(r.label_ja)}</span></div>`).join("")}</aside>` : ""}</div></main><footer class="captions"></footer>`;
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8" /><style>
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
 body{background:#f1f3e9;color:#183630;font-family:"Noto Sans CJK JP","Noto Sans",sans-serif}
@@ -50,9 +58,16 @@ body{background:#f1f3e9;color:#183630;font-family:"Noto Sans CJK JP","Noto Sans"
 .captions{height:270px;background:#122e2c;position:relative;border-top:7px solid #d99550}
 .captions:before{content:"ENGLISH / 日本語";position:absolute;left:70px;top:12px;color:#a9c7b8;font-size:17px;letter-spacing:.09em}
 .captions:after{content:"PaperSpeak";position:absolute;right:70px;bottom:16px;color:#76998c;font-size:16px;letter-spacing:.1em}
-</style></head><body><header class="top"><div class="titles"><h1>${esc(scene.chapter_title_en)}</h1><p lang="ja">${esc(scene.chapter_title_ja)}</p></div><div class="chapter-number">Chapter ${Number(scene.ordinal)+1}</div></header>
-<main class="figure-zone"><div class="kind">${kind}</div><div class="figure-content">${image || `<div class="empty">${esc(scene.paper_title)}</div>`}
-${asset ? `<aside class="description"><h2>${esc(asset.title_en)}</h2><p class="ja-title" lang="ja">${esc(asset.title_ja)}</p><p>${esc(asset.description_en)}</p><p class="ja-desc" lang="ja">${esc(asset.description_ja)}</p>${(scene.focus || []).map(id => (asset.regions || []).find(r => r.id === id)).filter(Boolean).map(r => `<div class="focus-label">${esc(r.label_en)}<br /><span lang="ja">${esc(r.label_ja)}</span></div>`).join("")}</aside>` : ""}</div></main><footer class="captions"></footer></body></html>`;
+.title-page{height:810px;padding:58px 100px 55px;background:radial-gradient(circle at 93% 9%,#64857477 0 0.5%,transparent 35%),linear-gradient(135deg,#e9f0df,#f8f7ee 58%,#e4eade);position:relative;overflow:hidden}
+.title-page:after{content:"";position:absolute;width:640px;height:640px;border:3px solid #8aab8b66;border-radius:50%;right:-200px;top:230px;box-shadow:0 0 0 55px #8aab8b22,0 0 0 115px #8aab8b17;pointer-events:none}
+.intro-meta{display:flex;justify-content:space-between;align-items:center;font-size:23px;font-weight:700;letter-spacing:.15em;color:#315c4d}
+.intro-copy{position:relative;z-index:1;max-width:1570px;margin-top:100px}
+.intro-kicker{font-size:22px;font-weight:700;letter-spacing:.1em;color:#547d66}
+.intro-copy h1{max-width:1550px;margin:24px 0 18px;line-height:1.15;letter-spacing:-.03em;color:#123b34;overflow-wrap:anywhere}
+.intro-rule{width:135px;height:7px;background:#d29148;border-radius:5px;margin:36px 0 28px}
+.intro-copy h2{font-size:43px;line-height:1.25;margin:0 0 10px;color:#24483e}
+.intro-copy p{font-size:30px;line-height:1.25;margin:0;color:#557361}
+</style></head><body>${scene.title_card ? titleCard : lessonSlide}</body></html>`;
 const browser = await chromium.launch({headless:true});
 try {
   const page = await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});

@@ -10,11 +10,12 @@ import wave
 
 import imageio_ffmpeg
 
-from . import config, db, translation, visuals, youtube
+from . import config, db, translation, visuals, voices, youtube
+from .quality import QualityHold, speech_match
 from .runtime import PracticePreempted
 
 log = logging.getLogger(__name__)
-VERSION = "visual-video-1"
+VERSION = "visual-video-2"
 SIZE = (1920, 1080)
 FPS = 30
 
@@ -73,11 +74,17 @@ def chapter_manifest(chapter, lesson):
         })
     if not turns:
         raise ValueError("The chapter has no spoken sentences.")
+    paper_title = lesson["data"]["title"]
+    intro_line = f"Today, we will study the paper titled {paper_title}. Let's begin."
     return {
         "version": VERSION, "lesson_id": lesson["id"], "chapter_id": chapter["id"],
-        "ordinal": chapter["ordinal"], "paper_title": lesson["data"]["title"],
+        "ordinal": chapter["ordinal"], "paper_title": paper_title,
         "chapter_title_en": chapter["data"]["title"],
         "chapter_title_ja": translation.translated(chapter, "title", chapter["data"]["title"]),
+        "intro": {"english": intro_line,
+                  "caption_en": f"Today, we will study the paper titled\n{paper_title}. Let's begin.",
+                  "japanese": f"今日は論文「{paper_title}」を学びます。",
+                  "voice": voices.HOST_VOICE, "tts_revision": config.manifest()["models"]["tts"]["revision"]},
         "assets": {key: {"kind": asset["kind"], **{k: asset["data"].get(k)
             for k in ("image_path", "sha256", "label", "page", "title_en", "title_ja",
                       "description_en", "description_ja", "regions", "source_ids")}}
@@ -222,15 +229,72 @@ def _ffmpeg(args, runtime, partial):
             raise
 
 
+def _intro_step(job, runtime, manifest, work):
+    """Generate and independently check the spoken title before encoding."""
+    checkpoint = job["checkpoint"]
+    path = work / "title.wav"
+    intro = manifest["intro"]
+    if not checkpoint.get("intro_audio_ready") or not path.is_file():
+        attempt = checkpoint.get("intro_attempts", 0)
+        seed = (int(digest([intro["english"], intro["tts_revision"]])[:8], 16) + attempt) % (2**31)
+        partial = work / "title.partial.wav"
+        partial.unlink(missing_ok=True)
+        try:
+            result = runtime.speech("tts", {"text": intro["english"], "voice": intro["voice"],
+                                            "seed": seed, "output": str(partial)})
+            frames = _duration_frames(partial)
+            if frames < 24000:
+                raise ValueError("The spoken title is too short.")
+            partial.replace(path)
+        finally:
+            partial.unlink(missing_ok=True)
+        checkpoint = checkpoint | {"intro_audio_ready": True, "intro_audio_verified": False,
+                                   "intro_frames": frames, "intro_tts_settings": result.get("generation_settings", {})}
+        db.patch_job(job["id"], stage=f"Speaking the title of chapter {manifest['ordinal'] + 1}",
+                     progress=0.05, checkpoint=checkpoint)
+        return False
+    if not checkpoint.get("intro_audio_verified"):
+        result = runtime.speech("asr", {"audio": str(path), "context": manifest["paper_title"]})
+        diff, acceptable = speech_match(intro["english"], result["text"])
+        if not acceptable:
+            attempts = checkpoint.get("intro_attempts", 0) + 1
+            path.unlink(missing_ok=True)
+            checkpoint = checkpoint | {"intro_attempts": attempts, "intro_audio_ready": False,
+                                       "intro_transcript": result["text"], "intro_wer": diff["wer"]}
+            db.patch_job(job["id"], stage="Trying the spoken title again", progress=0.05,
+                         checkpoint=checkpoint)
+            if attempts >= 3:
+                raise QualityHold("The spoken paper title did not match the script after three attempts.")
+            return False
+        checkpoint = checkpoint | {"intro_audio_verified": True, "intro_transcript": result["text"],
+                                   "intro_wer": diff["wer"],
+                                   "intro_asr_settings": result.get("generation_settings", {})}
+        db.patch_job(job["id"], stage="Spoken paper title checked", progress=0.1,
+                     checkpoint=checkpoint)
+        return False
+    return True
+
+
 def _chapter_step(job, runtime, export):
     manifest = export["data"]["manifest"]
-    turns, assets = manifest["turns"], manifest["assets"]
     work = _work(export)
+    if not _intro_step(job, runtime, manifest, work):
+        return False
+    checkpoint = db.one("SELECT checkpoint FROM jobs WHERE id=?", (job["id"],))["checkpoint"]
+    intro_turn = {"id": "title", "speaker": "host", "english": manifest["intro"]["caption_en"],
+                  "japanese": manifest["intro"]["japanese"],
+                  "audio": str((work / "title.wav").relative_to(config.DATA)),
+                  "frames": checkpoint["intro_frames"], "title_card": True}
+    turns, assets = [intro_turn, *manifest["turns"]], manifest["assets"]
     scenes = {}
     for turn in turns:
-        key = digest([turn["visual_key"], turn["focus"]])[:16]
-        turn["scene"] = key
-        scenes.setdefault(key, {"asset": assets.get(turn["visual_key"]), "focus": turn["focus"]})
+        if turn.get("title_card"):
+            turn["scene"] = "title-card"
+            scenes.setdefault("title-card", {"title_card": True, "asset": None, "focus": []})
+        else:
+            key = digest([turn["visual_key"], turn["focus"]])[:16]
+            turn["scene"] = key
+            scenes.setdefault(key, {"asset": assets.get(turn["visual_key"]), "focus": turn["focus"]})
     scene_items = list(scenes.items())
     index = job["checkpoint"].get("scene_index", 0)
     if index < len(scene_items):
@@ -293,6 +357,11 @@ def _chapter_step(job, runtime, export):
     _set_export(export, "ready", **{name: str(path.relative_to(config.DATA)) for name, path in paths.items()},
                 duration=duration, media_duration=actual_duration, bytes=paths["mp4"].stat().st_size,
                 sha256=file_digest(paths["mp4"]),
+                title_narration={"text": manifest["intro"]["english"],
+                                 "transcript": checkpoint["intro_transcript"],
+                                 "duration": checkpoint["intro_frames"] / 24000,
+                                 "tts_settings": checkpoint.get("intro_tts_settings", {}),
+                                 "asr_settings": checkpoint.get("intro_asr_settings", {})},
                 encoder=imageio_ffmpeg.get_ffmpeg_version())
     db.patch_job(job["id"], stage=f"Chapter {manifest['ordinal'] + 1} video ready", progress=1)
     return True

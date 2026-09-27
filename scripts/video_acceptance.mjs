@@ -29,9 +29,21 @@ try {
   const lesson = await (await context.request.get(`${base}/api/lessons/${id}`)).json();
   const video = lesson.videos.find(v => v.kind === 'chapter' && v.state === 'ready');
   if (!video) throw new Error('A completed chapter video is needed.');
+  const openingEn = await (await context.request.get(`${base}/api/files/${video.data.en_srt}`)).text();
+  const openingJa = await (await context.request.get(`${base}/api/files/${video.data.ja_srt}`)).text();
+  if (!openingEn.split('\n\n')[0].includes('paper titled') || !openingJa.split('\n\n')[0].includes('論文'))
+    throw new Error('The spoken opening title needs matching English and Japanese captions.');
+  report.checks.spoken_title_has_bilingual_captions = true;
   await page.locator(`[data-lesson-id="${id}"]`).click();
   const panel = page.getByRole('region',{name:'YouTube video export'});
   await expect(panel).toBeVisible();
+  const chapter = lesson.chapters.find(c => c.id === video.chapter_id);
+  const suggestedTitle = `${lesson.paper.title} — 第${chapter.ordinal + 1}章`;
+  await expect(panel.getByLabel('推奨タイトル（YouTube用）')).toHaveValue(suggestedTitle);
+  await context.grantPermissions(['clipboard-read','clipboard-write'], {origin:new URL(base).origin});
+  await panel.getByRole('button',{name:'タイトルをコピー'}).click();
+  if (await page.evaluate(() => navigator.clipboard.readText()) !== suggestedTitle)
+    throw new Error('The suggested YouTube title did not copy.');
   const firstDownload = panel.getByRole('link',{name:/Download first MP4/});
   await expect(firstDownload).toBeVisible();
   if (await firstDownload.getAttribute('href') !== '/api/files/' + video.data.mp4)

@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-09-27T11:08:02Z",
+  "generated_at": "2026-09-27T11:58:50+00:00",
   "lesson_id": "78a5f0a45b614188a9acfed52ccb1b83",
   "scope": "Real LoRA visual lesson, one ready chapter; complete-lesson and live YouTube upload remain pending",
   "chapter_count": 41,
   "ready_chapters": 1,
   "chapter_video": {
-    "export_id": "145e4acc8a4b4d2e93519665ba290593",
+    "export_id": "8cdf878df1134bdfb676a594637c96d6",
     "state": "ready",
-    "duration_seconds": 496.0,
+    "duration_seconds": 503.12,
     "resolution": [
       1920,
       1080
@@ -15,37 +15,47 @@
     "fps": 30,
     "video_codec": "H.264 High/yuv420p",
     "audio_codec": "AAC-LC/48kHz stereo",
-    "bytes": 147812636,
-    "sha256": "f08e5deaccf2d4b99298c1381b8874a27f3d7d933d7ad72f505ce51d189e7f5a",
-    "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-157d460a0b65.mp4",
-    "english_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-157d460a0b65.en.srt",
-    "japanese_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-157d460a0b65.ja.srt",
+    "bytes": 150227963,
+    "sha256": "1a0324e2e2d8027cacc1298caa654b18e67bb11306fe7a3d34cb419684eacd7a",
+    "mp4": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-3c9c1895215e.mp4",
+    "english_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-3c9c1895215e.en.srt",
+    "japanese_srt": "videos/78a5f0a45b614188a9acfed52ccb1b83/chapter-01-3c9c1895215e.ja.srt",
     "burned_captions": [
       "English",
       "Japanese"
     ],
-    "checked_sentences": 126,
+    "checked_sentences": 127,
+    "title_narration": {
+      "spoken_english": "Today, we will study the paper titled LoRA: Low-Rank Adaptation of Large Language Models. Let's begin.",
+      "recognized_english": "Today we will study the paper titled LoRA, Low-Rank Adaptation of Large Language Models. Let's begin.",
+      "asr_word_error_rate": 0.0,
+      "duration_seconds": 7.12
+    },
     "figure_transitions": [
       {
-        "seconds": 0.0,
+        "seconds": 0,
+        "visual": "title card"
+      },
+      {
+        "seconds": 7.12,
         "visual": "V3"
       },
       {
-        "seconds": 268.16,
+        "seconds": 275.28,
         "visual": "V1"
       },
       {
-        "seconds": 367.76,
+        "seconds": 374.88,
         "visual": "V2"
       }
     ]
   },
   "checks": {
-    "python_tests": "128 passed (video, simulated upload and preemption, backup/restore, bilingual repair)",
+    "python_tests": "129 passed (including checked title narration and video export)",
     "playwright_fixture": "8 passed",
-    "real_lan_browser": "passed: 206 range download, 496 s duration, 1920x1080 decode, no external browser requests",
-    "video_frames": "visually checked intro teaching diagram, Figure 1, Figure 2 with matching bilingual burned captions",
-    "full_join": "synthetic two-chapter join and SRT offsets passed",
+    "real_lan_browser": "passed: title recommendation copy, bilingual intro SRT, 206 range download, 503.12 s duration, 1920x1080 decode, no external browser requests",
+    "video_frames": "visually checked title card with burned two-line English and Japanese captions and first teaching diagram",
+    "full_join": "synthetic two-chapter join and SRT offsets passed; real complete lesson still pending",
     "youtube_upload": "mocked private resumable upload and duplicate prevention passed; no Google account connected"
   },
   "daily_discovery_enabled": false,

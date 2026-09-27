@@ -1191,6 +1191,12 @@ footer > span:first-child {
   max-width: min(100%, 290px);
   padding: 7px;
 }
+.mic-message {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  line-height: 1.45;
+}
 .mic-signal {
   display: flex;
   flex-direction: column;

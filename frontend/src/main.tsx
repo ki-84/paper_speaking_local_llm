@@ -42,6 +42,18 @@ import "./style.css";
 import { VisualPanel } from "./VisualPanel";
 
 type Page = "library" | "discover" | "review" | "jobs" | "settings" | "learn";
+function microphoneError(error: unknown, selectedMic = "") {
+  const reason = error instanceof Error ? error.name : "";
+  if (reason === "NotAllowedError" || reason === "PermissionDeniedError")
+    return "Microphone access is blocked. Allow it in Chrome's site settings and Mac Settings → Privacy & Security → Microphone.";
+  if (reason === "NotFoundError" || reason === "OverconstrainedError")
+    return selectedMic
+      ? "The selected microphone is unavailable. Choose System default or another microphone."
+      : "Chrome found no usable system microphone. Check Mac Settings → Sound → Input, then click Refresh microphones here.";
+  if (reason === "NotReadableError" || reason === "TrackStartError")
+    return "Chrome cannot read this microphone. Close other apps using it, or choose another microphone.";
+  return error instanceof Error ? error.message : "Chrome could not start the microphone.";
+}
 const tabs: [Page, string, typeof BookOpen][] = [
   ["library", "My library", BookOpen],
   ["discover", "論文を探す", Compass],
@@ -1192,6 +1204,7 @@ function Learn({
     [micDevices, setMicDevices] = useState<MediaDeviceInfo[]>([]),
     [selectedMic, setSelectedMic] = useState(() => localStorage.getItem("paperspeak-microphone") || ""),
     [activeMic, setActiveMic] = useState(""),
+    [micMessage, setMicMessage] = useState(""),
     [pending, setPending] = useState<any>(null),
     [question, setQuestion] = useState<any>(null),
     [hint, setHint] = useState(0);
@@ -1220,10 +1233,17 @@ function Learn({
     meterContext = useRef<AudioContext | null>(null),
     stream = useRef<MediaStream | null>(null),
     initialized = useRef("");
+  const refreshMicDevices = async () => {
+    const devices = await navigator.mediaDevices?.enumerateDevices();
+    const inputs = (devices || []).filter((device) => device.kind === "audioinput" && device.deviceId && device.deviceId !== "default");
+    setMicDevices(inputs);
+    return inputs;
+  };
   useEffect(() => {
-    navigator.mediaDevices?.enumerateDevices()
-      .then((devices) => setMicDevices(devices.filter((device) => device.kind === "audioinput" && device.deviceId && device.deviceId !== "default")))
-      .catch(() => {});
+    refreshMicDevices().catch(() => {});
+    const changed = () => { refreshMicDevices().catch(() => {}); };
+    navigator.mediaDevices?.addEventListener?.("devicechange", changed);
+    return () => navigator.mediaDevices?.removeEventListener?.("devicechange", changed);
   }, []);
   const stopMeter = () => {
     if (meterTimer.current) clearInterval(meterTimer.current);
@@ -1239,20 +1259,34 @@ function Learn({
     setTestingMic(false);
   };
   const openMic = async () => {
-    const s = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        deviceId: selectedMic ? { exact: selectedMic } : undefined,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-    });
+    const audioOptions = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    };
+    let s: MediaStream;
+    try {
+      s = await navigator.mediaDevices.getUserMedia({
+        audio: selectedMic ? { ...audioOptions, deviceId: { exact: selectedMic } } : audioOptions,
+      });
+      setMicMessage("");
+    } catch (error) {
+      const reason = error instanceof Error ? error.name : "";
+      if (!selectedMic || !["NotFoundError", "OverconstrainedError"].includes(reason)) throw error;
+      // Chrome may rotate device IDs after a permission or certificate change.
+      localStorage.removeItem("paperspeak-microphone");
+      setSelectedMic("");
+      s = await navigator.mediaDevices.getUserMedia({ audio: audioOptions });
+      setMicMessage("Your saved microphone was unavailable. Using the system default microphone.");
+    }
     stream.current = s;
     const track = s.getAudioTracks()[0];
+    if (!track) {
+      s.getTracks().forEach((item) => item.stop());
+      throw new Error("Chrome opened the microphone without an audio track. Choose another microphone.");
+    }
     setActiveMic(track?.label || "Microphone");
-    navigator.mediaDevices.enumerateDevices()
-      .then((devices) => setMicDevices(devices.filter((device) => device.kind === "audioinput" && device.deviceId && device.deviceId !== "default")))
-      .catch(() => {});
+    refreshMicDevices().catch(() => {});
     try {
       const context = new AudioContext();
       meterContext.current = context;
@@ -1280,17 +1314,22 @@ function Learn({
     }
     if (requestingMic || recording || sending) return;
     if (!navigator.mediaDevices?.getUserMedia) {
-      onError("Open the secure HTTPS address and trust the studio certificate to use your microphone.");
+      const message = "Open the secure HTTPS address and trust the studio certificate to use your microphone.";
+      setMicMessage(message);
+      onError(message);
       return;
     }
     stop();
     setRequestingMic(true);
+    setMicMessage("Opening microphone… Allow Chrome to use it if asked.");
     try {
       await openMic();
       setTestingMic(true);
     } catch (e) {
       releaseMic();
-      onError((e as Error).message);
+      refreshMicDevices().catch(() => {});
+      setMicMessage(microphoneError(e, selectedMic));
+      onError(microphoneError(e, selectedMic));
     } finally {
       setRequestingMic(false);
     }
@@ -1510,12 +1549,13 @@ function Learn({
     }
     stop();
     if (!navigator.mediaDevices?.getUserMedia) {
-      onError(
-        "Open the secure HTTPS address and trust the studio certificate to use your microphone.",
-      );
+      const message = "Open the secure HTTPS address and trust the studio certificate to use your microphone.";
+      setMicMessage(message);
+      onError(message);
       return;
     }
     setRequestingMic(true);
+    setMicMessage("Opening microphone… Allow Chrome to use it if asked.");
     try {
       const s = await openMic();
       const type = ["audio/webm;codecs=opus", "audio/mp4"].find((t) =>
@@ -1524,6 +1564,12 @@ function Learn({
       const r = new MediaRecorder(s, type ? { mimeType: type } : undefined);
       recorder.current = r;
       const chunks: BlobPart[] = [];
+      let recorderFailed = false;
+      r.addEventListener("error", () => {
+        recorderFailed = true;
+        setMicMessage("Recording stopped because Chrome lost the microphone. Try another microphone.");
+        if (r.state === "recording") r.stop();
+      });
       const target = {
         client_id: crypto.randomUUID(),
         chapter_id: chapterId,
@@ -1537,9 +1583,14 @@ function Learn({
         if (timer.current) clearInterval(timer.current);
         releaseMic();
         setRecording(false);
+        const blob = new Blob(chunks, { type: r.mimeType });
+        if (recorderFailed || !blob.size) {
+          setMicMessage("No audio was captured. Check the microphone input level and try again.");
+          return;
+        }
         const saved = {
           ...target,
-          blob: new Blob(chunks, { type: r.mimeType }),
+          blob,
           created: Date.now(),
         };
         setPending(saved);
@@ -1563,7 +1614,9 @@ function Learn({
       }, 250);
     } catch (e) {
       releaseMic();
-      onError((e as Error).message);
+      refreshMicDevices().catch(() => {});
+      setMicMessage(microphoneError(e, selectedMic));
+      onError(microphoneError(e, selectedMic));
     } finally {
       setRequestingMic(false);
     }
@@ -1870,11 +1923,9 @@ function Learn({
                   </button>
                   <button
                     className={`record-button ${recording ? "recording" : ""}`}
-                    disabled={
-                      requestingMic || sending || (!recording && !!pending)
-                    }
+                    disabled={requestingMic || sending}
                     onClick={() =>
-                      recording ? recorder.current?.stop() : startRecording()
+                      recording ? recorder.current?.stop() : pending ? send(pending) : startRecording()
                     }
                   >
                     {recording ? <Square size={16} /> : <Mic size={18} />}{" "}
@@ -1882,6 +1933,10 @@ function Learn({
                       ? `Done · ${minutes(seconds)}`
                       : sending
                         ? "Saving…"
+                        : requestingMic
+                          ? "Opening microphone…"
+                          : pending
+                            ? "Send saved recording"
                         : question
                           ? "Answer the question"
                           : "Your turn"}
@@ -1934,6 +1989,17 @@ function Learn({
                   >
                     {testingMic ? "Stop mic check" : "Check microphone"}
                   </button>
+                  <button
+                    className="text-button"
+                    disabled={recording || requestingMic || sending}
+                    onClick={() => refreshMicDevices()
+                      .then((inputs) => setMicMessage(inputs.length
+                        ? `${inputs.length} microphone${inputs.length === 1 ? "" : "s"} found. Choose one above and check it.`
+                        : "Chrome found no selectable microphone. Check Mac Settings → Sound → Input and Chrome's microphone permission."))
+                      .catch((error) => setMicMessage(microphoneError(error, selectedMic)))}
+                  >
+                    Refresh microphones
+                  </button>
                   {(testingMic || recording) && (
                     <div className="mic-signal" role="status">
                       <span>Input level · {activeMic}</span>
@@ -1941,6 +2007,7 @@ function Learn({
                       {micLevel === 0 && <small>Say hello. If this bar stays still, choose another mic or check Mac Sound → Input.</small>}
                     </div>
                   )}
+                  {micMessage && <p className="mic-message" role="status">{micMessage}</p>}
                 </div>
                 <div className="practice-caption">
                   <span>Listen. Say it. Listen to yourself.</span>

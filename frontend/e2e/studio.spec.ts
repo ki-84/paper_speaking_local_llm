@@ -184,11 +184,51 @@ test("failed upload stays in this browser and can be sent again", async ({
   await expect(
     page.getByText("A recording is saved in this browser.", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send saved recording" })).toBeEnabled();
   await page.unroute("**/api/attempts");
-  await page.getByRole("button", { name: "Send it now" }).click();
+  await page.getByRole("button", { name: "Send saved recording" }).click();
   await expect(
     page.getByText(
       "Your recording is saved. You can stay here while we check it.",
     ),
   ).toBeVisible();
+});
+
+test("a stale saved microphone falls back to the system default", async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem("paperspeak-microphone", "missing-device-id"));
+  await page.reload();
+  await page.getByRole("button", { name: /Interface test: a small change/ }).click();
+  await expect(page.getByRole("option", { name: "Last selected microphone" })).toHaveCount(1);
+  await page.getByRole("button", { name: "Your turn", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Done ·/ })).toBeVisible();
+  await expect(page.locator("#practice-microphone")).toHaveValue("");
+  await expect(page.getByText("Your saved microphone was unavailable. Using the system default microphone.")).toBeVisible();
+  await page.waitForTimeout(1200);
+  await page.getByRole("button", { name: /Done ·/ }).click();
+});
+
+test("a denied microphone gives a visible instruction beside the controls", async ({ page }) => {
+  await page.evaluate(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      throw new DOMException("Denied", "NotAllowedError");
+    };
+  });
+  await page.getByRole("button", { name: "Your turn", exact: true }).click();
+  await expect(page.locator(".mic-message")).toContainText("Microphone access is blocked");
+  await expect(page.getByRole("button", { name: "Your turn", exact: true })).toBeEnabled();
+});
+
+test("a missing system microphone explains the problem and refreshes connected devices", async ({ page }) => {
+  await page.evaluate(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      throw new DOMException("No device", "NotFoundError");
+    };
+    navigator.mediaDevices.enumerateDevices = async () => [{
+      kind: "audioinput", deviceId: "connected-device", label: "Connected microphone",
+    } as MediaDeviceInfo];
+  });
+  await page.getByRole("button", { name: "Check microphone" }).click();
+  await expect(page.locator(".mic-message")).toContainText("Chrome found no usable system microphone");
+  await page.getByRole("button", { name: "Refresh microphones" }).click();
+  await expect(page.getByRole("option", { name: "Connected microphone" })).toHaveCount(1);
 });

@@ -184,7 +184,8 @@ def _position(config_: dict, role: str) -> tuple[float, float, float]:
     x = (layout["avatar_inset"] if role == "guide" else
          1920 - layout["avatar_inset"] - layout["avatar_width"])
     x += (layout["avatar_width"] - layout["portrait_size"]) / 2
-    y = layout["footer_top"] + layout["avatar_top"]
+    # Absolutely positioned children start below the footer's top border.
+    y = layout["footer_top"] + layout["footer_border"] + layout["avatar_top"]
     return x, y, layout["portrait_size"] / 64
 
 

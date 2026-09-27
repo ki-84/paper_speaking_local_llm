@@ -32,7 +32,7 @@ def test_burned_subtitles_and_download_tracks_follow_exact_voice_frames():
     assert "Style: English" in ass and "Style: Japanese" in ass
 
 
-def test_speaker_change_adds_one_second_of_silence_without_subtitles(database):
+def test_every_sentence_pair_has_one_second_without_subtitles(database):
     turns = [
         {"speaker":"host", "scene":"title", "frames":24000, "english":"Paper title.", "japanese":"論文の題名。"},
         {"speaker":"host", "scene":"figure-a", "frames":24000, "english":"Look here.", "japanese":"ここを見てください。"},
@@ -41,14 +41,18 @@ def test_speaker_change_adds_one_second_of_silence_without_subtitles(database):
     ]
     silence = video._silence_file(database / "jobs")
     timeline = video._speaker_timeline(turns, silence)
-    assert [turn.get("silence", False) for turn in timeline] == [False,False,True,False,True,False]
-    assert [turn["scene"] for turn in timeline if turn.get("silence")] == ["figure-a","figure-b"]
+    assert [turn.get("silence", False) for turn in timeline] == [False,True,False,True,False,True,False]
+    assert [turn["scene"] for turn in timeline if turn.get("silence")] == ["title","figure-a","figure-b"]
+    assert [turn["pause_kind"] for turn in timeline if turn.get("silence")] == [
+        "same_speaker", "speaker_change", "speaker_change"]
     assert video._duration_frames(config.safe_path(silence)) == 24000
     subtitles, ass, duration = video._captions(timeline)
-    assert duration == 6
-    assert "00:00:03,000 --> 00:00:04,000" in subtitles["en"]
-    assert "00:00:05,000 --> 00:00:06,000" in subtitles["ja"]
-    assert "00:00:02,000 --> 00:00:03,000" not in subtitles["en"]
+    assert duration == 7
+    assert "00:00:02,000 --> 00:00:03,000" in subtitles["en"]
+    assert "00:00:04,000 --> 00:00:05,000" in subtitles["ja"]
+    assert "00:00:06,000 --> 00:00:07,000" in subtitles["en"]
+    assert "00:00:01,000 --> 00:00:02,000" not in subtitles["en"]
+    assert "00:00:03,000 --> 00:00:04,000" not in subtitles["ja"]
     assert ass.count("Dialogue:") == 8
 
 
@@ -89,6 +93,32 @@ def test_wav_lip_sync_closes_during_pauses_and_only_marks_the_speaker(database):
     assert all(float(event.split(",")[1].rsplit(":", 1)[1]) >= .90 for event in events)
     host_events = video_overlay.mouth_events("host", path, 72000, 0, config_)
     assert events[0] != host_events[0]
+
+
+def test_animated_mouth_is_on_the_sprites_lip_pixels(tmp_path, monkeypatch):
+    import re
+
+    import numpy as np
+
+    scene = tmp_path / "scene.json"
+    scene.write_text(db.dumps({"title_card": True, "paper_title": "A paper",
+                               "chapter_title_en": "A chapter", "chapter_title_ja": "章", "ordinal": 0}))
+    png = tmp_path / "characters.png"
+    video._render_slide(scene, png, tmp_path / "characters.partial.png")
+    decoded = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-hide_banner", "-loglevel", "error",
+                              "-i", str(png), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                             check=True, capture_output=True, timeout=30).stdout
+    pixels = np.frombuffer(decoded, dtype=np.uint8).reshape(1080, 1920, 3)
+    config_ = video_overlay.character_manifest()["layout"]
+    monkeypatch.setattr(video_overlay, "mouth_states", lambda *_: [(0, 24000, 2)])
+    for role, color in (("guide", (186, 114, 95)), ("host", (140, 85, 70))):
+        x, y, scale = video_overlay._position(config_, role)
+        lip_x, lip_y = round(x + 32 * scale), round(y + 38 * scale)
+        assert tuple(pixels[lip_y, lip_x]) == color
+        dark_event = video_overlay.mouth_events(role, png, 24000, 0, config_)[1]
+        match = re.search(r"\\pos\((\d+),(\d+)\)", dark_event)
+        assert match and abs(int(match[2]) - lip_y) <= 1
+        assert abs(int(match[1]) - round(x + 29 * scale)) <= 1
 
 
 def test_transient_chromium_capture_retries_without_leaving_partial_file(tmp_path, monkeypatch):

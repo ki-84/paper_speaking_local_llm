@@ -2,6 +2,7 @@
   "version": 1,
   "layout": {
     "footer_top": 810,
+    "footer_border": 7,
     "avatar_top": 10,
     "avatar_width": 225,
     "avatar_height": 245,

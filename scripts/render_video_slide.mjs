@@ -63,7 +63,7 @@ body{background:#f1f3e9;color:#183630;font-family:"Noto Sans CJK JP","Noto Sans"
 .description .ja-desc{color:#527065}
 .focus-label{padding:12px 15px;border-left:6px solid #e88328;background:#fff8e8;font-size:21px;color:#5a3921}
 .empty{font-family:Georgia,serif;font-size:72px;font-style:italic;color:#527065}
-.captions{height:270px;background:#122e2c;position:relative;border-top:7px solid #d99550}
+.captions{height:270px;background:#122e2c;position:relative;border-top:${Number(characters.layout.footer_border)}px solid #d99550}
 .avatar{position:absolute;top:10px;width:225px;height:245px;text-align:center;z-index:2}
 .avatar.left{left:34px}.avatar.right{right:34px}
 .avatar img{display:block;width:210px;height:210px;margin:0 auto;image-rendering:pixelated}

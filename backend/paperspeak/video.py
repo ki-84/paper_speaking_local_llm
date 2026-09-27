@@ -16,10 +16,11 @@ from .quality import QualityHold, speech_match
 from .runtime import PracticePreempted
 
 log = logging.getLogger(__name__)
-VERSION = "visual-video-5"
+VERSION = "visual-video-6"
 SIZE = (1920, 1080)
 FPS = 30
 SPEAKER_GAP_FRAMES = 24000
+SAME_SPEAKER_GAP_FRAMES = 24000
 ENCODE = {"video_codec": "libx264", "preset": "medium", "crf": 21,
           "gop_frames": 120, "b_frames": 3, "audio_codec": "aac", "audio_bitrate": "128k"}
 
@@ -112,7 +113,8 @@ def chapter_manifest(chapter, lesson):
             for key, asset in assets.items()},
         "turns": turns, "format": {"width": SIZE[0], "height": SIZE[1], "fps": FPS,
             "video": "H.264 High yuv420p", "audio": "AAC-LC stereo 48 kHz", "encode": ENCODE,
-            "speaker_gap_frames": SPEAKER_GAP_FRAMES},
+            "speaker_gap_frames": SPEAKER_GAP_FRAMES,
+            "same_speaker_gap_frames": SAME_SPEAKER_GAP_FRAMES},
         "characters": video_overlay.character_manifest(),
         "models_used": lesson["data"].get("models_used", {}),
     }
@@ -256,22 +258,26 @@ def _quote(path):
 
 
 def _speaker_timeline(turns, silence_path):
-    """Keep the previous figure on screen during each one-second speaker change."""
+    """Leave one second between every pair of sentences, keeping the previous figure."""
     timeline = []
     previous = None
     for turn in turns:
-        if previous and previous["speaker"] != turn["speaker"]:
-            timeline.append({"frames": SPEAKER_GAP_FRAMES, "audio": silence_path,
-                             "scene": previous["scene"], "silence": True})
+        if previous:
+            changed = previous["speaker"] != turn["speaker"]
+            timeline.append({"frames": SPEAKER_GAP_FRAMES if changed else SAME_SPEAKER_GAP_FRAMES,
+                             "audio": silence_path, "scene": previous["scene"],
+                             "silence": True, "pause_kind": "speaker_change" if changed else "same_speaker"})
         timeline.append(turn)
         previous = turn
     return timeline
 
 
 def _silence_file(work):
-    path = work / "speaker-gap.wav"
+    if SPEAKER_GAP_FRAMES != SAME_SPEAKER_GAP_FRAMES:
+        raise ValueError("The shared pause WAV requires equal pause lengths.")
+    path = work / "sentence-pause.wav"
     if not path.is_file() or _duration_frames(path) != SPEAKER_GAP_FRAMES:
-        partial = work / "speaker-gap.partial.wav"
+        partial = work / "sentence-pause.partial.wav"
         try:
             with wave.open(str(partial), "wb") as wav:
                 wav.setnchannels(1)

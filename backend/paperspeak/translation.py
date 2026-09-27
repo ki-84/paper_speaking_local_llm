@@ -153,7 +153,10 @@ def check_result(result, batch):
     for item in values:
         if not isinstance(item, dict):
             raise ValueError("Invalid translation item.")
-        key, japanese = item.get("id"), item.get("japanese")
+        raw_id, japanese = item.get("id"), item.get("japanese")
+        # JSON models sometimes return a numeric value for our short digit ID.
+        # Only canonical integers are equivalent to the requested string IDs.
+        key = str(raw_id) if isinstance(raw_id, (str, int)) and not isinstance(raw_id, bool) else None
         if (
             key not in expected
             or key in output
@@ -186,6 +189,7 @@ def translate_batch(chapter, lesson, runtime):
         "Translate each English item into natural, clear Japanese for an adult learning this paper. "
         "Keep the exact meaning, uncertainty, comparisons, names and written Arabic numbers. "
         "Do not add new scientific claims or explanations. Translate every item once, preserving its ID exactly. "
+        "Write each ID as a JSON string, not a number. Translate few-shot as フューショット or 少数例学習, never ファインショット. "
         "Preserve mathematical multiplication and exponents exactly: '1.75 times 10 to the 11th' means 1.75 × 10の11乗, not 1.75乗. "
         'Return {"items":[{"id":"same ID","japanese":"日本語訳"}]}.\nPREVIOUS MEANING ERRORS: '
         + json.dumps({str(i+1):chapter["data"].get("translation",{}).get("meaning_errors",{}).get(key)

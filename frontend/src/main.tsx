@@ -1622,7 +1622,7 @@ function Learn({
                   .catch((e) => onError(e.message))
               }
             >
-              {lesson.data.format !== "paper-visual-2" ? "Make a visual lesson" : "Make a new version"} <RefreshCw size={14} />
+              {lesson.data.format !== "paper-visual-2" ? "Make a visual lesson · 図付き教材を作る" : "Make a new version · 新しい版を作る"} <RefreshCw size={14} />
             </button>
           )}
         </div>
@@ -1654,7 +1654,7 @@ function Learn({
           <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download={`${readyChapterVideo.data.title || suggestedVideoTitle(lesson.paper.title, readyChapterNumber)}.mp4`}>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div>
         </div> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
       </section>}
-      {['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/retry`).then(refresh).catch(e=>onError(e.message))}>Resume preparation</button></div>}
+      {['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/retry`).then(refresh).catch(e=>onError(e.message))}>Resume preparation · 教材作成を再開</button></div>}
       {!lesson.chapters.length ? (
         <Empty
           icon={Headphones}

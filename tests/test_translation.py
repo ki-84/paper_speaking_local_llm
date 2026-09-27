@@ -184,6 +184,20 @@ def test_japanese_number_next_to_kanji_is_not_missing():
         translation.check_result(result, [("title", "Part 2")])
 
 
+def test_numeric_short_ids_are_accepted_without_loosening_number_checks():
+    batch = [("1", "Table 8"), ("2", "The model has 175B parameters.")]
+    good = {"items": [{"id": "1", "japanese": "表8"},
+                      {"id": 2, "japanese": "このモデルは1750億個のパラメータを持つ。"}]}
+    assert translation.check_result(good, batch)["2"].startswith("このモデル")
+    bad = {"items": [{"id": "1", "japanese": "表8"},
+                     {"id": 2, "japanese": "このモデルは175億個のパラメータを持つ。"}]}
+    with pytest.raises(ValueError, match="number"):
+        translation.check_result(bad, batch)
+    with pytest.raises(ValueError):
+        translation.check_result({"items": [{"id": True, "japanese": "表8"},
+                                           {"id": 2, "japanese": "1750億個"}]}, batch)
+
+
 def test_japanese_large_number_unit_must_keep_the_value():
     english = "Take GPT-3, about 175 billion parameters."
     good = {"items": [{"id": "turn", "japanese": "GPT-3は約1750億個のパラメータを使います。"}]}

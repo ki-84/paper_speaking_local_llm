@@ -52,6 +52,25 @@ def test_speaker_change_adds_one_second_of_silence_without_subtitles(database):
     assert ass.count("Dialogue:") == 8
 
 
+def test_transient_chromium_capture_retries_without_leaving_partial_file(tmp_path, monkeypatch):
+    scene = tmp_path / "scene.json"
+    scene.write_text("{}")
+    image, partial = tmp_path / "slide.png", tmp_path / "slide.partial.png"
+    calls = []
+
+    def render(*args, **kwargs):
+        calls.append(1)
+        assert not partial.exists()
+        partial.write_bytes(b"complete image" * 1000)
+        if len(calls) == 1:
+            raise subprocess.CalledProcessError(1, args[0], stderr="Capture failed")
+
+    monkeypatch.setattr(video.subprocess, "run", render)
+    monkeypatch.setattr(video.time, "sleep", lambda *_: None)
+    video._render_slide(scene, image, partial)
+    assert len(calls) == 2 and image.stat().st_size > 10000 and not partial.exists()
+
+
 def test_mp4_basename_matches_a_portable_youtube_title():
     title = video.export_title("LoRA: Low-Rank Adaptation of Large Language Models", 1)
     assert title == "LoRA - Low-Rank Adaptation of Large Language Models — 第1章"

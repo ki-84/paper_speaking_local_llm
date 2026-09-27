@@ -264,6 +264,28 @@ def _silence_file(work):
     return str(path.relative_to(config.DATA))
 
 
+def _render_slide(scene_path, image, partial):
+    """Retry a transient Chromium capture failure without restarting the lesson job."""
+    command = [str(config.ROOT / ".tools/node/bin/node"),
+               str(config.ROOT / "scripts/render_video_slide.mjs"),
+               str(scene_path), str(partial)]
+    for attempt in range(3):
+        partial.unlink(missing_ok=True)
+        try:
+            subprocess.run(command, check=True, capture_output=True, text=True, timeout=90)
+            if not partial.is_file() or partial.stat().st_size < 10000:
+                raise RuntimeError("A video figure did not render completely.")
+            partial.replace(image)
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, RuntimeError) as error:
+            partial.unlink(missing_ok=True)
+            if attempt == 2:
+                detail = getattr(error, "stderr", None) or str(error)
+                raise RuntimeError("Local slide rendering failed after three tries: " + detail[-800:]) from error
+            log.warning("Retrying video figure after Chromium capture failed (%s/3).", attempt + 1)
+            time.sleep(attempt + 1)
+
+
 def _ffmpeg(args, runtime, partial):
     command = [imageio_ffmpeg.get_ffmpeg_exe(), "-hide_banner", "-nostdin", "-y", "-loglevel", "warning", *args]
     with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True) as proc:
@@ -364,15 +386,7 @@ def _chapter_step(job, runtime, export):
                 "chapter_title_en": manifest["chapter_title_en"],
                 "chapter_title_ja": manifest["chapter_title_ja"],
                 "ordinal": manifest["ordinal"], "data_root": str(config.DATA), **scene}), encoding="utf-8")
-            try:
-                subprocess.run([str(config.ROOT / ".tools/node/bin/node"),
-                                str(config.ROOT / "scripts/render_video_slide.mjs"),
-                                str(scene_path), str(partial_image)], check=True, timeout=90)
-                if partial_image.stat().st_size < 10000:
-                    raise RuntimeError("A video figure did not render completely.")
-                partial_image.replace(image)
-            finally:
-                partial_image.unlink(missing_ok=True)
+            _render_slide(scene_path, image, partial_image)
         cp = job["checkpoint"] | {"scene_index": index + 1}
         db.patch_job(job["id"], stage=f"Drawing figure {index + 1}/{len(scene_items)} for chapter {manifest['ordinal'] + 1}",
                      progress=(index + 1) / (len(scene_items) + 2), checkpoint=cp)

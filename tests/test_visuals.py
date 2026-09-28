@@ -424,6 +424,25 @@ def test_rejected_optional_diagram_falls_back_to_checked_original(database):
     assert db.one("SELECT state FROM chapters WHERE id=?", (chapter["id"],))["state"] == "draft"
 
 
+def test_disputed_visual_sentence_is_omitted_after_local_repairs(database):
+    chapter, lesson = chapter_fixture()
+    chapter["state"] = "visual_dialogue_review"
+    chapter["data"].update(
+        turns=[{"id": "wrong", "text": "The top row is red.", "visual": None},
+               {"id": "good", "text": "The old weights stay fixed.", "visual": None}],
+        visual_dialogue_attempts=3,
+        visual_dialogue_review={"passed": False, "issues": [
+            {"turn_id": "wrong", "reason": "The row fades instead."}
+        ]},
+    )
+    db.save_chapter(chapter)
+    assert not visuals.dialogue_review_step(chapter, lesson, object())
+    saved = db.one("SELECT * FROM chapters WHERE id=?", (chapter["id"],))
+    assert saved["state"] == "review"
+    assert [t["id"] for t in saved["data"]["turns"]] == ["good"]
+    assert saved["data"]["best_effort_omissions"][0]["text"] == "The top row is red."
+
+
 def test_interrupted_repair_reuses_checkpoint_without_consuming_review_attempt(database):
     chapter, lesson = chapter_fixture()
     chapter = prepare(chapter, lesson)

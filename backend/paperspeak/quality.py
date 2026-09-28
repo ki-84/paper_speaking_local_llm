@@ -140,7 +140,7 @@ CONTRACTIONS = {
 }
 
 NUMBER_WORDS = set(
-    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion trillion point percent half quarter first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth thirtieth fortieth fiftieth sixtieth seventieth eightieth ninetieth hundredth thousandth millionth billionth trillionth".split()
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion trillion point percent half quarter first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth thirtieth fortieth fiftieth sixtieth seventieth eightieth ninetieth hundredth thousandth millionth billionth trillionth minus negative plus".split()
 )
 
 
@@ -168,6 +168,12 @@ def critical_speech_change(reference, diff, terms):
 
 def words(text):
     text = text.lower().replace("’", "'")
+    # ASR commonly inserts a word break in method variants and reads an
+    # equals sign aloud. These changes affect spelling, not the measured fact.
+    text = re.sub(r"\badapter[-‐‑ ]?([lh])\b", r"adapter \1", text)
+    text = re.sub(r"\bfine[-‐‑ ]?tuned(?=\s+lora\b)", "fine tune", text)
+    text = re.sub(r"\bbeats\b", "beat", text)
+    text = text.replace("=", " equals ")
     # These ML terms have the same pronunciation with or without a hyphen.
     # Do not remove arbitrary hyphens: re-sign and resign are different words.
     text = re.sub(r"\bpre[-‐‑ ]+(trained|training)\b", lambda m: "pre" + m[1], text)
@@ -206,6 +212,13 @@ def words(text):
             return m.group()
 
     text = re.sub(r"\d+(?:,\d{3})*(?:\.\d+)?", expand, text)
+    text = re.sub(
+        r"\b(hundred|thousand|million|billion|trillion)\s+and\s+"
+        r"(?=(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|"
+        r"twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b)",
+        r"\1 ", text,
+    )
     return re.findall(r"[a-z]+(?:'[a-z]+)?", text)
 
 

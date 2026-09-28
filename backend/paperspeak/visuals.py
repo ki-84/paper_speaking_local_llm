@@ -438,6 +438,24 @@ def prepare_step(chapter, lesson, evidence, runtime):
 def dialogue_review_step(chapter, lesson, runtime):
     c = chapter["data"]
     if c.get("visual_dialogue_attempts", 0) >= MAX_ATTEMPTS:
+        # The local model has already tried to repair these exact sentences.
+        # Discard the still-disputed lines and review the remaining dialogue
+        # against the paper again. This keeps an incorrect visual description
+        # out of the lesson without blocking unrelated explanations.
+        issues = c.get("visual_dialogue_review", {}).get("issues", [])
+        disputed = {issue.get("turn_id") for issue in issues if isinstance(issue, dict)}
+        removed = [turn for turn in c.get("turns", []) if turn.get("id") in disputed]
+        if removed and len(removed) < len(c["turns"]) and c.get("visual_omission_rounds", 0) < 4:
+            c.setdefault("best_effort_omissions", []).extend(
+                {"text": turn["text"], "reason": "visual description did not match the figure"}
+                for turn in removed
+            )
+            c["turns"] = [turn for turn in c["turns"] if turn.get("id") not in disputed]
+            c["visual_omission_rounds"] = c.get("visual_omission_rounds", 0) + 1
+            c["visual_dialogue_attempts"] = 0
+            chapter["state"] = "review"
+            db.save_chapter(chapter)
+            return False
         raise QualityHold("The conversation and visuals still disagree. This chapter remains unpublished.")
     errors = validate_links(c["turns"], chapter, require_all=True)
     result = runtime.ask(

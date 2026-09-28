@@ -237,3 +237,21 @@ def test_pretraining_spelling_does_not_trigger_a_false_audio_repair():
     assert word_diff("per Sterner et al. (2026a)", "per Sterner at all, 2026a")["wer"] == 0
     assert word_diff("per Sterner et al. (2026a)", "per Sterner at all, 2025a")["wer"] > 0
     assert word_diff("two steps", "three steps")["wer"] > 0
+
+
+def test_audio_spelling_variants_keep_method_names_and_numbers():
+    from paperspeak.quality import speech_match
+
+    pairs = [
+        ("AdapterH adds thirty point three percent latency compared with the Fine-Tune/LoRA baseline.",
+         "Adapter H adds 30.3 percent latency compared with the fine-tuned LoRA baseline."),
+        ("So spreading the budget beat stacking it on a single table.",
+         "So spreading the budget beats stacking it on a single table."),
+        ("The 21.5 value is the r=4 factor, calculated as 6.91 divided by 0.32, not rounded to twenty.",
+         "The 21.5 value is the r equals 4 factor, calculated as 6.91 divided by 0.32, not rounded to 20."),
+        ("It needs one hundred twenty-five million trainable parameters.",
+         "It needs 125 million trainable parameters."),
+    ]
+    assert all(speech_match(script, heard)[1] for script, heard in pairs)
+    assert not speech_match("It needs 125 million parameters.", "It needs 120 million parameters.")[1]
+    assert not speech_match("AdapterH is faster.", "AdapterL is faster.")[1]

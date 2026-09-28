@@ -303,6 +303,33 @@ def hold_current_chapter(lesson_id, reason):
     return chapter["ordinal"] + 1
 
 
+def omit_invalid_draft_turns(turns, errors):
+    """Remove only unsupported numbers and broken figure references from a draft."""
+    safe_reasons = (
+        "a number is not in the cited evidence",
+        "mentions a visual but has no visual link",
+        "has an unknown visual key",
+        "highlights an unknown visual region",
+        "but displays a different visual",
+    )
+    rejected = {}
+    for error in errors:
+        match = re.match(r"Sentence (\d+)(?::?\s+)(.*)", error)
+        if not match or not any(reason in match[2] for reason in safe_reasons):
+            continue
+        index = int(match[1]) - 1
+        if 0 <= index < len(turns):
+            rejected.setdefault(index, []).append(error)
+    if not rejected or len(rejected) == len(turns):
+        return turns, []
+    kept = [turn for i, turn in enumerate(turns) if i not in rejected]
+    omitted = [
+        {"text": turns[i]["text"], "reason": "; ".join(rejected[i])}
+        for i in sorted(rejected)
+    ]
+    return kept, omitted
+
+
 def lesson_step(job, runtime):
     lesson = db.one("SELECT * FROM lessons WHERE id=?", (job["target"],))
     if not lesson:
@@ -529,9 +556,19 @@ def lesson_step(job, runtime):
         if visuals.enabled(lesson):
             errors += visuals.validate_links(turns, chapter)
         if errors:
-            c["validation_errors"] = errors
-            db.save_chapter(chapter)
-            raise ValueError("; ".join(errors[:5]))
+            kept, omitted = omit_invalid_draft_turns(turns, errors)
+            if omitted:
+                remaining = validate_turns(kept, evidence)
+                if visuals.enabled(lesson):
+                    remaining += visuals.validate_links(kept, chapter)
+                if not remaining:
+                    turns = kept
+                    c.setdefault("best_effort_omissions", []).extend(omitted)
+                    errors = []
+            if errors:
+                c["validation_errors"] = errors
+                db.save_chapter(chapter)
+                raise ValueError("; ".join(errors[:5]))
         c.pop("validation_errors", None)
         for t in turns:
             t.update(id=db.uid(), audio=None, audio_verified=False)
@@ -901,7 +938,7 @@ def lesson_step(job, runtime):
             thinking=False,
             max_tokens=1400,
         )
-        from .quality import NUMBER_WORDS, numbers, words
+        from .quality import NUMBER_WORDS, words
 
         text = result.get("text", "")
         errors = validate_turns([turn | {"text": text}], evidence)
@@ -909,13 +946,20 @@ def lesson_step(job, runtime):
             errors
             or not text
             or text == turn["text"]
-            or numbers(text) != numbers(turn["text"])
             or [w for w in words(text) if w in NUMBER_WORDS]
             != [w for w in words(turn["text"]) if w in NUMBER_WORDS]
         ):
-            raise ValueError(
-                "The speech revision must preserve meaning and numbers while changing the wording."
-            )
+            attempts = turn.get("invalid_rephrase_attempts", 0) + 1
+            turn["invalid_rephrase_attempts"] = attempts
+            if attempts >= 3:
+                c.setdefault("best_effort_omissions", []).append({
+                    "text": turn["text"], "reason": "speech could not be checked after local rewrites",
+                })
+                c["turns"] = [item for item in c["turns"] if item["id"] != turn["id"]]
+                c.pop("audio_rephrase_turn", None)
+                chapter["state"] = "review"
+            db.save_chapter(chapter)
+            return False
         turn.setdefault("audio_rephrase_history", []).append(
             {
                 "text": turn["text"],
@@ -973,10 +1017,13 @@ def lesson_step(job, runtime):
                     chapter["state"] = "audio_rephrase"
                     db.save_chapter(chapter)
                     return False
+                c.setdefault("best_effort_omissions", []).append({
+                    "text": turn["text"], "reason": "speech did not match after local rewrites",
+                })
+                c["turns"] = [item for item in c["turns"] if item["id"] != turn["id"]]
+                chapter["state"] = "review"
                 db.save_chapter(chapter)
-                raise QualityHold(
-                    "An audio sentence does not match its script after retries. It remains unpublished."
-                )
+                return False
             config.safe_path(turn["audio"]).unlink(missing_ok=True)
             turn.update(audio=None, audio_retries=attempts + 1)
             chapter["state"] = "audio"

@@ -45,6 +45,21 @@ def test_quality_hold_skips_chapter_and_keeps_other_work_available(database):
     assert db.one("SELECT state FROM lessons WHERE id=?", (lid,))["state"] == "building"
 
 
+def test_best_effort_draft_omits_only_unsupported_or_unlinked_sentences():
+    turns = [
+        {"text": "The method has 99 layers."},
+        {"text": "Look at this figure."},
+        {"text": "The old weights stay fixed."},
+    ]
+    kept, omitted = lessons.omit_invalid_draft_turns(turns, [
+        "Sentence 1: a number is not in the cited evidence.",
+        "Sentence 2 mentions a visual but has no visual link.",
+    ])
+    assert kept == [turns[2]]
+    assert len(omitted) == 2
+    assert lessons.omit_invalid_draft_turns(turns, ["Sentence 3: invalid kind."])[1] == []
+
+
 def test_duplicate_claims_do_not_require_evidence_from_another_chapter():
     canonical = {"id": "n1", "claim": "One mechanism", "source_ids": ["paper:H1"]}
     duplicate = {"id": "n2", "claim": "The same mechanism", "source_ids": ["paper:P3"]}

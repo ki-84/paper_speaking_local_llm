@@ -402,6 +402,28 @@ def test_visual_plan_and_asset_failures_stop_after_three_attempts(database):
     assert db.one("SELECT state FROM chapters WHERE id=?", (chapter["id"],))["state"] == "visuals"
 
 
+def test_rejected_optional_diagram_falls_back_to_checked_original(database):
+    chapter, lesson = chapter_fixture()
+    chapter["data"].update(visual_stage="assets", visuals=[
+        {"key": "V1", "asset_id": "original"}, {"key": "V2", "asset_id": "bad-diagram"},
+    ])
+    db.save_chapter(chapter)
+    for ident, kind, review, attempts in [
+        ("original", "original", {"passed": True}, 1),
+        ("bad-diagram", "teaching", {"passed": False, "issues": ["Unsupported claim"]}, 3),
+    ]:
+        db.execute("INSERT INTO visual_assets VALUES (?,?,?,?,?,?)",
+                   (ident, lesson["paper_id"], lesson["id"], kind,
+                    db.dumps({"review": review, "review_attempts": attempts}), 1))
+    assert not visuals.prepare_step(chapter, lesson, [], object())
+    saved = db.one("SELECT * FROM chapters WHERE id=?", (chapter["id"],))
+    assert [v["key"] for v in saved["data"]["visuals"]] == ["V1"]
+    assert saved["data"]["visual_omissions"][0]["key"] == "V2"
+    assert db.one("SELECT * FROM visual_assets WHERE id='bad-diagram'")["data"]["review"]["passed"] is False
+    assert not visuals.prepare_step(saved, lesson, [], object())
+    assert db.one("SELECT state FROM chapters WHERE id=?", (chapter["id"],))["state"] == "draft"
+
+
 def test_interrupted_repair_reuses_checkpoint_without_consuming_review_attempt(database):
     chapter, lesson = chapter_fixture()
     chapter = prepare(chapter, lesson)

@@ -142,6 +142,24 @@ def test_local_repair_preserves_other_sentences_and_needs_review(database):
     assert lessons.repair_targets(chapter) is None
 
 
+def test_local_repair_omits_unsupported_new_number(database):
+    sid = "source"
+    evidence = [{"id": sid, "data": {"text": "The old weights stay fixed."}}]
+    chapter = {
+        "turns": [{"id": "old", "speaker": "guide", "kind": "paper",
+                   "text": "The old weights stay fixed.", "source_ids": [sid]}],
+        "review": {"issues": [{"turn_id": "old", "reason": "Explain the change."}]},
+    }
+    replacement = [
+        {"speaker": "guide", "kind": "paper", "text": "The method uses 99 layers.", "source_ids": [sid]},
+        {"speaker": "guide", "kind": "paper", "text": "The old weights stay fixed.", "source_ids": [sid]},
+    ]
+    lessons.apply_local_repairs(chapter, {"edits": [{"turn_id": "old", "replacement": replacement}]},
+                                {"old"}, evidence)
+    assert [t["text"] for t in chapter["turns"]] == ["The old weights stay fixed."]
+    assert chapter["best_effort_omissions"][0]["reason"] == "unsupported number"
+
+
 def test_lesson_checkpoints_audio_recovery_and_immutable_revision(
     database, monkeypatch
 ):
@@ -311,6 +329,7 @@ def test_audio_rephrasing_preserves_old_audio_and_requires_evidence_review(datab
         "turns": [turn],
         "revision_round": 0,
         "english_polished": True,
+        "audio_rephrase_rounds": 3,
     }
     db.execute(
         "INSERT INTO chapters VALUES (?,?,?,?,?)",

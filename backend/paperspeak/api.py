@@ -561,6 +561,7 @@ def control_job(ident: str, action: Literal["pause", "resume", "retry", "cancel"
             for turn in chapter["data"].get("turns", []):
                 if not turn.get("audio_verified"):
                     turn["audio_retries"] = 0
+                    turn["audio_rephrase_rounds"] = 0
             db.save_chapter(chapter)
     return {"ok": True}
 

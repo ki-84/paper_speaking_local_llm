@@ -157,6 +157,7 @@ def apply_local_repairs(chapter, result, allowed, evidence):
     if not isinstance(edits, list) or not edits:
         raise ValueError("A local repair needs at least one replacement.")
     replacements = {}
+    omissions = []
     for edit in edits:
         if not isinstance(edit, dict):
             raise ValueError("Each local repair must be an object with a turn ID and replacements.")
@@ -182,6 +183,17 @@ def apply_local_repairs(chapter, result, allowed, evidence):
             raise ValueError(
                 "Each replacement needs text, speaker, kind and source IDs."
             )
+        # A repair may add a fresh measured number that is absent from its
+        # citation. Omit that sentence and let the evidence review decide
+        # whether another explanation is needed.
+        supported = []
+        for turn in turns:
+            turn_errors = validate_turns([turn], evidence)
+            if turn_errors and all("a number is not in the cited evidence" in e for e in turn_errors):
+                omissions.append({"turn_id": ident, "text": turn["text"], "reason": "unsupported number"})
+            else:
+                supported.append(turn)
+        turns = supported
         errors = validate_turns(turns, evidence) if turns else []
         if errors:
             raise ValueError("; ".join(errors[:5]))
@@ -214,6 +226,8 @@ def apply_local_repairs(chapter, result, allowed, evidence):
     chapter.setdefault("local_revision_history", []).append(
         {"time": time.time(), "issues": chapter["review"]["issues"], "changes": history}
     )
+    if omissions:
+        chapter.setdefault("best_effort_omissions", []).extend(omissions)
     chapter["turns"] = updated
 
 
@@ -910,6 +924,7 @@ def lesson_step(job, runtime):
             }
         )
         turn.update(text=text, audio=None, audio_verified=False, audio_retries=0)
+        turn["audio_rephrase_rounds"] = turn.get("audio_rephrase_rounds", 0) + 1
         c["audio_rephrase_rounds"] = c.get("audio_rephrase_rounds", 0) + 1
         c.pop("audio_rephrase_turn", None)
         # A language model's rewording must pass the original evidence review
@@ -953,7 +968,7 @@ def lesson_step(job, runtime):
         if not acceptable:
             attempts = turn.get("audio_retries", 0)
             if attempts >= 2:
-                if c.get("audio_rephrase_rounds", 0) < 3:
+                if turn.get("audio_rephrase_rounds", 0) < 3:
                     c["audio_rephrase_turn"] = turn["id"]
                     chapter["state"] = "audio_rephrase"
                     db.save_chapter(chapter)

@@ -412,7 +412,23 @@ def prepare_step(chapter, lesson, evidence, runtime):
         return False
     for asset in assets(chapter):
         if not (asset["data"].get("review") or {}).get("passed"):
-            review_asset(asset, lesson, runtime)
+            try:
+                review_asset(asset, lesson, runtime)
+            except QualityHold:
+                # A checked original figure is a useful fallback when the
+                # optional teaching diagram cannot be made accurate. Keep the
+                # rejected asset in history, but never show it in the lesson.
+                originals = [a for a in assets(chapter) if a["kind"] == "original"
+                             and (a["data"].get("review") or {}).get("passed")]
+                if asset["kind"] == "original" or not originals:
+                    raise
+                chapter["data"].setdefault("visual_omissions", []).append({
+                    "key": asset["key"], "asset_id": asset["id"],
+                    "reason": (asset["data"].get("review") or {}).get("issues", []),
+                })
+                chapter["data"]["visuals"] = [ref for ref in chapter["data"]["visuals"]
+                                               if ref["asset_id"] != asset["id"]]
+                db.save_chapter(chapter)
             return False
     chapter["state"] = "draft"
     db.save_chapter(chapter)

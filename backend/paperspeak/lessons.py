@@ -267,6 +267,28 @@ def questions_ready(chapter):
             and review.get("digest") == figure_extract.digest(data["questions"]))
 
 
+def hold_current_chapter(lesson_id, reason):
+    """Keep a rejected chapter unpublished and let the remaining chapters run."""
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (lesson_id,))
+    if not lesson or lesson["data"].get("phase") != "chapters":
+        return None
+    chapters = db.all(
+        "SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (lesson_id,)
+    )
+    chapter = next((c for c in chapters if c["state"] not in {"ready", "held"}), None)
+    if not chapter:
+        return None
+    chapter["data"]["quality_hold"] = {
+        "reason": str(reason)[:1200],
+        "from_state": chapter["state"],
+        "at": time.time(),
+    }
+    chapter["state"] = "held"
+    db.save_chapter(chapter)
+    db.event("chapter", {"id": chapter["id"]})
+    return chapter["ordinal"] + 1
+
+
 def lesson_step(job, runtime):
     lesson = db.one("SELECT * FROM lessons WHERE id=?", (job["target"],))
     if not lesson:
@@ -381,8 +403,15 @@ def lesson_step(job, runtime):
     chapters = db.all(
         "SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (lesson["id"],)
     )
-    chapter = next((c for c in chapters if c["state"] != "ready"), None)
+    chapter = next((c for c in chapters if c["state"] not in {"ready", "held"}), None)
     if chapter is None:
+        held = [c for c in chapters if c["state"] == "held"]
+        if held:
+            lesson["state"] = "partial"
+            save(lesson)
+            numbers = ", ".join(str(c["ordinal"] + 1) for c in held)
+            stage(f"Other chapters finished; chapters {numbers} need attention", 1)
+            raise QualityHold(f"Chapters {numbers} need attention. Finished chapters remain available.")
         lesson["state"] = "ready"
         save(lesson, "complete")
         stage("Your lesson is ready", 1)

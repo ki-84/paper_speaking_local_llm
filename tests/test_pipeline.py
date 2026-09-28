@@ -6,6 +6,43 @@ import numpy as np
 import pytest
 import soundfile as sf
 from paperspeak import config, db, lessons, papers, translation
+from paperspeak.quality import QualityHold
+
+
+def test_quality_hold_skips_chapter_and_keeps_other_work_available(database):
+    pid = papers.register({"source_id": "hold-test", "version": "v1", "title": "Hold test"})
+    lid = lessons.create(pid)
+    lesson = db.one("SELECT * FROM lessons WHERE id=?", (lid,))
+    lesson["data"]["phase"] = "chapters"
+    db.save_lesson(lesson)
+    for ordinal in range(2):
+        db.execute(
+            "INSERT INTO chapters VALUES (?,?,?,?,?)",
+            (db.uid(), lid, ordinal, "audio_review", db.dumps({"turns": [], "claim_ids": []})),
+        )
+    jid = db.enqueue("lesson", lid)
+    job = db.one("SELECT * FROM jobs WHERE id=?", (jid,))
+
+    assert lessons.hold_current_chapter(lid, "Speech needs correction") == 1
+    chapters = db.all("SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (lid,))
+    assert chapters[0]["state"] == "held"
+    assert chapters[0]["data"]["quality_hold"]["reason"] == "Speech needs correction"
+    assert not lessons.lesson_step(job, object())
+    assert db.one("SELECT state FROM chapters WHERE id=?", (chapters[1]["id"],))["state"] == "translation"
+
+    db.execute("UPDATE chapters SET state='ready' WHERE id=?", (chapters[1]["id"],))
+    with pytest.raises(QualityHold, match="Chapters 1 need attention"):
+        lessons.lesson_step(job, object())
+    assert db.one("SELECT state FROM lessons WHERE id=?", (lid,))["state"] == "partial"
+    assert db.one("SELECT state FROM chapters WHERE id=?", (chapters[1]["id"],))["state"] == "ready"
+    from paperspeak.api import control_job
+
+    db.patch_job(jid, state="failed")
+    control_job(jid, "retry")
+    resumed = db.one("SELECT * FROM chapters WHERE id=?", (chapters[0]["id"],))
+    assert resumed["state"] == "audio_review"
+    assert "quality_hold" not in resumed["data"]
+    assert db.one("SELECT state FROM lessons WHERE id=?", (lid,))["state"] == "building"
 
 
 def test_duplicate_claims_do_not_require_evidence_from_another_chapter():

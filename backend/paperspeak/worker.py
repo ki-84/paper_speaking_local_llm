@@ -175,6 +175,19 @@ def run():
                 cp = current["checkpoint"]
                 failures = cp.get("_failures", 0) + 1
                 cp["_failures"] = failures
+                # A chapter has already exhausted its own bounded repair loop,
+                # or a repeated step error cannot be repaired here. Preserve
+                # its checkpoint and continue with the next chapter.
+                if job["kind"] == "lesson" and (isinstance(e, QualityHold) or failures >= 3):
+                    held_number = lessons.hold_current_chapter(job["target"], e)
+                    if held_number is not None:
+                        cp.pop("_failures", None)
+                        db.patch_job(
+                            job["id"], state="queued", owner=None,
+                            checkpoint=cp, error=None, available=0,
+                            stage=f"Chapter {held_number} needs attention; continuing with the next chapter",
+                        )
+                        continue
                 state = (
                     "failed"
                     if isinstance(e, QualityHold) or failures >= 3

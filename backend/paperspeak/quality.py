@@ -176,6 +176,7 @@ def words(text):
     text = re.sub(r"\bd[_ -]?model\b", "d model", text)
     text = re.sub(r"\bd[_ -]?ff\b", "dff", text)
     text = re.sub(r"\bfeed[-‐‑ ]?forward\b", "feedforward", text)
+    text = re.sub(r"\bnon[-‐‑ ]?linear\b", "nonlinear", text)
     text = re.sub(r"\bhalf[-‐‑ ]?way\b", "halfway", text)
     # These benchmark names are often transcribed with an audible word break.
     # Join only these known names; other task names and numbers stay distinct.

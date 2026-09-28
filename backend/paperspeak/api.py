@@ -554,6 +554,8 @@ def control_job(ident: str, action: Literal["pause", "resume", "retry", "cancel"
             "SELECT * FROM chapters WHERE lesson_id=? AND state!='ready'",
             (job["target"],),
         ):
+            if chapter["state"] == "held":
+                chapter["state"] = chapter["data"].pop("quality_hold")["from_state"]
             chapter["data"]["revision_round"] = 0
             chapter["data"]["audio_rephrase_rounds"] = 0
             for turn in chapter["data"].get("turns", []):

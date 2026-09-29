@@ -82,6 +82,23 @@ def test_best_effort_questions_omit_only_untaught_question(database):
     assert lessons.questions_ready(chapter)
 
 
+def test_last_resort_omits_unverifiable_japanese_line(database):
+    pid = papers.register({"source_id": "translation-fallback", "version": "v1", "title": "Paper"})
+    lesson = {"paper_id": pid, "data": {"format": "legacy"}}
+    chapter = {"id": "translation-fallback", "state": "held", "data": {
+        "turns": [
+            {"id": "bad", "speaker": "guide", "kind": "background", "text": "A hard sentence.", "source_ids": []},
+            {"id": "good", "speaker": "host", "kind": "question", "text": "What can we learn?", "source_ids": []},
+        ],
+        "translation": {"meaning_errors": {"turn:bad": "Meaning changed"}},
+        "quality_hold": {"from_state": "translation", "reason": "Meaning changed"},
+    }}
+    lessons.condense_held_chapter(chapter, lesson)
+    assert chapter["state"] == "audio"
+    assert [turn["id"] for turn in chapter["data"]["turns"]] == ["good"]
+    assert chapter["data"]["best_effort_omissions"][-1]["reason"] == "Japanese meaning could not be verified"
+
+
 def test_duplicate_claims_do_not_require_evidence_from_another_chapter():
     canonical = {"id": "n1", "claim": "One mechanism", "source_ids": ["paper:H1"]}
     duplicate = {"id": "n2", "claim": "The same mechanism", "source_ids": ["paper:P3"]}

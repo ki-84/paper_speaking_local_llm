@@ -424,10 +424,14 @@ def condense_held_chapter(chapter, lesson):
         issue.get("turn_id") for issue in c.get("review", {}).get("issues", [])
         if isinstance(issue, dict) and issue.get("turn_id")
     }
+    translation_errors = c.get("translation", {}).get("meaning_errors", {})
+    disputed.update(key.removeprefix("turn:") for key in translation_errors if key.startswith("turn:"))
     kept = []
     for turn in c.get("turns", []):
         if turn.get("id") in disputed:
-            c["best_effort_omissions"].append({"text": turn["text"], "reason": "disputed paper claim"})
+            reason = ("Japanese meaning could not be verified"
+                      if "turn:" + turn["id"] in translation_errors else "disputed paper claim")
+            c["best_effort_omissions"].append({"text": turn["text"], "reason": reason})
         else:
             kept.append(turn)
     c["turns"] = kept

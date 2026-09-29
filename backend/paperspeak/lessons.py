@@ -240,6 +240,7 @@ def selected_sources(chapter, notes, sources):
         c for n in notes for c in n["claims"] if c["id"] in chosen
     ]
     ids = {sid for c in claims for sid in c["source_ids"]}
+    ids.update(sid for turn in chapter.get("turns", []) for sid in turn.get("source_ids", []))
     if "visuals" in chapter:
         for ref in chapter["visuals"]:
             asset = db.one("SELECT data FROM visual_assets WHERE id=?", (ref["asset_id"],))
@@ -328,6 +329,84 @@ def omit_invalid_draft_turns(turns, errors):
         for i in sorted(rejected)
     ]
     return kept, omitted
+
+
+def checked_candidate(chapter, turns, evidence, check_visuals):
+    errors = validate_turns(turns, evidence)
+    if check_visuals:
+        errors += visuals.validate_links(turns, chapter)
+    if not errors:
+        return turns, []
+    kept, omitted = omit_invalid_draft_turns(turns, errors)
+    if omitted:
+        remaining = validate_turns(kept, evidence)
+        if check_visuals:
+            remaining += visuals.validate_links(kept, chapter)
+        if not remaining:
+            chapter["data"].setdefault("best_effort_omissions", []).extend(omitted)
+            return kept, []
+    return turns, errors
+
+
+def recover_review(chapter):
+    """Drop disputed lines/coverage after the local reviewer exhausted repairs."""
+    c = chapter["data"]
+    review = c.get("review", {})
+    turns = c.get("turns", [])
+    ids = {turn["id"] for turn in turns}
+    disputed = set()
+    for issue in review.get("issues", []):
+        ident = issue.get("turn_id", "") if isinstance(issue, dict) else ""
+        matches = [key for key in ids if key == ident or (len(ident) >= 8 and key.startswith(ident))]
+        if len(matches) == 1:
+            disputed.add(matches[0])
+    missing = set(review.get("missing_claim_ids", []))
+    if not disputed and not missing or len(disputed) >= len(turns):
+        return False
+    c.setdefault("best_effort_omissions", []).extend(
+        {"text": turn["text"], "reason": "unresolved evidence or clarity issue"}
+        for turn in turns if turn["id"] in disputed
+    )
+    c["turns"] = [turn for turn in turns if turn["id"] not in disputed]
+    if missing:
+        c["evidence_claim_ids"] = [ident for ident in c.get("evidence_claim_ids", c.get("claim_ids", []))
+                                   if ident not in missing]
+        c.setdefault("best_effort_omissions", []).extend(
+            {"claim_id": ident, "reason": "claim not explained after local repairs"}
+            for ident in sorted(missing)
+        )
+    c["revision_round"] = 0
+    chapter["state"] = "review"
+    db.save_chapter(chapter)
+    return True
+
+
+def recover_questions(chapter, issues):
+    """Keep the checked practice questions and omit only disputed ones."""
+    c = chapter["data"]
+    questions = c.get("questions", [])
+    disputed = set()
+    for issue in issues:
+        for match in re.finditer(r"\b(?:Q|Question\s*)(\d+)\b", issue, re.I):
+            index = int(match[1]) - 1
+            if 0 <= index < len(questions):
+                disputed.add(index)
+        for index, question in enumerate(questions):
+            if question.get("id") and question["id"] in issue:
+                disputed.add(index)
+    if not disputed or len(disputed) >= len(questions):
+        return False
+    c.setdefault("best_effort_omissions", []).extend(
+        {"question": questions[i]["question"], "reason": "question required untaught or unsupported content"}
+        for i in sorted(disputed)
+    )
+    c["questions"] = [question for i, question in enumerate(questions) if i not in disputed]
+    c["question_review"] = {"passed": True, "issues": [], "best_effort": True,
+                            "version": "question-meaning-1", "digest": figure_extract.digest(c["questions"]),
+                            "time": time.time()}
+    chapter["state"] = "audio"
+    db.save_chapter(chapter)
+    return True
 
 
 def lesson_step(job, runtime):
@@ -552,23 +631,11 @@ def lesson_step(job, runtime):
                              images=visuals.image_paths(chapter) if visuals.enabled(lesson) else None)
         turns = split_spoken_turns(result.get("turns", []))
         visuals.bind_numbered_refs(turns, chapter)
-        errors = validate_turns(turns, evidence)
-        if visuals.enabled(lesson):
-            errors += visuals.validate_links(turns, chapter)
+        turns, errors = checked_candidate(chapter, turns, evidence, visuals.enabled(lesson))
         if errors:
-            kept, omitted = omit_invalid_draft_turns(turns, errors)
-            if omitted:
-                remaining = validate_turns(kept, evidence)
-                if visuals.enabled(lesson):
-                    remaining += visuals.validate_links(kept, chapter)
-                if not remaining:
-                    turns = kept
-                    c.setdefault("best_effort_omissions", []).extend(omitted)
-                    errors = []
-            if errors:
-                c["validation_errors"] = errors
-                db.save_chapter(chapter)
-                raise ValueError("; ".join(errors[:5]))
+            c["validation_errors"] = errors
+            db.save_chapter(chapter)
+            raise ValueError("; ".join(errors[:5]))
         c.pop("validation_errors", None)
         for t in turns:
             t.update(id=db.uid(), audio=None, audio_verified=False)
@@ -634,6 +701,8 @@ def lesson_step(job, runtime):
             chapter["state"] = ("visual_dialogue_review" if visuals.enabled(lesson) else "questions") if c.get("english_polished") else "english"
         else:
             if c["revision_round"] >= MAX_SCIENTIFIC_REVISIONS:
+                if recover_review(chapter):
+                    return False
                 db.save_chapter(chapter)
                 raise QualityHold(
                     "This chapter still has unresolved evidence or clarity issues. It has not been published."
@@ -662,9 +731,7 @@ def lesson_step(job, runtime):
         )
         turns = split_spoken_turns(result.get("turns", []))
         visuals.bind_numbered_refs(turns, chapter)
-        errors = validate_turns(turns, evidence)
-        if visuals.enabled(lesson):
-            errors += visuals.validate_links(turns, chapter)
+        turns, errors = checked_candidate(chapter, turns, evidence, visuals.enabled(lesson))
         if errors:
             c["validation_errors"] = errors
             db.save_chapter(chapter)
@@ -713,7 +780,12 @@ def lesson_step(job, runtime):
                     visuals.bind_numbered_refs(c["turns"], chapter)
                     link_errors = visuals.validate_links(c["turns"], chapter)
                     if link_errors:
-                        raise ValueError("; ".join(link_errors))
+                        kept, omitted = omit_invalid_draft_turns(c["turns"], link_errors)
+                        if omitted and not visuals.validate_links(kept, chapter):
+                            c["turns"] = kept
+                            c.setdefault("best_effort_omissions", []).extend(omitted)
+                        else:
+                            raise ValueError("; ".join(link_errors))
             except ValueError as error:
                 c["validation_errors"] = [str(error)]
                 db.save_chapter(chapter)
@@ -744,9 +816,7 @@ def lesson_step(job, runtime):
         )
         turns = split_spoken_turns(result.get("turns", []))
         visuals.bind_numbered_refs(turns, chapter)
-        errors = validate_turns(turns, evidence)
-        if visuals.enabled(lesson):
-            errors += visuals.validate_links(turns, chapter)
+        turns, errors = checked_candidate(chapter, turns, evidence, visuals.enabled(lesson))
         if errors:
             c["validation_errors"] = errors
             db.save_chapter(chapter)
@@ -843,6 +913,8 @@ def lesson_step(job, runtime):
             chapter["state"] = "questions"
             db.save_chapter(chapter)
             if c["question_review_attempts"] >= 3:
+                if recover_questions(chapter, issues):
+                    return False
                 raise QualityHold("The understanding questions still need correction: " + "; ".join(issues))
         db.save_chapter(chapter)
         return False

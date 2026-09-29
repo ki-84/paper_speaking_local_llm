@@ -60,6 +60,32 @@ def test_best_effort_draft_omits_only_unsupported_or_unlinked_sentences():
     assert lessons.omit_invalid_draft_turns(turns, ["Sentence 3: invalid kind."])[1] == []
 
 
+def test_best_effort_review_removes_disputed_line_and_records_missing_claim(database):
+    chapter = {"id": "review-fixture", "state": "review", "data": {
+        "turns": [{"id": "bad", "text": "Unsupported claim."},
+                  {"id": "good", "text": "The old weights stay fixed."}],
+        "claim_ids": ["c1", "c2"], "evidence_claim_ids": ["c1", "c2"],
+        "review": {"issues": [{"turn_id": "bad", "reason": "Unsupported"}],
+                   "missing_claim_ids": ["c2"]}, "revision_round": 8,
+    }}
+    assert lessons.recover_review(chapter)
+    assert [t["id"] for t in chapter["data"]["turns"]] == ["good"]
+    assert chapter["data"]["evidence_claim_ids"] == ["c1"]
+    assert len(chapter["data"]["best_effort_omissions"]) == 2
+    assert chapter["data"]["revision_round"] == 0
+
+
+def test_best_effort_questions_omit_only_untaught_question(database):
+    chapter = {"id": "question-fixture", "state": "question_review", "data": {
+        "questions": [{"id": "q1", "question": "What stays fixed?"},
+                      {"id": "q2", "question": "What was never taught?"}],
+    }}
+    assert lessons.recover_questions(chapter, ["Q2 asks about untaught content."])
+    assert chapter["state"] == "audio"
+    assert [q["id"] for q in chapter["data"]["questions"]] == ["q1"]
+    assert lessons.questions_ready(chapter)
+
+
 def test_duplicate_claims_do_not_require_evidence_from_another_chapter():
     canonical = {"id": "n1", "claim": "One mechanism", "source_ids": ["paper:H1"]}
     duplicate = {"id": "n2", "claim": "The same mechanism", "source_ids": ["paper:P3"]}

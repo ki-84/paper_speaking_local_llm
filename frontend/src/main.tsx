@@ -1749,6 +1749,9 @@ function Learn({
             <div className="study-title">
               <h2>{chapter?.data.title}</h2>
               <p>{chapter?.data.focus}</p>
+              {ready && (chapter?.data.best_effort_omissions?.length || 0) > 0 && (
+                <p className="subtle">Some details were left out because they could not be checked. See the original paper for the full results. · 確認できなかった内容は省略しています。詳細は論文の原文をご覧ください。</p>
+              )}
               {currentVideo?.state === "ready" && <div className="chapter-video-links">
                 <VideoTitleSuggestion title={currentVideo.data.title || suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)} onError={onError} />
                 <a className="secondary" href={fileUrl(currentVideo.data.mp4)} download={`${currentVideo.data.title || suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)}.mp4`}>Download chapter MP4 · この章の動画</a>

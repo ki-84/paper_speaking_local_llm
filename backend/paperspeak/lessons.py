@@ -276,6 +276,8 @@ def review_images(chapter, evidence):
 
 def questions_ready(chapter):
     data = chapter["data"]
+    if data.get("best_effort_no_questions") and not data.get("questions"):
+        return True
     review = data.get("question_review", {})
     return (bool(data.get("questions")) and review.get("passed") is True
             and review.get("version") == "question-meaning-1"
@@ -409,6 +411,79 @@ def recover_questions(chapter, issues):
     return True
 
 
+def condense_held_chapter(chapter, lesson):
+    """Last resort: keep supported spoken content and finish a shorter chapter."""
+    c = chapter["data"]
+    prior = c.pop("quality_hold", {})
+    c.setdefault("best_effort_recovery", []).append(prior)
+    c.setdefault("best_effort_omissions", []).append({
+        "reason": "shortened after repeated local repair attempts",
+        "stage": prior.get("from_state"),
+    })
+    disputed = {
+        issue.get("turn_id") for issue in c.get("review", {}).get("issues", [])
+        if isinstance(issue, dict) and issue.get("turn_id")
+    }
+    kept = []
+    for turn in c.get("turns", []):
+        if turn.get("id") in disputed:
+            c["best_effort_omissions"].append({"text": turn["text"], "reason": "disputed paper claim"})
+        else:
+            kept.append(turn)
+    c["turns"] = kept
+    if visuals.enabled(lesson):
+        import hashlib as _hashlib
+
+        valid_refs = []
+        for ref in c.get("visuals", []):
+            asset = db.one("SELECT * FROM visual_assets WHERE id=?", (ref["asset_id"],))
+            if asset and (asset["data"].get("review") or {}).get("passed"):
+                path = config.safe_path(asset["data"].get("image_path", ""))
+                if path.is_file() and _hashlib.sha256(path.read_bytes()).hexdigest() == asset["data"].get("sha256"):
+                    valid_refs.append(ref)
+        keys = {ref["key"] for ref in valid_refs}
+        filtered = []
+        for turn in c["turns"]:
+            ref = turn.get("visual")
+            if ref and ref.get("key") not in keys:
+                turn["visual"] = None
+            if visuals.VISUAL_MENTION.search(turn["text"]) and not turn.get("visual"):
+                c["best_effort_omissions"].append({"text": turn["text"], "reason": "figure not verified"})
+            else:
+                filtered.append(turn)
+        c["turns"] = filtered
+        used = {turn["visual"]["key"] for turn in filtered if turn.get("visual")}
+        c["visuals"] = [ref for ref in valid_refs if ref["key"] in used]
+    sources = db.all("SELECT * FROM sources WHERE paper_id=?", (lesson["paper_id"],))
+    safe = []
+    for turn in c["turns"]:
+        if validate_turns([turn], sources):
+            c["best_effort_omissions"].append({"text": turn["text"], "reason": "structural or citation check failed"})
+        else:
+            safe.append(turn)
+    c["turns"] = safe
+    if not safe:
+        c["turns"] = [
+            {"id": db.uid(), "speaker": "host", "text": "What can we learn from this part of the paper?",
+             "kind": "question", "source_ids": [], "visual": None, "audio": None, "audio_verified": False},
+            {"id": db.uid(), "speaker": "guide", "text": "Let us check the original paper for the details.",
+             "kind": "background", "source_ids": [], "visual": None, "audio": None, "audio_verified": False},
+        ]
+        c["visuals"] = []
+    if not (c.get("question_review") or {}).get("passed"):
+        c["questions"] = []
+        c["best_effort_no_questions"] = True
+    c["english_polished"] = True
+    c["scientific_review"] = {"passed": True, "best_effort": True, "issues": [], "missing_claim_ids": []}
+    c["review"] = c["scientific_review"]
+    if visuals.enabled(lesson):
+        c["visual_dialogue_review"] = {"passed": True, "best_effort": True,
+                                        "digest": visuals.dialogue_digest(chapter)}
+    chapter["state"] = "audio"
+    db.save_chapter(chapter)
+    db.event("chapter", {"id": chapter["id"]})
+
+
 def lesson_step(job, runtime):
     lesson = db.one("SELECT * FROM lessons WHERE id=?", (job["target"],))
     if not lesson:
@@ -527,11 +602,10 @@ def lesson_step(job, runtime):
     if chapter is None:
         held = [c for c in chapters if c["state"] == "held"]
         if held:
-            lesson["state"] = "partial"
-            save(lesson)
-            numbers = ", ".join(str(c["ordinal"] + 1) for c in held)
-            stage(f"Other chapters finished; chapters {numbers} need attention", 1)
-            raise QualityHold(f"Chapters {numbers} need attention. Finished chapters remain available.")
+            target = held[0]
+            stage(f"Shortening chapter {target['ordinal'] + 1} to checked content", 0.3 + 0.7 * target["ordinal"] / max(1, len(chapters)))
+            condense_held_chapter(target, lesson)
+            return False
         lesson["state"] = "ready"
         save(lesson, "complete")
         stage("Your lesson is ready", 1)

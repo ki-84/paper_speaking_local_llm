@@ -31,17 +31,13 @@ def test_quality_hold_skips_chapter_and_keeps_other_work_available(database):
     assert db.one("SELECT state FROM chapters WHERE id=?", (chapters[1]["id"],))["state"] == "translation"
 
     db.execute("UPDATE chapters SET state='ready' WHERE id=?", (chapters[1]["id"],))
-    with pytest.raises(QualityHold, match="Chapters 1 need attention"):
-        lessons.lesson_step(job, object())
-    assert db.one("SELECT state FROM lessons WHERE id=?", (lid,))["state"] == "partial"
+    assert not lessons.lesson_step(job, object())
     assert db.one("SELECT state FROM chapters WHERE id=?", (chapters[1]["id"],))["state"] == "ready"
-    from paperspeak.api import control_job
-
-    db.patch_job(jid, state="failed")
-    control_job(jid, "retry")
     resumed = db.one("SELECT * FROM chapters WHERE id=?", (chapters[0]["id"],))
-    assert resumed["state"] == "audio_review"
+    assert resumed["state"] == "audio"
     assert "quality_hold" not in resumed["data"]
+    assert resumed["data"]["best_effort_no_questions"]
+    assert len(resumed["data"]["turns"]) == 2
     assert db.one("SELECT state FROM lessons WHERE id=?", (lid,))["state"] == "building"
 
 

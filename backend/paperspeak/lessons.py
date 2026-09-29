@@ -454,6 +454,13 @@ def condense_held_chapter(chapter, lesson):
         c["turns"] = filtered
         used = {turn["visual"]["key"] for turn in filtered if turn.get("visual")}
         c["visuals"] = [ref for ref in valid_refs if ref["key"] in used]
+        if visuals.validate_links(c["turns"], chapter, require_all=True):
+            c["best_effort_omissions"].append({"reason": "visual links could not be checked"})
+            c["visuals"] = []
+            c["turns"] = [turn for turn in c["turns"]
+                          if not visuals.VISUAL_MENTION.search(turn["text"])]
+            for turn in c["turns"]:
+                turn["visual"] = None
     sources = db.all("SELECT * FROM sources WHERE paper_id=?", (lesson["paper_id"],))
     safe = []
     for turn in c["turns"]:
@@ -470,9 +477,8 @@ def condense_held_chapter(chapter, lesson):
              "kind": "background", "source_ids": [], "visual": None, "audio": None, "audio_verified": False},
         ]
         c["visuals"] = []
-    if not (c.get("question_review") or {}).get("passed"):
-        c["questions"] = []
-        c["best_effort_no_questions"] = True
+    c["questions"] = []
+    c["best_effort_no_questions"] = True
     c["english_polished"] = True
     c["scientific_review"] = {"passed": True, "best_effort": True, "issues": [], "missing_claim_ids": []}
     c["review"] = c["scientific_review"]

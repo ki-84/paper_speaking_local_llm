@@ -92,8 +92,8 @@ in the acceptance artifact after generation.
 For installed media, run:
 
 ```bash
-PYTHONPATH=backend .venv/bin/python scripts/story_acceptance.py PROJECT_ID --screenshots
-.tools/node/bin/node scripts/story_browser_acceptance.mjs PROJECT_ID
+PYTHONPATH=backend .venv/bin/python scripts/story_acceptance.py PROJECT_ID --screenshots --sync
+.tools/node/bin/node scripts/story_browser_acceptance.mjs PROJECT_ID --require-complete
 ```
 
 The second script uses LAN HTTPS to check video playback, range download,
@@ -102,3 +102,8 @@ packaging, Japanese help and practice expression navigation. Its optional
 Chromium's microphone input and exercises capture, upload and local evaluation.
 It removes its QA recording and restores the previous study position. A real
 Mac microphone and human learner pronunciation accuracy remain separate checks.
+
+The installed LoRA films and measured synchronization results are documented
+in [story_lora_verification.md](story_lora_verification.md). `--sync` compares
+actual MP4 frames/audio with the source master timeline and records AAC offset;
+it checks the current export rather than silently accepting an older revision.

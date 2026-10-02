@@ -1,0 +1,739 @@
+{
+  "verified_at": "2026-10-02T19:00:15.008808+00:00",
+  "paper": "LoRA: Low-Rank Adaptation of Large Language Models",
+  "arxiv": "2106.09685v2",
+  "project_id": "8ab4bf9ac3274635925c609fc9860165",
+  "format": "paper-story-1",
+  "renderer": "story-film-2",
+  "project_state": "ready",
+  "tests": {
+    "backend": {
+      "passed": 174,
+      "warning": "Starlette test-client deprecation"
+    },
+    "frontend_e2e": {
+      "passed": 11
+    },
+    "frontend_build": "passed"
+  },
+  "films": {
+    "overview": {
+      "export_id": "9029f46f14854fc2904b93de4fb027db",
+      "mp4": "videos/9b91ddf1600a436fb8fcd71cc1b37eb0/6e2925b20c94/AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習.mp4",
+      "minutes": 17.81,
+      "megabytes": 51.19,
+      "sha256": "967909d39ad329afd1bca759b03c5a4fa128d370f95264aa83facec6ef27278f",
+      "checks": {
+        "duration_in_range": true,
+        "duration_error_small": true,
+        "equation_policy": true,
+        "equations_actually_selected": true,
+        "chapters_ready": true,
+        "sentence_clips_exist": true,
+        "japanese_for_every_sentence": true,
+        "expressions_count": true,
+        "questions_available": true,
+        "burned_subtitles": true,
+        "thumbnail_exists": true,
+        "current_renderer": true,
+        "rendered_audio_caption_figure_sync": true
+      },
+      "spoken_words": 3129,
+      "practice_sentences": 244,
+      "audio_wer_max": 0.028985507246376812,
+      "frames": [
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-01.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-02.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-03.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-04.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-05.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-06.png"
+      ],
+      "sync_samples": [
+        {
+          "time": 12.0,
+          "rgb_mean_error": 0.316,
+          "audio_correlation": 0.99965,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-01.png"
+        },
+        {
+          "time": 211.06,
+          "rgb_mean_error": 0.267,
+          "audio_correlation": 0.99914,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-02.png"
+        },
+        {
+          "time": 370.499,
+          "rgb_mean_error": 0.254,
+          "audio_correlation": 0.99958,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-03.png"
+        },
+        {
+          "time": 550.675,
+          "rgb_mean_error": 0.278,
+          "audio_correlation": 0.99957,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-04.png"
+        },
+        {
+          "time": 709.473,
+          "rgb_mean_error": 0.287,
+          "audio_correlation": 0.99989,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-05.png"
+        },
+        {
+          "time": 931.713,
+          "rgb_mean_error": 0.274,
+          "audio_correlation": 0.99963,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-06.png"
+        },
+        {
+          "time": 60.7,
+          "rgb_mean_error": 0.412,
+          "audio_correlation": 0.99852,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-boundary-60.7.png"
+        },
+        {
+          "time": 121.7,
+          "rgb_mean_error": 0.424,
+          "audio_correlation": 0.99959,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/overview-boundary-121.7.png"
+        }
+      ],
+      "title": "AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習",
+      "duration_seconds": 1068.46,
+      "expressions": 10,
+      "scene_reviews": [
+        {
+          "title": "The Heavy Backpack",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "The Prosthetic Arms",
+          "content": "checked",
+          "editorial": "best_effort",
+          "omissions": []
+        },
+        {
+          "title": "The Ink Stamp",
+          "content": "checked",
+          "editorial": "best_effort",
+          "omissions": []
+        },
+        {
+          "title": "The Mistaken Map",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "The 35-Megabyte Proof",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "The Etched Detail",
+          "content": "checked",
+          "editorial": "best_effort",
+          "omissions": []
+        }
+      ]
+    },
+    "deep_dive": {
+      "export_id": "729e902a92474279b85a002d2e5275bb",
+      "mp4": "videos/2cef90a69e1e428f96ffd43470048f7f/fb30726ec2a9/LoRAの仕組みを図と計算で理解する・詳解編・英語学習.mp4",
+      "minutes": 33.67,
+      "megabytes": 94.53,
+      "sha256": "8726314a635e93786b51e28ffc594aa93193067362462328e0eb04036bcea962",
+      "checks": {
+        "duration_in_range": true,
+        "duration_error_small": true,
+        "equation_policy": true,
+        "equations_actually_selected": true,
+        "chapters_ready": true,
+        "sentence_clips_exist": true,
+        "japanese_for_every_sentence": true,
+        "expressions_count": true,
+        "questions_available": true,
+        "burned_subtitles": true,
+        "thumbnail_exists": true,
+        "current_renderer": true,
+        "rendered_audio_caption_figure_sync": true
+      },
+      "spoken_words": 5237,
+      "practice_sentences": 424,
+      "audio_wer_max": 0.047619047619047616,
+      "frames": [
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-01.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-02.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-03.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-04.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-05.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-06.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-07.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-08.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-09.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-10.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-02-1.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-02-2.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-03-1.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-03-2.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-04-1.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-04-2.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-04-3.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-05-1.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-05-2.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-06-0.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-06-1.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-06-2.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-09-1.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-09-2.png",
+        "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-zoom-09-3.png"
+      ],
+      "sync_samples": [
+        {
+          "time": 12.0,
+          "rgb_mean_error": 0.225,
+          "audio_correlation": 0.99975,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-01.png"
+        },
+        {
+          "time": 175.32,
+          "rgb_mean_error": 0.236,
+          "audio_correlation": 0.99985,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-02.png"
+        },
+        {
+          "time": 393.88,
+          "rgb_mean_error": 0.183,
+          "audio_correlation": 0.99986,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-03.png"
+        },
+        {
+          "time": 603.32,
+          "rgb_mean_error": 0.336,
+          "audio_correlation": 0.9995,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-04.png"
+        },
+        {
+          "time": 888.04,
+          "rgb_mean_error": 0.255,
+          "audio_correlation": 0.99968,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-05.png"
+        },
+        {
+          "time": 1093.32,
+          "rgb_mean_error": 0.278,
+          "audio_correlation": 0.99967,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-06.png"
+        },
+        {
+          "time": 1279.76,
+          "rgb_mean_error": 0.329,
+          "audio_correlation": 0.99947,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-07.png"
+        },
+        {
+          "time": 1442.38,
+          "rgb_mean_error": 0.338,
+          "audio_correlation": 0.99967,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-08.png"
+        },
+        {
+          "time": 1660.94,
+          "rgb_mean_error": 0.312,
+          "audio_correlation": 0.99968,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-09.png"
+        },
+        {
+          "time": 1840.62,
+          "rgb_mean_error": 0.315,
+          "audio_correlation": 0.99985,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-10.png"
+        },
+        {
+          "time": 60.7,
+          "rgb_mean_error": 0.314,
+          "audio_correlation": 0.99943,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-boundary-60.7.png"
+        },
+        {
+          "time": 121.7,
+          "rgb_mean_error": 0.316,
+          "audio_correlation": 0.99935,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-boundary-121.7.png"
+        },
+        {
+          "time": 203.32,
+          "rgb_mean_error": 0.331,
+          "audio_correlation": 0.99987,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-02-1.png"
+        },
+        {
+          "time": 242.92,
+          "rgb_mean_error": 0.357,
+          "audio_correlation": 0.99935,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-02-2.png"
+        },
+        {
+          "time": 398.56,
+          "rgb_mean_error": 0.243,
+          "audio_correlation": 0.99925,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-03-1.png"
+        },
+        {
+          "time": 427.88,
+          "rgb_mean_error": 0.373,
+          "audio_correlation": 0.99988,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-03-2.png"
+        },
+        {
+          "time": 607.76,
+          "rgb_mean_error": 0.238,
+          "audio_correlation": 0.99909,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-04-1.png"
+        },
+        {
+          "time": 799.04,
+          "rgb_mean_error": 0.297,
+          "audio_correlation": 0.99904,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-04-2.png"
+        },
+        {
+          "time": 829.48,
+          "rgb_mean_error": 0.284,
+          "audio_correlation": 0.9998,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-04-3.png"
+        },
+        {
+          "time": 896.56,
+          "rgb_mean_error": 0.252,
+          "audio_correlation": 0.99917,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-05-1.png"
+        },
+        {
+          "time": 922.12,
+          "rgb_mean_error": 0.25,
+          "audio_correlation": 0.99968,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-05-2.png"
+        },
+        {
+          "time": 1085.24,
+          "rgb_mean_error": 0.254,
+          "audio_correlation": 0.99969,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-06-0.png"
+        },
+        {
+          "time": 1099.44,
+          "rgb_mean_error": 0.249,
+          "audio_correlation": 0.99916,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-06-1.png"
+        },
+        {
+          "time": 1122.84,
+          "rgb_mean_error": 0.23,
+          "audio_correlation": 0.9999,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-06-2.png"
+        },
+        {
+          "time": 1668.98,
+          "rgb_mean_error": 0.266,
+          "audio_correlation": 0.99893,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-09-1.png"
+        },
+        {
+          "time": 1692.78,
+          "rgb_mean_error": 0.35,
+          "audio_correlation": 0.99976,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-math-09-2.png"
+        },
+        {
+          "time": 1741.34,
+          "rgb_mean_error": 0.307,
+          "audio_correlation": 0.99973,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-8ab4bf9ac3274635925c609fc9860165/deep_dive-zoom-09-3.png"
+        }
+      ],
+      "title": "LoRAの仕組みを図と計算で理解する・詳解編・英語学習",
+      "duration_seconds": 2020.1,
+      "expressions": 12,
+      "scene_reviews": [
+        {
+          "title": "The Frozen Monolith and the Slider",
+          "content": "checked",
+          "editorial": "best_effort",
+          "omissions": []
+        },
+        {
+          "title": "Shapes, Directions, and Rank",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "The Core Equation: ΔW = BA",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "The Forward Pass: Summing the Paths",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "Training the Sliders: Init and Scaling",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "Deployment: Merging the Magic",
+          "content": "checked",
+          "editorial": "best_effort",
+          "omissions": []
+        },
+        {
+          "title": "The Cost: Parameters vs. Memory",
+          "content": "best_effort",
+          "editorial": "best_effort",
+          "omissions": [
+            {
+              "text": "You’re missing the optimizer. Adam, the training algorithm, needs to store two extra copies of every parameter it updates: momentum and variance. In full fine-tuning, that’s three times the model size in memory. With LoRA, we only compute those states for the tiny LoRA matrices. The 175 billion frozen weights still sit in memory, but they don’t need optimizer states. That’s where the savings come from.",
+              "reason": "unresolved source check"
+            }
+          ]
+        },
+        {
+          "title": "The Evidence: GLUE and GPT-2",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "The Rank Hypothesis: Subspace Overlap",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        },
+        {
+          "title": "Limitations and the Takeaway",
+          "content": "checked",
+          "editorial": "checked",
+          "omissions": []
+        }
+      ]
+    }
+  },
+  "lan_browser": {
+    "project_id": "8ab4bf9ac3274635925c609fc9860165",
+    "started": "2026-10-02T18:54:33.481Z",
+    "scope": "Linux Chromium over LAN HTTPS; real movies and practice audio. Optional file-fed microphone tests capture/upload/local evaluation, not human pronunciation accuracy or physical Mac hardware.",
+    "checks": {
+      "two_film_cards": true,
+      "overview_movie_plays": true,
+      "deep_dive_movie_plays": true,
+      "finished_movie_plays": true,
+      "lan_mp4_range_download": true,
+      "packaging_and_timestamps": true,
+      "same_script_and_initial_japanese": true,
+      "sentence_audio_and_navigation": true,
+      "actual_expression_practice": true,
+      "deep_worked_example_practice_and_figure": true,
+      "no_browser_exceptions": true
+    },
+    "status": "passed",
+    "progress_restored": true,
+    "deep_progress_restored": true,
+    "finished": "2026-10-02T18:54:35.811Z"
+  },
+  "source_audit": {
+    "project_id": "8ab4bf9ac3274635925c609fc9860165",
+    "checked_at": 1790965123.234309,
+    "scope": "Independent source-based review of specific LoRA claims; not a complete scientific or CEFR certification",
+    "checks": [
+      {
+        "scope": "matrix dimensions and full-shaped Delta W",
+        "source_id": "426c6e9b5b0a4693b391444f2c1fb74d:P4.1",
+        "result": "d outputs, k inputs; BA full shape; factorization reduces representation"
+      },
+      {
+        "scope": "zero initialization and alpha/r scaling",
+        "source_id": "426c6e9b5b0a4693b391444f2c1fb74d:P4.1",
+        "result": "B starts zero; scaling reduces retuning, without identical-dynamics guarantee"
+      },
+      {
+        "scope": "parameter/memory/checkpoint distinction",
+        "source_id": "426c6e9b5b0a4693b391444f2c1fb74d:H33",
+        "result": "Training 1.2TB to 350GB and task checkpoint 35MB are distinct; base model retained"
+      },
+      {
+        "scope": "representative GLUE and E2E results",
+        "source_ids": [
+          "426c6e9b5b0a4693b391444f2c1fb74d:H43",
+          "426c6e9b5b0a4693b391444f2c1fb74d:H47"
+        ],
+        "result": "86.4/87.2 and 68.2/70.4 correspond to stated rows; performance evidence is task-specific"
+      },
+      {
+        "scope": "subspace overlap interpretation",
+        "source_id": "426c6e9b5b0a4693b391444f2c1fb74d:H72",
+        "result": "Shared top direction, not broad overlap of all rank-eight directions; phi=1 needs dimension qualification"
+      },
+      {
+        "scope": "worked calculation",
+        "result": "Ax=7; BAx=[7,14]; I*x+BAx=[8,15]; merged [[4,4],[6,9]]*x also [8,15]; explicitly hypothetical"
+      },
+      {
+        "scope": "original Figure 3 zoom",
+        "result": "Independent pixel inspection corrected the saved p3 region to retain panel heading, 1–8 tick labels and j axis; original pixels preserved"
+      }
+    ],
+    "old_lessons_preserved": true,
+    "old_paused_jobs": [
+      {
+        "id": "d951f20572014ca2bb43cd6ec4bc332b",
+        "target": "72451d203e2948fe826f8f3f7d97b5c5",
+        "state": "paused"
+      },
+      {
+        "id": "af8db257f7a44ddcb7a4012719919767",
+        "target": "4cb816a0b72f4b17a496c7848c349be9",
+        "state": "paused"
+      },
+      {
+        "id": "712b3b2d646046658fee3d6ec4f7a7d0",
+        "target": "78a5f0a45b614188a9acfed52ccb1b83",
+        "state": "paused"
+      }
+    ]
+  },
+  "longest_shared_word_sequence": 8,
+  "discovery_enabled": false,
+  "youtube_auto_upload": false,
+  "retained_old_paused_lesson_jobs": [
+    {
+      "id": "d951f20572014ca2bb43cd6ec4bc332b",
+      "state": "paused",
+      "target": "72451d203e2948fe826f8f3f7d97b5c5"
+    },
+    {
+      "id": "af8db257f7a44ddcb7a4012719919767",
+      "state": "paused",
+      "target": "4cb816a0b72f4b17a496c7848c349be9"
+    },
+    {
+      "id": "712b3b2d646046658fee3d6ec4f7a7d0",
+      "state": "paused",
+      "target": "78a5f0a45b614188a9acfed52ccb1b83"
+    }
+  ],
+  "local_inference": {
+    "reader": "qwen-q8",
+    "speech": "Pinned local Qwen3-TTS BF16 with Maya/Aiden",
+    "recognition": "Pinned local Qwen3-ASR and forced aligner",
+    "network_test": "External Python connections and DNS blocked after acquisition; blocked inside speech actor; Chromium requests aborted during slide generation. Application-level isolation, not a host-wide firewall."
+  },
+  "review_scope": "Media mechanics and specific source-backed LoRA statements checked. Local model reviews are not complete scientific certification or CEFR certification. No physical Mac microphone test or human pronunciation benchmark in this run.",
+  "raw_evidence_directory": "data/evaluation/story-8ab4bf9ac3274635925c609fc9860165",
+  "pixel_lip_sync": {
+    "export_id": "9029f46f14854fc2904b93de4fb027db",
+    "sha256": "967909d39ad329afd1bca759b03c5a4fa128d370f95264aa83facec6ef27278f",
+    "samples": [
+      {
+        "speaking": "host",
+        "at_seconds": 7.6,
+        "pixels": {
+          "guide": {
+            "box": [
+              133,
+              948,
+              33,
+              13
+            ],
+            "changed_pixels": 0,
+            "mean_difference": 1.98
+          },
+          "host": {
+            "box": [
+              1760,
+              948,
+              33,
+              13
+            ],
+            "changed_pixels": 149,
+            "mean_difference": 38.87
+          }
+        },
+        "passed": true
+      },
+      {
+        "speaking": "guide",
+        "at_seconds": 25.064,
+        "pixels": {
+          "guide": {
+            "box": [
+              133,
+              948,
+              33,
+              13
+            ],
+            "changed_pixels": 201,
+            "mean_difference": 43.46
+          },
+          "host": {
+            "box": [
+              1760,
+              948,
+              33,
+              13
+            ],
+            "changed_pixels": 0,
+            "mean_difference": 2.15
+          }
+        },
+        "passed": true
+      }
+    ]
+  },
+  "microphone_browser": {
+    "project_id": "8ab4bf9ac3274635925c609fc9860165",
+    "started": "2026-10-02T18:56:14.545Z",
+    "scope": "Linux Chromium over LAN HTTPS; real movies and practice audio. Optional file-fed microphone tests capture/upload/local evaluation, not human pronunciation accuracy or physical Mac hardware.",
+    "checks": {
+      "two_film_cards": true,
+      "overview_movie_plays": true,
+      "deep_dive_movie_plays": true,
+      "finished_movie_plays": true,
+      "lan_mp4_range_download": true,
+      "packaging_and_timestamps": true,
+      "same_script_and_initial_japanese": true,
+      "sentence_audio_and_navigation": true,
+      "actual_expression_practice": true,
+      "media_recorder_upload": true,
+      "local_recording_evaluation": true,
+      "deep_worked_example_practice_and_figure": true,
+      "no_browser_exceptions": true
+    },
+    "attempt_id": "54ea95ea0f1a4584a7659d9900355d6a",
+    "recording_result": {
+      "state": "ready",
+      "stages": [
+        "audio",
+        "question_id",
+        "phase",
+        "sha256",
+        "model_manifest",
+        "language_model",
+        "wav",
+        "quality",
+        "transcript",
+        "timestamps",
+        "asr_settings",
+        "pace_wpm",
+        "pauses",
+        "word_match",
+        "wer",
+        "words",
+        "reference_text",
+        "reference_audio",
+        "reference_timestamps",
+        "pronunciation_focus",
+        "pronunciation",
+        "word_stress",
+        "syllable_energy",
+        "stress",
+        "reference_stress",
+        "feedback"
+      ],
+      "transcript": "Imagine you're a chef who needs to cook a specific dish every day. Imagine you're.",
+      "quality": {
+        "duration": 4.44,
+        "rms": 0.15151003003120422,
+        "peak": 0.861572265625,
+        "clipping": 0,
+        "status": "ok",
+        "spectral_flatness": 0.0012978259398244204
+      }
+    },
+    "status": "passed",
+    "progress_restored": true,
+    "deep_progress_restored": true,
+    "qa_recording_removed": true,
+    "qa_review_restored": true,
+    "finished": "2026-10-02T18:56:30.840Z"
+  }
+}

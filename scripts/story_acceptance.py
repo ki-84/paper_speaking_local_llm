@@ -7,10 +7,117 @@ import subprocess
 from difflib import SequenceMatcher
 
 import imageio_ffmpeg
+import numpy as np
+import pymupdf
 from paperspeak import config, db, story, story_video, video
 
 
-def inspect(ident, screenshots=False):
+def media_sync_check(mp4, speech, ass_path, timestamp, frame_path):
+    """Compare rendered media with the independently positioned source audio/frame."""
+    cursor = 0.0
+    for item in speech:
+        seconds = item["frames"] / 24000
+        if cursor <= timestamp < cursor + seconds:
+            break
+        cursor += seconds
+    else:
+        raise ValueError("Sample lies beyond the master timeline")
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    expected = frame_path.with_name(frame_path.stem + "-expected.png")
+    subprocess.run(
+        [
+            ffmpeg,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-loop",
+            "1",
+            "-i",
+            str(config.safe_path(item["scene"])),
+            "-vf",
+            f"format=yuv420p,setpts=PTS+{timestamp}/TB,ass={ass_path}",
+            "-frames:v",
+            "1",
+            str(expected),
+        ],
+        check=True,
+        timeout=40,
+    )
+    pixels = []
+    for path in (frame_path, expected):
+        pix = pymupdf.Pixmap(str(path))
+        pixels.append(
+            np.frombuffer(pix.samples, dtype=np.uint8)
+            .reshape(pix.height, pix.width, pix.n)[..., :3]
+            .astype(float)
+        )
+    image_error = float(np.abs(pixels[0] - pixels[1]).mean())
+    length = min(2.0, cursor + seconds - timestamp)
+    decoded = []
+    for path, offset in (
+        (mp4, timestamp),
+        (config.safe_path(item["audio"]), timestamp - cursor),
+    ):
+        raw = subprocess.run(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-ss",
+                str(offset),
+                "-i",
+                str(path),
+                "-t",
+                str(length),
+                "-ar",
+                "24000",
+                "-ac",
+                "1",
+                "-f",
+                "s16le",
+                "-",
+            ],
+            capture_output=True,
+            check=True,
+            timeout=40,
+        ).stdout
+        decoded.append(np.frombuffer(raw, dtype="<i2").astype(float))
+    count = min(map(len, decoded))
+    actual, reference = (a[:count] for a in decoded)
+    lag = 0
+    correlation = None
+    if np.std(reference) > 10:
+        # Measure AAC priming explicitly rather than mistaking a few milliseconds
+        # of decoded delay for different spoken audio.
+        window = min(2400, count // 4)
+        size = 1 << (2 * count - 1).bit_length()
+        cross = np.fft.irfft(
+            np.fft.rfft(actual, size) * np.conj(np.fft.rfft(reference, size)), size
+        )
+        lag = (
+            int(np.argmax(np.concatenate((cross[-window:], cross[: window + 1]))))
+            - window
+        )
+        if lag >= 0:
+            actual, reference = actual[lag:], reference[: count - lag]
+        else:
+            actual, reference = actual[: count + lag], reference[-lag:]
+        correlation = float(np.corrcoef(actual, reference)[0, 1])
+    return {
+        "time": round(timestamp, 3),
+        "rgb_mean_error": round(image_error, 3),
+        "audio_correlation": round(correlation, 5) if correlation is not None else None,
+        "audio_offset_ms": round(lag / 24, 3),
+        "passed": image_error < 5
+        and abs(lag / 24) < 80
+        and (correlation is None or correlation > 0.98),
+        "frame": str(frame_path.relative_to(config.DATA)),
+    }
+
+
+def inspect(ident, screenshots=False, sync=False):
     project = db.one("SELECT * FROM video_projects WHERE id=?", (ident,))
     if not project:
         raise ValueError("Video project not found")
@@ -34,10 +141,9 @@ def inspect(ident, screenshots=False):
         ]
         scripts.append(words)
         export = db.one(
-            "SELECT * FROM video_exports WHERE lesson_id=? AND kind=? AND state='ready' ORDER BY created DESC LIMIT 1",
-            (track["lesson_id"], mode),
+            "SELECT * FROM video_exports WHERE id=?", (track.get("export_id"),)
         )
-        if not export:
+        if not export or export["state"] != "ready":
             report["films"][mode] = {"state": "pending", "phase": track["phase"]}
             continue
         data = export["data"]
@@ -47,7 +153,8 @@ def inspect(ident, screenshots=False):
             "SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal",
             (track["lesson_id"],),
         )
-        _, _, starts, _ = _timeline(
+        work = config.DATA / "jobs" / ("story-video-" + export["id"])
+        speech, _, starts, _ = _timeline(
             manifest, config.DATA / "jobs" / ("story-video-" + export["id"])
         )
         checks = {
@@ -85,11 +192,14 @@ def inspect(ident, screenshots=False):
             "questions_available": all(c["data"].get("questions") for c in chapters),
             "burned_subtitles": data["acceptance"]["burned_subtitles"] == ["en", "ja"],
             "thumbnail_exists": config.safe_path(data["thumbnail"]).is_file(),
+            "current_renderer": manifest["version"] == story_video.VERSION,
         }
         paths = []
-        if screenshots:
+        sync_samples = []
+        if screenshots or sync:
             for i, (start, _) in enumerate(starts):
                 path = root / f"{mode}-{i + 1:02}.png"
+                timestamp = min(start + 12, data["duration"] - 0.5)
                 subprocess.run(
                     [
                         imageio_ffmpeg.get_ffmpeg_exe(),
@@ -98,7 +208,7 @@ def inspect(ident, screenshots=False):
                         "error",
                         "-y",
                         "-ss",
-                        str(min(start + 12, data["duration"] - 0.5)),
+                        str(timestamp),
                         "-i",
                         str(mp4),
                         "-frames:v",
@@ -109,6 +219,38 @@ def inspect(ident, screenshots=False):
                     timeout=40,
                 )
                 paths.append(str(path.relative_to(config.DATA)))
+                if sync:
+                    sync_samples.append(
+                        media_sync_check(
+                            mp4, speech, work / "captions.ass", timestamp, path
+                        )
+                    )
+            if sync:
+                for timestamp in (60.7, 121.7):
+                    path = root / f"{mode}-boundary-{timestamp}.png"
+                    subprocess.run(
+                        [
+                            imageio_ffmpeg.get_ffmpeg_exe(),
+                            "-hide_banner",
+                            "-loglevel",
+                            "error",
+                            "-y",
+                            "-ss",
+                            str(timestamp),
+                            "-i",
+                            str(mp4),
+                            "-frames:v",
+                            "1",
+                            str(path),
+                        ],
+                        check=True,
+                        timeout=40,
+                    )
+                    sync_samples.append(
+                        media_sync_check(
+                            mp4, speech, work / "captions.ass", timestamp, path
+                        )
+                    )
             offset = 0.0
             previous = None
             for index, scene in enumerate(manifest["scenes"]):
@@ -122,16 +264,22 @@ def inspect(ident, screenshots=False):
                             / 24000
                         )
                     focus = u.get("visual_focus", 0)
+                    zoom = bool(scene["visual"].get("image_path")) and focus >= scene[
+                        "visual"
+                    ].get("zoom_start", 999)
                     if (
-                        scene["visual"].get("equations")
-                        and (
-                            not scene["visual"].get("image_path")
-                            or 0 < focus < scene["visual"].get("zoom_start", 999)
+                        zoom
+                        or (
+                            scene["visual"].get("equations")
+                            and (
+                                not scene["visual"].get("image_path")
+                                or 0 < focus < scene["visual"].get("zoom_start", 999)
+                            )
                         )
-                        and focus not in sampled
-                    ):
+                    ) and focus not in sampled:
                         sampled.add(focus)
-                        path = root / f"{mode}-math-{index + 1:02}-{focus}.png"
+                        kind = "zoom" if zoom else "math"
+                        path = root / f"{mode}-{kind}-{index + 1:02}-{focus}.png"
                         subprocess.run(
                             [
                                 imageio_ffmpeg.get_ffmpeg_exe(),
@@ -151,8 +299,22 @@ def inspect(ident, screenshots=False):
                             timeout=40,
                         )
                         paths.append(str(path.relative_to(config.DATA)))
+                        if sync:
+                            sync_samples.append(
+                                media_sync_check(
+                                    mp4,
+                                    speech,
+                                    work / "captions.ass",
+                                    offset + min(3, u["duration"] / 2),
+                                    path,
+                                )
+                            )
                     offset += u["duration"]
                     previous = u
+        if sync:
+            checks["rendered_audio_caption_figure_sync"] = bool(sync_samples) and all(
+                s["passed"] for s in sync_samples
+            )
         report["films"][mode] = {
             "state": "ready",
             "export_id": export["id"],
@@ -162,6 +324,7 @@ def inspect(ident, screenshots=False):
             "sha256": data["sha256"],
             "checks": checks,
             "frames": paths,
+            "sync_samples": sync_samples,
             "spoken_words": len(words),
             "practice_sentences": sum(len(c["data"]["turns"]) for c in chapters),
             "audio_wer_max": max(
@@ -195,7 +358,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("project_id")
     parser.add_argument("--screenshots", action="store_true")
+    parser.add_argument("--sync", action="store_true")
     args = parser.parse_args()
-    report = inspect(args.project_id, args.screenshots)
+    report = inspect(args.project_id, args.screenshots, args.sync)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     raise SystemExit(0 if report["media_checks_pass"] else 1)

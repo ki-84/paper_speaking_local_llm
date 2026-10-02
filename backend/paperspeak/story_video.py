@@ -11,7 +11,7 @@ import imageio_ffmpeg
 
 from . import config, db, video, video_overlay
 
-VERSION = "story-film-1"
+VERSION = "story-film-2"
 
 
 def portable_title(title):
@@ -519,8 +519,6 @@ def step(job, runtime):
         # Timestamp shift after ASS evaluation keeps all cues on the master timeline.
         video._ffmpeg(
             [
-                "-ss",
-                str(start),
                 "-f",
                 "concat",
                 "-safe",
@@ -536,7 +534,10 @@ def step(job, runtime):
                 "-i",
                 str(audio_list),
                 "-vf",
-                f"fps=30,format=yuv420p,setpts=PTS+{start}/TB,ass={ass_path},setpts=PTS-STARTPTS",
+                # Dense frames before trimming retain the image covering a seek point.
+                # Seeking the sparse PNG concat directly can skip to the next paragraph,
+                # shifting both ASS captions and the visible diagram by many seconds.
+                f"fps=30,trim=start={start}:duration={length},setpts=PTS-STARTPTS,format=yuv420p,setpts=PTS+{start}/TB,ass={ass_path},setpts=PTS-STARTPTS",
                 "-t",
                 f"{length:.6f}",
                 "-c:v",

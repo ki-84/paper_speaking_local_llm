@@ -494,6 +494,40 @@ def test_resumable_video_keeps_audio_and_subtitle_timing_across_segment_boundary
     # Both parts exist; restarting the renderer reuses these instead of starting over.
     work = database / "jobs" / ("story-video-" + eid)
     assert (work / "part-000.mp4").is_file() and (work / "part-001.mp4").is_file()
+    # Check actual burned captions after the boundary, not just the separate SRT.
+    # A sparse PNG input seek formerly jumped to its next image and evaluated ASS too late.
+    import subprocess
+
+    import imageio_ffmpeg
+    import pymupdf
+
+    frame = database / "boundary-caption.png"
+    subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-ss",
+            "60.7",
+            "-i",
+            str(config.safe_path(export["data"]["mp4"])),
+            "-frames:v",
+            "1",
+            str(frame),
+        ],
+        check=True,
+    )
+    pix = pymupdf.Pixmap(frame)
+    white = sum(
+        min(pix.pixel(x, y)[:3]) > 200
+        for x in range(340, 1580, 2)
+        for y in range(835, 960, 2)
+    )
+    assert white > 100, (
+        "The final English cue must be burned into the second video segment"
+    )
 
 
 def test_original_figure_does_not_hide_math_or_become_a_recursive_source(database):
@@ -617,6 +651,7 @@ def test_worked_example_is_bounded_explicit_and_arithmetically_correct(
     assert "hypothetical example" in s["utterances"][2]["text"]
     story.ensure_lora_worked_example(p, t)
     assert len(s["utterances"]) == 5
+    assert [u["visual_focus"] for u in s["utterances"]] == [0, 0, 1, 2, 2]
     story.validate_visual(s["visual"], "deep_dive")
 
 

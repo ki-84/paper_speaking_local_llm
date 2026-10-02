@@ -18,7 +18,7 @@ const browser=await chromium.launch({headless:true,args:microphone?['--use-fake-
 const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1000},permissions:microphone?['microphone']:[]});
 const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
-let lesson,attemptId,reviewSnapshot;
+let lesson,deepLesson,attemptId,reviewSnapshot;
 const reviews=(action,payload)=>{
   const code=`import json,sys
 from paperspeak import db
@@ -109,6 +109,25 @@ try {
     report.recording_result={state:attempt.state,stages:Object.keys(attempt.data),transcript:attempt.data.transcript,quality:attempt.data.quality};
   }
   await page.screenshot({path:path.join(root,'data/evaluation/story-practice.png'),fullPage:true});
+  if(process.argv.includes('--require-complete')){
+    deepLesson=await api('/lessons/'+project.data.modes.deep_dive.lesson_id);
+    const c=deepLesson.chapters.find(c=>c.data.turns.some(t=>t.text.includes("Let's use a hypothetical example")));
+    if(!c)throw new Error('The spoken worked example is missing');
+    const i=c.data.turns.findIndex(t=>t.text.includes("Let's use a hypothetical example")),turn=c.data.turns[i];
+    await context.request.put(base+`/api/lessons/${deepLesson.id}/progress`,{data:{chapter_id:c.id,turn_index:i,role:'both',speed:1,subtitles:true}});
+    await page.goto(base);
+    await page.locator('.story-film').nth(1).getByRole('button',{name:'Practice English · 英語練習'}).click();
+    await expect(page.locator('.spoken-sentence')).toHaveText(turn.text);
+    await expect(page.locator('.sentence-translation')).not.toBeEmpty();
+    const img=page.locator('.visual-picture img');
+    await expect.poll(()=>img.evaluate(img=>img.complete&&img.naturalWidth>0)).toBeTruthy();
+    const ref=c.data.visuals.find(r=>r.key===turn.visual.key),asset=deepLesson.visuals.find(a=>a.id===ref.asset_id);
+    if(!decodeURIComponent(new URL(await img.getAttribute('src'),base).pathname).endsWith(asset.data.image_path))throw new Error('The practice figure does not match the spoken cue');
+    await page.getByRole('button',{name:'Hear it',exact:true}).click();
+    await expect.poll(()=>page.locator('.sentence-card audio').evaluate(a=>a.currentTime)).toBeGreaterThan(0);
+    report.checks.deep_worked_example_practice_and_figure=true;
+    await page.screenshot({path:path.join(root,'data/evaluation/story-deep-practice.png'),fullPage:true});
+  }
   if(errors.length)throw new Error(errors.join('\n'));
   report.checks.no_browser_exceptions=true;
   report.status=Object.values(report.checks).every(Boolean)?'passed':'failed';
@@ -117,6 +136,7 @@ try {
 finally{
   await page.goto('about:blank');
   if(lesson){const restored=await context.request.put(base+`/api/lessons/${lesson.id}/progress`,{data:lesson.progress?.chapter_id?lesson.progress:{chapter_id:lesson.chapters[0].id,turn_index:0}});report.progress_restored=restored.ok();}
+  if(deepLesson){const restored=await context.request.put(base+`/api/lessons/${deepLesson.id}/progress`,{data:deepLesson.progress?.chapter_id?deepLesson.progress:{chapter_id:deepLesson.chapters[0].id,turn_index:0}});report.deep_progress_restored=restored.ok();}
   if(attemptId){
     const removed=await context.request.delete(base+'/api/attempts/'+attemptId);report.qa_recording_removed=removed.ok();
     if(removed.ok()){

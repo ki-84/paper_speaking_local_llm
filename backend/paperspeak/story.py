@@ -650,6 +650,21 @@ def ensure_lora_worked_example(project, track):
             "status": "Explicit hypothetical example, not a paper measurement",
         }
     )
+    ensure_worked_example_cues(scene)
+
+
+def ensure_worked_example_cues(scene):
+    if not scene.get("visual", {}).get("worked_example"):
+        return
+    tail = scene["utterances"][-4:]
+    if not tail or "calculator doesn't have a paprika button" not in tail[0]["text"]:
+        return
+    # Adding formulas after drafting must not reinterpret old node indices as toy calculations.
+    offset = int(bool(scene["visual"].get("original_asset_id")))
+    for index, u in enumerate(scene["utterances"][:-4]):
+        u["visual_focus"] = 0 if index == 0 else offset
+    for u, focus in zip(tail, (0, 1, 2, 2)):
+        u["visual_focus"] = focus + offset
 
 
 def sentences(text):
@@ -1879,6 +1894,7 @@ def _script_step(project, runtime, mode):
         normalize_lora_conventions(project, scene)
         if mode == "deep_dive":
             ensure_lora_math_visual(project, scene)
+            ensure_worked_example_cues(scene)
         if not scene.get("visual_ready"):
             try:
                 validate_visual(scene["visual"], mode)

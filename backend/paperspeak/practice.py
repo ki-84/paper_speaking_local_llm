@@ -443,11 +443,15 @@ def practice_step(job, runtime):
     if phase == "understand":
         stage("Checking the idea in your answer", 0.65)
         q = next(q for q in chapter["data"]["questions"] if q["id"] == a["question_id"])
+        lesson = db.one("SELECT data FROM lessons WHERE id=?", (attempt["lesson_id"],))
+        expression_target = ("Use natural C1 English in better_answer, retaining useful idioms and complex sentences where appropriate. "
+                             if lesson["data"].get("format") == "paper-story-1" else "Use short easy English in better_answer. ")
         result = runtime.ask(
             "Give kind, short feedback to an English learner answering a question about a paper. "
             "Evaluate understanding separately from English expression. Accept correct paraphrases and do not require exact sample wording. "
             "The transcript may contain recognition errors; if a key word is ambiguous, ask for another try instead of asserting the learner is wrong. "
-            'Return {"understanding":"clear|partly_clear|try_again","content_feedback":"one simple sentence","english_feedback":"one useful simple tip","better_answer":"a short easy-English answer","next_step":"one small action"}.'
+            + expression_target
+            + 'Return {"understanding":"clear|partly_clear|try_again","content_feedback":"one clear sentence","english_feedback":"one useful tip","better_answer":"a concise answer at the requested English level","next_step":"one small action"}.'
             "\nQUESTION AND RUBRIC: "
             + json.dumps(q)
             + "\nLESSON: "

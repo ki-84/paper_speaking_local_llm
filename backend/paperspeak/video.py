@@ -314,7 +314,8 @@ def _render_slide(scene_path, image, partial):
 
 def _ffmpeg(args, runtime, partial):
     command = [imageio_ffmpeg.get_ffmpeg_exe(), "-hide_banner", "-nostdin", "-y", "-loglevel", "warning", *args]
-    with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True) as proc:
+    # Long concat/seek jobs can produce enough warnings to fill an unread pipe.
+    with partial.with_suffix(".encode.log").open("w+") as error_log, subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=error_log, text=True) as proc:
         try:
             while proc.poll() is None:
                 if runtime.practice_waiting():
@@ -322,7 +323,8 @@ def _ffmpeg(args, runtime, partial):
                     proc.wait(timeout=10)
                     raise PracticePreempted("Video paused for your recording.")
                 time.sleep(1)
-            error = proc.stderr.read()
+            error_log.seek(0)
+            error = error_log.read()
             if proc.returncode:
                 raise RuntimeError("Local video encoding failed: " + error[-1200:])
         except BaseException:

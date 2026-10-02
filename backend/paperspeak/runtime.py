@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 import hashlib
 import json
 import os
@@ -10,6 +9,8 @@ import socket
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from pathlib import Path
 
 import httpx
@@ -468,6 +469,7 @@ class Runtime:
                 raise GPUUnavailable("Waiting for the GPU to be free.")
             self.log = open(config.DATA / f"logs/{environment}.log", "a")
             env = os.environ | {
+                "HF_HUB_DISABLE_TELEMETRY": "1",
                 "HF_HUB_OFFLINE": "1",
                 "TRANSFORMERS_OFFLINE": "1",
                 "TOKENIZERS_PARALLELISM": "false",

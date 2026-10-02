@@ -14,12 +14,15 @@ from . import (
     db,
     discovery,
     lessons,
+    local_network,
+    paper_search,
     papers,
     phoneme_probe,
     practice,
-    paper_search,
     recommendation_ja,
     revoice,
+    story,
+    story_video,
     translation,
     video,
     youtube,
@@ -99,6 +102,16 @@ def run():
                 runtime.job_kind = job["kind"]
                 if job["kind"] == "lesson":
                     done = lessons.lesson_step(job, runtime)
+                elif job["kind"] == "video_project":
+                    project = db.one("SELECT data FROM video_projects WHERE id=?", (job["target"],))
+                    if project and project["data"]["phase"] != "sources":
+                        with local_network.inference_only():
+                            done = story.step(job, runtime)
+                    else:
+                        done = story.step(job, runtime)
+                elif job["kind"] == "story_video":
+                    with local_network.inference_only():
+                        done = story_video.step(job, runtime)
                 elif job["kind"] == "discover":
                     done = discovery.discovery_step(job, runtime)
                 elif job["kind"] == "practice":
@@ -207,7 +220,7 @@ def run():
                         (job["target"],),
                     )
                     db.event("attempt", {"id": job["target"]})
-                if state == "failed" and job["kind"] in {"chapter_video", "full_video"}:
+                if state == "failed" and job["kind"] in {"chapter_video", "full_video", "story_video"}:
                     export = db.one("SELECT * FROM video_exports WHERE id=?", (job["target"],))
                     if export:
                         video._set_export(export, "failed", error=str(e)[:1200])

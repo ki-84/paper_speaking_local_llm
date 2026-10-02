@@ -37,7 +37,7 @@ def parse_reference(value):
     return m.group(1), m.group(2) or ""
 
 
-def fetch(url, params=None, cache=True, cache_scope=""):
+def fetch(url, params=None, cache=True, cache_scope="", *, attempts=4, timeout=90):
     u = urlparse(url)
     if u.scheme != "https" or u.hostname not in {
         "arxiv.org",
@@ -55,13 +55,13 @@ def fetch(url, params=None, cache=True, cache_scope=""):
     with open(config.DATA / "cache/arxiv.lock", "a+") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         stamp = config.DATA / "cache/arxiv.last"
-        for retry in range(4):
+        for retry in range(attempts):
             last = float(stamp.read_text()) if stamp.exists() else 0
             time.sleep(max(0, 3.1 - (time.time() - last)))
             stamp.write_text(str(time.time()))
             try:
                 with httpx.Client(
-                    timeout=90,
+                    timeout=timeout,
                     follow_redirects=False,
                     headers={
                         "User-Agent": "PaperSpeakLinux/0.1 (personal research reader)"
@@ -92,7 +92,7 @@ def fetch(url, params=None, cache=True, cache_scope=""):
                         temp.replace(cached)
                     return r.content
             except httpx.TransportError:
-                if retry == 3:
+                if retry == attempts - 1:
                     raise
                 time.sleep(3 * 2**retry)
     raise RuntimeError("arXiv is busy. Please try again later.")

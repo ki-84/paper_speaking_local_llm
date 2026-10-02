@@ -298,10 +298,14 @@ def run(request):
 
 
 if __name__ == "__main__":
+    # This script runs in the speech virtualenv, with its own directory on sys.path.
+    # Enforce local-only inference in the child process as well as the coordinator.
+    from local_network import inference_only
+
     output = sys.stdout
     for line in sys.stdin:
         try:
-            with contextlib.redirect_stdout(sys.stderr):
+            with contextlib.redirect_stdout(sys.stderr), inference_only():
                 result = run(json.loads(line))
         except Exception as e:
             traceback.print_exc(file=sys.stderr)

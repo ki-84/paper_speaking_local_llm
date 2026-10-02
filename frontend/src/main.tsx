@@ -371,6 +371,7 @@ function App() {
                 </span>
               </div>
             </section>
+            <StoryStudio papers={papers} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
             <div className="section-heading">
               <div>
                 <div className="eyebrow">ONE IDEA AT A TIME</div>
@@ -398,7 +399,7 @@ function App() {
                       <span>{date(l.created)}</span>
                     </div>
                     <h3>{l.data.title}</h3>
-                    <p className="subtle">{l.data.format === "paper-visual-2" ? "Visual lesson · 図付き教材" : "Earlier edition · 旧版"}</p>
+                    <p className="subtle">{l.data.format === "paper-story-1" ? "Film & C1 English practice · 動画と英語練習" : l.data.format === "paper-visual-2" ? "Visual lesson · 図付き教材" : "Earlier edition · 旧版"}</p>
                     <div className="card-bottom">
                       <span>
                         <Headphones size={16} />
@@ -819,6 +820,7 @@ function App() {
             onError={setError}
             refresh={refresh}
             onBack={() => setPage("library")}
+            onOpenLesson={openLesson}
           />
         )}
         <footer>
@@ -1174,6 +1176,7 @@ function Learn({
   onBack,
   reviewTarget,
   onRecording,
+  onOpenLesson,
 }: {
   id: string;
   reviewTarget: Row | null;
@@ -1182,6 +1185,7 @@ function Learn({
   onError: (s: string) => void;
   refresh: () => void;
   onBack: () => void;
+  onOpenLesson: (id: string) => void;
 }) {
   const [lesson, setLesson] = useState<Row | null>(null),
     [chapterId, setChapterId] = useState(""),
@@ -1663,7 +1667,7 @@ function Learn({
           >
             Open paper <ExternalLink size={14} />
           </a>
-          {(lesson.state === "ready" || lesson.data.format !== "paper-visual-2") && (
+          {lesson.data.format !== "paper-story-1" && (lesson.state === "ready" || lesson.data.format !== "paper-visual-2") && (
             <button
               className="text-button"
               onClick={() =>
@@ -1680,6 +1684,11 @@ function Learn({
           )}
         </div>
       </div>
+      <StoryProjectPanel paperId={lesson.paper_id} projectId={lesson.data.project_id} version={version} onError={onError} refresh={refresh} openLesson={onOpenLesson} />
+      {lesson.data.format === "paper-story-1" && chapter?.data.expressions?.length > 0 && <section className="story-expressions">
+        <h2>English you can use · 会話から学ぶ英語</h2>
+        {chapter?.data.expressions.map((e:any) => <div key={e.phrase}><strong>{e.phrase}</strong><p lang="ja">{e.meaning_ja}</p><p>{e.usage_en}</p>{e.example_en && <small>{e.example_en}</small>}<button className="secondary" disabled={recording} onClick={()=>{const exact=turns.findIndex((t:any)=>t.story_utterance_id===e.utterance_id&&t.text.toLowerCase().includes(e.phrase.toLowerCase()));const at=exact>=0?exact:turns.findIndex((t:any)=>t.story_utterance_id===e.utterance_id);if(at>=0){move(at);document.querySelector('.sentence-card')?.scrollIntoView({behavior:'smooth',block:'center'});}}}>Practice this expression · この表現を練習</button></div>)}
+      </section>}
       {lesson.data.format === "paper-visual-2" && <section className="video-export" aria-label="YouTube video export">
         <div>
           <strong>Video for YouTube · 動画を書き出し</strong>
@@ -2520,6 +2529,75 @@ function ClipButton({
     </button>
   );
 }
+type StoryPanelProps = {paperId:string;projectId?:string;version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void};
+
+function StoryStudio({papers, ...props}: Omit<StoryPanelProps,"paperId"> & {papers:Row[]}) {
+  const [selected,setSelected] = useState("");
+  useEffect(() => {if (!selected && papers.length) setSelected((papers.find(p=>p.source_id === "2106.09685") || papers[0]).id);}, [papers,selected]);
+  if (!papers.length) return null;
+  return <section className="story-studio"><label>One paper. Two stories. · 論文から2本の動画
+    <select value={selected} onChange={e=>setSelected(e.target.value)}>{papers.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select>
+    </label>{selected && <StoryProjectPanel paperId={selected} {...props} />}</section>;
+}
+
+function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson}:StoryPanelProps) {
+  const [project,setProject] = useState<any>(null);
+  const [busy,setBusy] = useState(false);
+  useEffect(() => {
+    let alive=true;
+    const load=async()=> {
+      const id=projectId || (await api<any[]>("/video-projects")).find(p=>p.paper_id===paperId)?.id;
+      const value=id ? await api<any>(`/video-projects/${id}`) : null;
+      if(alive)setProject(value);
+    };
+    load().catch(e=>{if(alive)onError(e.message);});
+    return ()=>{alive=false;};
+  },[paperId,projectId,version]);
+  const create=async()=> {
+    setBusy(true);
+    try {const r=await post(`/papers/${paperId}/video-projects`);setProject(await api(`/video-projects/${r.project_id}`));refresh();}
+    catch(e){onError((e as Error).message);}finally{setBusy(false);}
+  };
+  const control=async(action:string)=> {
+    try {await post(`/jobs/${project.job.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}
+  };
+  const copy=(text:string)=>navigator.clipboard.writeText(text).catch(e=>onError(e.message));
+  return <section className="story-project" aria-label="解説・詳解動画">
+    <div className="story-heading"><div><h2>Stories worth watching · 解説と詳解</h2><p>自然なC1英語の会話、動く図解、英日字幕。数式なしの解説編と、原理まで学ぶ詳解編。</p></div>
+      {!project ? <button className="primary" disabled={busy} onClick={create}>{busy?"Starting…":"解説・詳解動画を作る"} <Play size={16}/></button>
+      : <div className="actions"><Badge state={project.state}>{project.state==="ready"?"2本の動画が完成":project.job?.stage || "Preparing two stories"}</Badge>
+        {['queued','running'].includes(project.job?.state) && <button className="secondary" onClick={()=>control('pause')}>Pause · 一時停止</button>}
+        {['paused','failed','cancelled'].includes(project.job?.state) && <button className="primary" onClick={()=>control('resume')}>Resume · 続きから再開</button>}</div>}
+    </div>
+    {project && <>
+      {project.job?.error && <p role="alert">{project.job.error}</p>}
+      <progress max={1} value={project.job?.progress || 0}/>
+      <div className="story-film-grid">{Object.entries(project.data.modes || {}).map(([mode,entry])=> {
+        const track=entry as any;
+        const complete=track.videos?.find((v:any)=>v.kind===mode&&v.state==='ready');
+        const preview=track.videos?.find((v:any)=>v.kind===`${mode}_preview`&&v.state==='ready');
+        const visible=complete||preview;
+        return <article className="story-film" key={mode}><div className="eyebrow">{mode==='overview'?'THE IDEA · 数式なし':'UNDER THE HOOD · 数式と原理'}</div>
+          <h3>{track.packaging?.title || track.label}</h3><p>{track.preset.range.join('〜')}分 · {complete?'完成':track.phase}</p>
+          {visible && <video controls preload="metadata" poster={fileUrl(visible.data.thumbnail)} src={fileUrl(visible.data.mp4)} />}
+          {preview&&!complete&&<small>冒頭約90秒のプレビューです。全体の作成は続いています。</small>}
+          <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>Download MP4 · 動画</a>}
+            {visible&&<a className="secondary" href={fileUrl(visible.data.thumbnail)} download={`${visible.data.title}.png`}>Thumbnail · サムネイル</a>}
+            <button className="secondary" onClick={()=>openLesson(track.lesson_id)}>Practice English · 英語練習</button></div>
+          {track.packaging&&<details><summary>Titles & description · タイトルと説明欄</summary>
+            {track.packaging.candidates.map((c:any,i:number)=><div className="story-title" key={i}><span>{c.title_ja}</span><button className="text-button" onClick={()=>copy(c.title_ja)}>Copy</button></div>)}
+            <textarea aria-label={`${track.label} YouTube description`} readOnly value={complete?.data.description || track.packaging.description || "動画の完成時に説明文とタイムスタンプを用意します。"}/>
+            <button className="secondary" onClick={()=>copy(complete?.data.description || track.packaging.description || '')}>Copy description · 説明欄をコピー</button></details>}
+          {!!track.scenes?.length&&<details><summary>Script & review · 脚本と確認結果</summary>{track.scenes.map((s:any,i:number)=><div className="story-script" key={i}><h4>{s.title} / {s.title_ja}</h4>{s.utterances.map((u:any)=><p key={u.id}><strong>{u.speaker==='guide'?'Maya':'Aiden'}:</strong> {u.text}</p>)}{Object.entries(s.reviews||{}).map(([kind,value])=>{const review=value as any;return <small className="story-review" key={kind}>{kind==='content'?'Content · 内容':'Editing · 編集'}: {review.status||'checking'}{review.history?.at(-1)?.notes&&` — ${review.history.at(-1).notes}`}</small>;})}</div>)}</details>}
+          {!!track.expressions?.length&&<details><summary>Useful English · 使える表現</summary>{track.expressions.map((e:any)=><p key={e.phrase}><strong>{e.phrase}</strong> — {e.meaning_ja}<br/>{e.usage_en}</p>)}</details>}
+        </article>;
+      })}</div>
+      {!!project.data.warnings?.length&&<details><summary>Generation notes · 作成時の補足 ({project.data.warnings.length})</summary>{project.data.warnings.map((w:any,i:number)=><p key={i}>{w.reason} · {w.action}</p>)}</details>}
+      <p className="subtle">完成した動画はYouTube Studioへ手動でアップロードできます。英語と日本語の字幕は動画に直接入ります。</p>
+    </>}
+  </section>;
+}
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

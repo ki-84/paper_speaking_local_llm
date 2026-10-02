@@ -24,7 +24,17 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db, lessons, papers, practice, recommendation_ja, translation, youtube
+from . import (
+    config,
+    db,
+    lessons,
+    papers,
+    practice,
+    recommendation_ja,
+    story,
+    translation,
+    youtube,
+)
 from .runtime import gpu_info
 
 
@@ -253,8 +263,30 @@ def generate_lesson(ident: str):
 @app.get("/api/lessons", dependencies=[Depends(auth)])
 def list_lessons():
     return db.all(
-        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE j.kind='lesson' AND j.target=l.id ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l ORDER BY created DESC"
+        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format'),'project_id',json_extract(l.data,'$.project_id'),'mode',json_extract(l.data,'$.mode')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE (j.kind='lesson' AND j.target=l.id) OR (j.kind='video_project' AND j.target=json_extract(l.data,'$.project_id')) ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l ORDER BY created DESC"
     )
+
+
+@app.post("/api/papers/{ident}/video-projects", dependencies=[Depends(auth)])
+def create_video_project(ident: str):
+    try:
+        return story.create(ident)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/video-projects", dependencies=[Depends(auth)])
+def list_video_projects():
+    return [{"id": p["id"], "paper_id": p["paper_id"], "state": p["state"], "created": p["created"],
+             "title": p["data"]["paper_title"]} for p in db.all("SELECT * FROM video_projects ORDER BY created DESC")]
+
+
+@app.get("/api/video-projects/{ident}", dependencies=[Depends(auth)])
+def get_video_project(ident: str):
+    try:
+        return story.get(ident)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
 
 
 @app.get("/api/lessons/{ident}", dependencies=[Depends(auth)])
@@ -269,19 +301,19 @@ def get_lesson(ident: str):
     l["videos"] = db.all("SELECT * FROM video_exports WHERE lesson_id=? ORDER BY created DESC", (ident,))
     l["youtube_connected"] = youtube.connected()
     l["youtube_auto_upload"] = youtube.automatic()
-    video_jobs = db.all("SELECT target,kind,id,state,stage,error,progress FROM jobs WHERE kind IN ('chapter_video','full_video','youtube_upload') AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) ORDER BY created DESC", (ident,))
+    video_jobs = db.all("SELECT target,kind,id,state,stage,error,progress FROM jobs WHERE kind IN ('chapter_video','full_video','story_video','youtube_upload') AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) ORDER BY created DESC", (ident,))
     video_job_by_export = {}
     for video_job in video_jobs:
         video_job_by_export.setdefault((video_job["target"], video_job["kind"]), video_job)
     for video in l["videos"]:
         stored = video["data"]
         video["data"] = {key: stored[key] for key in
-            ("mp4", "en_srt", "ja_srt", "duration", "media_duration", "bytes", "sha256", "encoder", "encode_settings", "chapter_count", "title")
+            ("mp4", "en_srt", "ja_srt", "duration", "media_duration", "bytes", "sha256", "encoder", "encode_settings", "chapter_count", "title", "thumbnail", "description", "acceptance")
             if key in stored}
         if stored.get("youtube"):
             video["data"]["youtube"] = {key: value for key, value in stored["youtube"].items()
                 if key in {"state", "privacy", "bytes_sent", "video_id", "url", "uploaded_at", "error"}}
-        video["job"] = video_job_by_export.get((video["id"], video["kind"] + "_video"))
+        video["job"] = video_job_by_export.get((video["id"], "story_video" if l["data"].get("format") == story.FORMAT else video["kind"] + "_video"))
         video["upload_job"] = video_job_by_export.get((video["id"], "youtube_upload"))
     l["paper"] = db.one("SELECT * FROM papers WHERE id=?", (l["paper_id"],))
     l["attempts"] = db.all(
@@ -293,6 +325,8 @@ def get_lesson(ident: str):
         "SELECT id,state,stage,error FROM jobs WHERE kind='lesson' AND target=? ORDER BY created DESC LIMIT 1",
         (ident,),
     )
+    if l["data"].get("format") == story.FORMAT:
+        l["job"] = db.one("SELECT id,state,stage,error FROM jobs WHERE kind='video_project' AND target=? ORDER BY created DESC LIMIT 1", (l["data"]["project_id"],))
     translation_jobs = db.all(
         "SELECT target,id,state,stage,error,progress FROM jobs WHERE kind='translate' AND target IN (SELECT id FROM chapters WHERE lesson_id=?) ORDER BY created DESC",
         (ident,),
@@ -536,6 +570,13 @@ def control_job(ident: str, action: Literal["pause", "resume", "retry", "cancel"
     cp = job["checkpoint"]
     cp.pop("_failures", None)
     db.patch_job(ident, state=state, checkpoint=cp, error=None, available=0)
+    if job["kind"] == "video_project":
+        project = db.one("SELECT * FROM video_projects WHERE id=?", (job["target"],))
+        if project:
+            for track in project["data"]["modes"].values():
+                for child in db.all("SELECT id FROM jobs WHERE kind='story_video' AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) AND state IN ('queued','running','paused','failed','cancelled')", (track["lesson_id"],)):
+                    db.patch_job(child["id"], state=state, error=None, available=0)
+        db.event("video_project", {"id": job["target"]})
     if job["kind"] == "practice" and action in {"resume", "retry"}:
         db.execute("UPDATE attempts SET state='pending' WHERE id=?", (job["target"],))
     elif job["kind"] == "practice" and action == "cancel":

@@ -1,0 +1,642 @@
+{
+  "time_jst": "2026-10-04T07:34:11.379560+09:00",
+  "status": "passed",
+  "scope": "Completed story-project thumbnails and YouTube metadata. Original MP4, audio and immutable manifests retained. No video uploaded to YouTube.",
+  "versions": {
+    "identity": "paper-venue-edition-awards-2",
+    "thumbnail": "surprised-pixel-3-awards",
+    "description": "paper-awards-no-urls-1"
+  },
+  "projects": [
+    {
+      "id": "7b57bfd44d4e4aef92e22821cb8931b6",
+      "paper": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "publication": {
+        "status": "verified",
+        "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+        "venue": "ICML",
+        "year": 2026,
+        "label": "ICML 2026",
+        "source_url": "https://icml.cc/virtual/2026/oral/71086",
+        "source_text": "ICML 2026",
+        "checked_at": 1791066405.1109447,
+        "source_sha256": "e918ec9bf596c07b0ccb5dc428b360569dbe56cc63eb7f8facc06b4f94612623",
+        "source_kind": "official-conference-program"
+      },
+      "awards": [
+        {
+          "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "Outstanding Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71086",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai",
+          "source_name": "Outstanding Papers",
+          "name_ja": "優秀論文賞",
+          "label": "ICML 2026 優秀論文賞"
+        }
+      ],
+      "changed_exports": [
+        "dc126b2df292467484d0ed909c4d358e",
+        "e3725e8da6464c10a3ad7adc27aca03c",
+        "0b0a8a53b587497db62decbbec947a49",
+        "22e3a996bd80445981c07d6d28e22998"
+      ],
+      "thumbnail_sets": {
+        "overview": "cb1318dbcdef0e2b3adca53c4a0e33a0",
+        "deep_dive": "71e759c9886ee881893a324fdbefe2ce"
+      },
+      "exports": [
+        {
+          "id": "dc126b2df292467484d0ed909c4d358e",
+          "sha256": "18925105e179c5a7caf5f301da9f456ebbcc4f86b1baca262480ac1fb597df21",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】The Flexibility Trap - Rethinking the Value of Arbitrary Order in Diffusion Lan…｜ICML 2026",
+          "description_url_free": true
+        },
+        {
+          "id": "e3725e8da6464c10a3ad7adc27aca03c",
+          "sha256": "f6379bd88b823084210d55836bed163bb347a8eca7b7193d206e7ce445a30f30",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】The Flexibility Trap - Rethinking the Value of Arbitrary Order in Diffusion Lan…｜ICML 2026 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "0b0a8a53b587497db62decbbec947a49",
+          "sha256": "c697d14c14be10791461e6b346b1430cea1e5f2e91968b1aa49fad927d829799",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】The Flexibility Trap - Rethinking the Value of Arbitrary Order in Diffusion Lan…｜ICML 2026",
+          "description_url_free": true
+        },
+        {
+          "id": "22e3a996bd80445981c07d6d28e22998",
+          "sha256": "42e0d953da32bcb9eadc6285ca320e5bc8217016d666288a5091ca288cefe320",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】The Flexibility Trap - Rethinking the Value of Arbitrary Order in Diffusion Lan…｜ICML 2026 — Preview",
+          "description_url_free": true
+        }
+      ],
+      "thumbnails": {
+        "overview": {
+          "set_id": "cb1318dbcdef0e2b3adca53c4a0e33a0",
+          "candidates": [
+            {
+              "id": "3082b5deb8f0375ce44f2bc14dac4fe4",
+              "png": "thumbnails/cb1318dbcdef0e2b3adca53c4a0e33a0/thumbnail-0.png",
+              "jpg": "thumbnails/cb1318dbcdef0e2b3adca53c4a0e33a0/thumbnail-0.jpg",
+              "sha256": "c28f35dde18efbc4ea0a5a11f304bb748f604636167c364d87710423d2d5a6eb",
+              "prior_candidate": "cc739ebf05b5445382a44ac6646a71b5"
+            },
+            {
+              "id": "ecaa07cd76f1fa043e1be9501d42f78e",
+              "png": "thumbnails/cb1318dbcdef0e2b3adca53c4a0e33a0/thumbnail-1.png",
+              "jpg": "thumbnails/cb1318dbcdef0e2b3adca53c4a0e33a0/thumbnail-1.jpg",
+              "sha256": "9b8cab951d5e903cf34c27aa685d85dc5eab1282831c8a9a87890f68448d5492",
+              "prior_candidate": "1d83cf11da28456f8ee1e80fb39f4fe5"
+            },
+            {
+              "id": "03e9d11e3c39e88c886aceacf4014fe5",
+              "png": "thumbnails/cb1318dbcdef0e2b3adca53c4a0e33a0/thumbnail-2.png",
+              "jpg": "thumbnails/cb1318dbcdef0e2b3adca53c4a0e33a0/thumbnail-2.jpg",
+              "sha256": "f9ef0950cecf55e91b1b7a7ddcd32ab0465afd5dd2b66ee5a2c3d06fa4a6347e",
+              "prior_candidate": "2cea38d0d1274038b49725d9276d1d6c"
+            }
+          ],
+          "selected_id": "ecaa07cd76f1fa043e1be9501d42f78e",
+          "old_set_retained": "0f8cf2395de24b0aa7eb9712760a2fe2",
+          "selection_source": "automatic"
+        },
+        "deep_dive": {
+          "set_id": "71e759c9886ee881893a324fdbefe2ce",
+          "candidates": [
+            {
+              "id": "1f3f614c4c6727e1bf8d13c008864c8e",
+              "png": "thumbnails/71e759c9886ee881893a324fdbefe2ce/thumbnail-0.png",
+              "jpg": "thumbnails/71e759c9886ee881893a324fdbefe2ce/thumbnail-0.jpg",
+              "sha256": "bb0d73245c4a7e436273d1fd1ac74d2c130c6749fe9a1a1b528c88b9327fbe3b",
+              "prior_candidate": "ba54266cd3144f08b09c37dd2769ac6d"
+            },
+            {
+              "id": "509c6d9350ac262f0ef8959bab807d0e",
+              "png": "thumbnails/71e759c9886ee881893a324fdbefe2ce/thumbnail-1.png",
+              "jpg": "thumbnails/71e759c9886ee881893a324fdbefe2ce/thumbnail-1.jpg",
+              "sha256": "97b04d33f2f83e7741411c3b38f896214d032095d65d415ce8119de092cd50bd",
+              "prior_candidate": "ca086766669644d18bab894712474428"
+            },
+            {
+              "id": "8937b10e673a2578ffc7fb81efaf25c2",
+              "png": "thumbnails/71e759c9886ee881893a324fdbefe2ce/thumbnail-2.png",
+              "jpg": "thumbnails/71e759c9886ee881893a324fdbefe2ce/thumbnail-2.jpg",
+              "sha256": "e36da675698f4ebefb0637e49475523d84e8489d2b56974ff4eb54d2be683f79",
+              "prior_candidate": "5a2c6854d6624058be01870f01246f42"
+            }
+          ],
+          "selected_id": "1f3f614c4c6727e1bf8d13c008864c8e",
+          "old_set_retained": "99b48c25d5c54c399ec26ef8c87063ed",
+          "selection_source": "automatic"
+        }
+      }
+    },
+    {
+      "id": "a057ab1cb5924f1aa27a8e60390cb574",
+      "paper": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+      "publication": {
+        "status": "verified",
+        "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+        "venue": "RSS",
+        "year": 2026,
+        "label": "RSS 2026",
+        "source_url": "https://roboticsconference.org/2026/program/papers/159/",
+        "source_text": "RSS 2026, July 13, 2026 - July 17, 2026, Sydney, Australia",
+        "checked_at": 1791032397.6482542,
+        "source_sha256": "f9eda47d449f0db7d3e8e7aba7f59a090550eba87e007580cae989bb026c9b1f",
+        "source_kind": "official-conference-program"
+      },
+      "awards": [
+        {
+          "title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+          "venue": "RSS",
+          "year": 2026,
+          "name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2026/program/awards/",
+          "paper_url": "https://roboticsconference.org/2026/program/papers/159/",
+          "retrieved_at": 1791015662.3008652,
+          "source_sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321",
+          "area": "robotics",
+          "source_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+          "name_ja": "優秀システム論文賞",
+          "label": "RSS 2026 優秀システム論文賞"
+        }
+      ],
+      "changed_exports": [
+        "4d886c5fb48b4df688c5d4a5b5ff5f1a",
+        "77cbe218fdea4a67b8f17d73acfb19c6",
+        "6630bd8c6f8743a4919dbb4a7b570df2",
+        "a9b9fea129a34ff595ee53b2f2ede9b9"
+      ],
+      "thumbnail_sets": {
+        "overview": "f9e4d0e155ee7104ac6eaf73b5138b86",
+        "deep_dive": "0767e2dfc6194de57db7ec0d4be079df"
+      },
+      "exports": [
+        {
+          "id": "4d886c5fb48b4df688c5d4a5b5ff5f1a",
+          "sha256": "6aaafe0a02cf0040969cb4d4176f80ba898b195f7d4b1c58e3da96067c061960",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】NeuralActuator - Neural Actuation Modeling for Robot Dynamics and External Force…｜RSS 2026",
+          "description_url_free": true
+        },
+        {
+          "id": "77cbe218fdea4a67b8f17d73acfb19c6",
+          "sha256": "54aaacc3b65c80ffa31140c0b33d7f48a40184cdddd08fc60e7f4034f9a6ae5e",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】NeuralActuator - Neural Actuation Modeling for Robot Dynamics and External Force…｜RSS 2026 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "6630bd8c6f8743a4919dbb4a7b570df2",
+          "sha256": "b0ecfa0537657b92f92eb84e1c90960d51dc73d4fdd6835cc56e332ee7bdc999",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】NeuralActuator - Neural Actuation Modeling for Robot Dynamics and External Force…｜RSS 2026",
+          "description_url_free": true
+        },
+        {
+          "id": "a9b9fea129a34ff595ee53b2f2ede9b9",
+          "sha256": "482e76ea66353ea001d084daee5e9644756ff33b00983370115c2db34f0cac35",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】NeuralActuator - Neural Actuation Modeling for Robot Dynamics and External Force…｜RSS 2026 — Preview",
+          "description_url_free": true
+        }
+      ],
+      "thumbnails": {
+        "overview": {
+          "set_id": "f9e4d0e155ee7104ac6eaf73b5138b86",
+          "candidates": [
+            {
+              "id": "fa5762b506f079be4d0310bc9ac7f69f",
+              "png": "thumbnails/f9e4d0e155ee7104ac6eaf73b5138b86/thumbnail-0.png",
+              "jpg": "thumbnails/f9e4d0e155ee7104ac6eaf73b5138b86/thumbnail-0.jpg",
+              "sha256": "143e9ff6a8bf6bca1802e63f844a2e2bc17171f8c293e2790bf4fd73984e6b37",
+              "prior_candidate": "36020fee572540eab7754e6861ae5da8"
+            },
+            {
+              "id": "4d1c493fa80a4b7ae478309935af6131",
+              "png": "thumbnails/f9e4d0e155ee7104ac6eaf73b5138b86/thumbnail-1.png",
+              "jpg": "thumbnails/f9e4d0e155ee7104ac6eaf73b5138b86/thumbnail-1.jpg",
+              "sha256": "93ba94678d83cfd20f2f80f47970937dc91a4101af04e7447a9698d039db9349",
+              "prior_candidate": "ac4a4aa1928447668a013f3f2ae050b6"
+            },
+            {
+              "id": "bac0d21a958aa1b1d0217ac5f626119e",
+              "png": "thumbnails/f9e4d0e155ee7104ac6eaf73b5138b86/thumbnail-2.png",
+              "jpg": "thumbnails/f9e4d0e155ee7104ac6eaf73b5138b86/thumbnail-2.jpg",
+              "sha256": "f2147162e9860f6fc3e15acc6df64645da192108d427d746d74e2248e056e975",
+              "prior_candidate": "73d87621f62f465583d8a4a80e668caf"
+            }
+          ],
+          "selected_id": "4d1c493fa80a4b7ae478309935af6131",
+          "old_set_retained": "8ded0b6a3e32436aa14ee853f0aca59f",
+          "selection_source": "automatic"
+        },
+        "deep_dive": {
+          "set_id": "0767e2dfc6194de57db7ec0d4be079df",
+          "candidates": [
+            {
+              "id": "be3e78aa96aa7b38a4d4117fb9f6c11d",
+              "png": "thumbnails/0767e2dfc6194de57db7ec0d4be079df/thumbnail-0.png",
+              "jpg": "thumbnails/0767e2dfc6194de57db7ec0d4be079df/thumbnail-0.jpg",
+              "sha256": "6c75ac6e58487f19dfdbc292cd5610062fa1fafc22f9bb41fa75a1738f87624b",
+              "prior_candidate": "46b60afe855d4ba18d3742700d4ef276"
+            },
+            {
+              "id": "acc649dba7b1554f7fe8b1cdab3afc35",
+              "png": "thumbnails/0767e2dfc6194de57db7ec0d4be079df/thumbnail-1.png",
+              "jpg": "thumbnails/0767e2dfc6194de57db7ec0d4be079df/thumbnail-1.jpg",
+              "sha256": "9e2f53b3f4056099bf985bd4a1c2cc8e968555bd2f9852ee5accd1875dbfb6f1",
+              "prior_candidate": "f07462012f5c45ce8e96fea076c599b7"
+            },
+            {
+              "id": "09619cf17a3163bf1730bd74fc75abaa",
+              "png": "thumbnails/0767e2dfc6194de57db7ec0d4be079df/thumbnail-2.png",
+              "jpg": "thumbnails/0767e2dfc6194de57db7ec0d4be079df/thumbnail-2.jpg",
+              "sha256": "a96908e3bb25b17ee9e20d0ca8c4c1a9b863e36ad1832fca9246b334c03d4759",
+              "prior_candidate": "1eb6fc858d36449c8b0a4a79f3054e9a"
+            }
+          ],
+          "selected_id": "acc649dba7b1554f7fe8b1cdab3afc35",
+          "old_set_retained": "ec83b6daf8c74c39a11dc0dae6fb5c04",
+          "selection_source": "automatic"
+        }
+      }
+    },
+    {
+      "id": "bd7642d8e5e244399c5a48e30fe52ec2",
+      "paper": "Asynchronous Methods for Deep Reinforcement Learning",
+      "publication": {
+        "status": "verified",
+        "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+        "venue": "ICML",
+        "year": 2016,
+        "label": "ICML 2016",
+        "source_url": "https://proceedings.mlr.press/v48/mniha16.html",
+        "source_text": "International Conference on Machine Learning",
+        "checked_at": 1791025128.404082,
+        "source_sha256": "26eaaf7710baa80ca54f3ac7f603e1ed287a4007d2fb96d9092ee675cd99e6f5",
+        "source_kind": "official-proceedings"
+      },
+      "awards": [
+        {
+          "title": "Asynchronous Methods for Deep Reinforcement Learning",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://proceedings.mlr.press/v48/mniha16.html",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai",
+          "source_name": "ICML 2026 Test of Time Award",
+          "name_ja": "Test of Time賞",
+          "label": "ICML 2026 Test of Time賞"
+        }
+      ],
+      "changed_exports": [
+        "0601479643764e64bf3193c4b4555f06",
+        "e090ed9f50c044bdb99d5e1fa751936a",
+        "a1bd67d90ec04ed2b0ecf29506471f33",
+        "7448791ecc8245a29879b35e80729f11"
+      ],
+      "thumbnail_sets": {
+        "overview": "62be774e6450b4e4b414cfbe625db0b1",
+        "deep_dive": "c54fd2c2cdc05ae328997efecff6248b"
+      },
+      "exports": [
+        {
+          "id": "0601479643764e64bf3193c4b4555f06",
+          "sha256": "20f4f9e0d1d00be96622e04bc3ea8642e92a2355ce0e66d7c93024f5e4fa76fb",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】Asynchronous Methods for Deep Reinforcement Learning｜ICML 2016｜AIが「リプレイ」なしで安定して学ぶ方法",
+          "description_url_free": true
+        },
+        {
+          "id": "e090ed9f50c044bdb99d5e1fa751936a",
+          "sha256": "b6ae568b6f7892466857612b35d2f6ad56e0b53ebe972da5039b84d2b8eabeca",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】Asynchronous Methods for Deep Reinforcement Learning｜ICML 2016｜AIが「リプレイ」なしで安定して学ぶ方法 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "a1bd67d90ec04ed2b0ecf29506471f33",
+          "sha256": "0705a8ce801ef70d8177ad9aac19dbfac31070ff58c3b1afc515d3d8c9f23e5e",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】Asynchronous Methods for Deep Reinforcement Learning｜ICML 2016",
+          "description_url_free": true
+        },
+        {
+          "id": "7448791ecc8245a29879b35e80729f11",
+          "sha256": "788b455728cbf24dd72e4b7e6e2b14382ff16b10f0ba379dfd6201dd8e353441",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】Asynchronous Methods for Deep Reinforcement Learning｜ICML 2016 — Preview",
+          "description_url_free": true
+        }
+      ],
+      "thumbnails": {
+        "overview": {
+          "set_id": "62be774e6450b4e4b414cfbe625db0b1",
+          "candidates": [
+            {
+              "id": "13b5b7e707a78e2858b2ec911123d04a",
+              "png": "thumbnails/62be774e6450b4e4b414cfbe625db0b1/thumbnail-0.png",
+              "jpg": "thumbnails/62be774e6450b4e4b414cfbe625db0b1/thumbnail-0.jpg",
+              "sha256": "452cf2eecd1346f62d4f38680412253509f0057e7c546c9e1727224aeee16703",
+              "prior_candidate": "1378b58611114bd3a5c696872145aa51"
+            },
+            {
+              "id": "66a29cd4b1c66e96b6daa9fa7ddb0531",
+              "png": "thumbnails/62be774e6450b4e4b414cfbe625db0b1/thumbnail-1.png",
+              "jpg": "thumbnails/62be774e6450b4e4b414cfbe625db0b1/thumbnail-1.jpg",
+              "sha256": "c286ad6a22d10295ae1d323bf207485402249ff10616356322e414cb07722eb5",
+              "prior_candidate": "36487b93286b4fa6bd2eb9e4c980a40e"
+            },
+            {
+              "id": "aac736d0dd5d4331c71bf3210621c0fd",
+              "png": "thumbnails/62be774e6450b4e4b414cfbe625db0b1/thumbnail-2.png",
+              "jpg": "thumbnails/62be774e6450b4e4b414cfbe625db0b1/thumbnail-2.jpg",
+              "sha256": "0577f4887d5801c8689f1344f281f05da8975396286750cbc4a5023a042beae7",
+              "prior_candidate": "ca5c02a05c834bf88bfc40fb1e872bda"
+            }
+          ],
+          "selected_id": "13b5b7e707a78e2858b2ec911123d04a",
+          "old_set_retained": "811672431d3a41509fb304023b35d69b",
+          "selection_source": "automatic"
+        },
+        "deep_dive": {
+          "set_id": "c54fd2c2cdc05ae328997efecff6248b",
+          "candidates": [
+            {
+              "id": "7bafc10b54f37354b0ddb1d917c8a3b3",
+              "png": "thumbnails/c54fd2c2cdc05ae328997efecff6248b/thumbnail-0.png",
+              "jpg": "thumbnails/c54fd2c2cdc05ae328997efecff6248b/thumbnail-0.jpg",
+              "sha256": "9e8582a0ebc432833cc1b66a5d7ff1807d5b5783767b85d8bcac922520452938",
+              "prior_candidate": "6b4f6f69c15a4aea8ca23e0c89465ccf"
+            },
+            {
+              "id": "62e17ce3e513ca9bb0c7e57f47888be7",
+              "png": "thumbnails/c54fd2c2cdc05ae328997efecff6248b/thumbnail-1.png",
+              "jpg": "thumbnails/c54fd2c2cdc05ae328997efecff6248b/thumbnail-1.jpg",
+              "sha256": "e940aa938a9801a4cabf6aaec1d4ad54f148148a9acd2a323303b5771a8aae40",
+              "prior_candidate": "5a547863e8c749e7999b364a3a656719"
+            },
+            {
+              "id": "ec3ebceb3dfcd3874addc1dc1da68cd8",
+              "png": "thumbnails/c54fd2c2cdc05ae328997efecff6248b/thumbnail-2.png",
+              "jpg": "thumbnails/c54fd2c2cdc05ae328997efecff6248b/thumbnail-2.jpg",
+              "sha256": "35078d13b44c75055291127589cbfcdde09cedd8071f210402c463c0074aa1dd",
+              "prior_candidate": "416d496fd17f4785ac086f3b918e87f0"
+            }
+          ],
+          "selected_id": "7bafc10b54f37354b0ddb1d917c8a3b3",
+          "old_set_retained": "c00116e7e07e41958faaebb38ac52360",
+          "selection_source": "automatic"
+        }
+      }
+    },
+    {
+      "id": "8ab4bf9ac3274635925c609fc9860165",
+      "paper": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "publication": {
+        "status": "unconfirmed",
+        "paper_title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "label": "学会未確認",
+        "checked_at": 1791066593.7980852,
+        "reason": "No matching official publication record or explicit publication header; award dates are not publication dates.",
+        "lookup_version": "official-records-3-virtual"
+      },
+      "awards": [],
+      "changed_exports": [
+        "c4329159b0494dfcb56b6ae760721969",
+        "6569fd1f76204ed09aba7516950e266c",
+        "9029f46f14854fc2904b93de4fb027db",
+        "c7d25ce4466a4d5689e03123a09acaf5",
+        "2e0631191a704f8e83c8e986f8f36623",
+        "577ec023632947af97267f3648998dca",
+        "e020240123f641c58df245e695b25967",
+        "f18332f3572c49118ba8d3361e294322",
+        "729e902a92474279b85a002d2e5275bb",
+        "05fedbdeb9a54f03b53a0ff05975a079",
+        "48a2abcc1f57406ea5ddfea7c53d99fc"
+      ],
+      "thumbnail_sets": {},
+      "exports": [
+        {
+          "id": "c4329159b0494dfcb56b6ae760721969",
+          "sha256": "f2da7c336e2527f2015a20cefa69116bb3369525ddc558fc9dabc125572d76e3",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習",
+          "description_url_free": true
+        },
+        {
+          "id": "6569fd1f76204ed09aba7516950e266c",
+          "sha256": "f2da7c336e2527f2015a20cefa69116bb3369525ddc558fc9dabc125572d76e3",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習",
+          "description_url_free": true
+        },
+        {
+          "id": "9029f46f14854fc2904b93de4fb027db",
+          "sha256": "967909d39ad329afd1bca759b03c5a4fa128d370f95264aa83facec6ef27278f",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習",
+          "description_url_free": true
+        },
+        {
+          "id": "c7d25ce4466a4d5689e03123a09acaf5",
+          "sha256": "9925de273fce9834e0abe5096eac9183c07f88af6308df19455b9c9df327b6c4",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "2e0631191a704f8e83c8e986f8f36623",
+          "sha256": "6a41b881e46ecba0a0ac9578226ab4dffb67fcfb4a972692ac9b6441fa866700",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "577ec023632947af97267f3648998dca",
+          "sha256": "dd2a77a5951eee3d889de8fd349df1188129ab2e037bc5ccd880244f0a267a55",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜AIの調整で、なぜ「全部」を変えなくていい？・解説編・英語学習 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "e020240123f641c58df245e695b25967",
+          "sha256": "7e118a5488b1366bb72fb4132aaa17e5fa41e2d6dc184903a2972a1e18a8ca87",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜LoRAの仕組みを図と計算で理解する・詳解編・英語学習",
+          "description_url_free": true
+        },
+        {
+          "id": "f18332f3572c49118ba8d3361e294322",
+          "sha256": "e92e43a8d5e9daa0749aacc1384ea69155f960594ff46372ba48281d575f1fee",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜LoRAの仕組みを図と計算で理解する・詳解編・英語学習",
+          "description_url_free": true
+        },
+        {
+          "id": "729e902a92474279b85a002d2e5275bb",
+          "sha256": "8726314a635e93786b51e28ffc594aa93193067362462328e0eb04036bcea962",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜LoRAの仕組みを図と計算で理解する・詳解編・英語学習",
+          "description_url_free": true
+        },
+        {
+          "id": "05fedbdeb9a54f03b53a0ff05975a079",
+          "sha256": "d22eb1ed45a75ff194911bda612fbc18de2459263f882657af3321d1eeeb0cbe",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜LoRAの仕組みを図と計算で理解する・詳解編・英語学習 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "48a2abcc1f57406ea5ddfea7c53d99fc",
+          "sha256": "07053151b44b6e3c9989a65b8694f627bc0c127501f2cf1593e5c5343e4f229d",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】LoRA - Low-Rank Adaptation of Large Language Models｜学会未確認｜LoRAの仕組みを図と計算で理解する・詳解編・英語学習 — Preview",
+          "description_url_free": true
+        }
+      ]
+    },
+    {
+      "id": "47b1fed445f54a9995643c2c088cbaa0",
+      "paper": "Hierarchical Continuous Diffusion Language Models",
+      "publication": {
+        "status": "unconfirmed",
+        "paper_title": "Hierarchical Continuous Diffusion Language Models",
+        "label": "学会未確認",
+        "checked_at": 1791066594.3473108,
+        "reason": "No matching official publication record or explicit publication header; award dates are not publication dates.",
+        "lookup_version": "official-records-3-virtual"
+      },
+      "awards": [],
+      "changed_exports": [
+        "27ffe90c54564d62ab8c287d96b484a7",
+        "c49675038e974e4c8dc017be602c11ba",
+        "d2059751bfb34b0fa28f1961b66f2cc0",
+        "83769e4beef345ab88d8c152c28aa331",
+        "8c9a0d3ab913402091974949b33583d7"
+      ],
+      "thumbnail_sets": {},
+      "exports": [
+        {
+          "id": "27ffe90c54564d62ab8c287d96b484a7",
+          "sha256": "d99bb9f63ff65984742095ac05206520949ec3faef935402cf3b5a08222fb4d7",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】Hierarchical Continuous Diffusion Language Models｜学会未確認｜「全体像」を先に固めるAIの発想",
+          "description_url_free": true
+        },
+        {
+          "id": "c49675038e974e4c8dc017be602c11ba",
+          "sha256": "5db87f392b17de27a2334a6fb2ccc94693be65c76d7e5c6a1b67b03b45ad108d",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】Hierarchical Continuous Diffusion Language Models｜学会未確認｜「全体像」を先に固めるAIの発想",
+          "description_url_free": true
+        },
+        {
+          "id": "d2059751bfb34b0fa28f1961b66f2cc0",
+          "sha256": "3c33a4eb56a2ad1d0587aa58cd2e8cb54b41cf7eeb8b79a438852adf32d2f0cb",
+          "mp4_bytes_unchanged": true,
+          "title": "【概要解説】Hierarchical Continuous Diffusion Language Models｜学会未確認｜「全体像」を先に固めるAIの発想 — Preview",
+          "description_url_free": true
+        },
+        {
+          "id": "83769e4beef345ab88d8c152c28aa331",
+          "sha256": "2851315e8ee71ebd01ebcfc70f35302080c1dd2f1324a969386fa65fe2cf1bb9",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】Hierarchical Continuous Diffusion Language Models｜学会未確認｜並列生成の呪い：トークン独立の罠と階層結合",
+          "description_url_free": true
+        },
+        {
+          "id": "8c9a0d3ab913402091974949b33583d7",
+          "sha256": "6ee5abf2d89de194f7b250e233147e56a67155892b8e89c8ea1d85842bb0bffb",
+          "mp4_bytes_unchanged": true,
+          "title": "【詳細解説】Hierarchical Continuous Diffusion Language Models｜学会未確認｜並列生成の呪い：トークン独立の罠と階層結合 — Preview",
+          "description_url_free": true
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "python_tests": {
+      "passed": 267,
+      "duration_seconds": 37.59
+    },
+    "ruff_changed_files": "passed",
+    "deployed_lan_ui": {
+      "actual_lan_ui_and_downloads": true,
+      "description_url_free_with_verified_awards": true,
+      "selected_thumbnail_dimensions": true,
+      "no_browser_errors": true,
+      "read_only": true
+    },
+    "three_awarded_projects_six_new_sets_eighteen_png_eighteen_jpeg": true,
+    "selected_portraits_and_phone_layout_visually_checked": true,
+    "local_fixed_composition": "Saved FLUX illustrations and portraits reused. Python loopback inference guard and Chromium external-request blocking; no claim of operating-system network isolation.",
+    "old_mp4_sha256_preserved": true,
+    "all_five_ready_story_projects_descriptions_url_free": true,
+    "old_paused_jobs": [
+      {
+        "id": "712b3b2d646046658fee3d6ec4f7a7d0",
+        "state": "paused"
+      },
+      {
+        "id": "af8db257f7a44ddcb7a4012719919767",
+        "state": "paused"
+      },
+      {
+        "id": "d951f20572014ca2bb43cd6ec4bc332b",
+        "state": "paused"
+      }
+    ],
+    "settings_unchanged": {
+      "discovery_enabled": false,
+      "nightly_video_enabled": true,
+      "nightly_video_hour": 2,
+      "nightly_video_minute": 0,
+      "youtube_auto_upload": false
+    },
+    "service": "active and enabled"
+  },
+  "thumbnail_checks": {
+    "7b57bfd44d4e4aef92e22821cb8931b6": {
+      "two_sets_three_candidates_each": true,
+      "png_jpeg_1280_720_under_2mb": true,
+      "recorded_png_hashes_match": true,
+      "hair_clothes_body_preserved": true
+    },
+    "a057ab1cb5924f1aa27a8e60390cb574": {
+      "two_sets_three_candidates_each": true,
+      "png_jpeg_1280_720_under_2mb": true,
+      "recorded_png_hashes_match": true,
+      "hair_clothes_body_preserved": true
+    },
+    "bd7642d8e5e244399c5a48e30fe52ec2": {
+      "two_sets_three_candidates_each": true,
+      "png_jpeg_1280_720_under_2mb": true,
+      "recorded_png_hashes_match": true,
+      "hair_clothes_body_preserved": true
+    }
+  }
+}

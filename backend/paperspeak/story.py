@@ -3007,38 +3007,13 @@ def _learning_step(project, runtime, mode):
         db.save_chapter(chapter)
         scene["questions_ready"] = True
         return
-    if not track.get("description_ready"):
-        references = [
-            db.one("SELECT * FROM papers WHERE id=?", (project["paper_id"],)),
-            *[
-                db.one("SELECT * FROM papers WHERE id=?", (r["paper_id"],))
-                for r in project["data"]["references"]
-                if r.get("paper_id")
-            ],
-        ]
-        title = track["packaging"]["title"]
-        track["packaging"]["description"] = (
-            title
-            + "\n\n論文名："
-            + project["data"]["paper_title"]
-            + "\n発表学会："
-            + project["data"]["publication"]["label"]
-            + "\n"
-            + project["data"]["publication"].get("source_url", "")
-            + "\n\n図解とMaya・Aidenの自然な英語の会話で、AI論文の"
-            + (
-                "背景・課題・発想を数式なしで学びます。"
-                if mode == "overview"
-                else "原理・数式・具体例・実験を詳しく学びます。"
-            )
-            + "英語・日本語の字幕付きです。英語表現を聞き取り、動画を止めて声に出したり、自分の言葉で説明したりしてみてください。\n\n"
-            "音声・会話・補助図はローカルAIを使って作成した学習用教材です。仮の計算例は論文の実験結果と区別しています。\n\n参考文献\n"
-            + "\n".join(
-                p["title"] + "\n" + p["data"].get("url", "") for p in references if p
-            )
-            + "\n\n#AI論文 #英語学習 #機械学習"
-        )
+    if (
+        not track.get("description_ready")
+        or track.get("description_version") != publication.DESCRIPTION_VERSION
+    ):
+        track["packaging"]["description"] = publication.description(project, mode)
         track["description_ready"] = True
+        track["description_version"] = publication.DESCRIPTION_VERSION
     lid = track["lesson_id"]
     lesson = db.one("SELECT * FROM lessons WHERE id=?", (lid,))
     lesson["state"] = "ready"

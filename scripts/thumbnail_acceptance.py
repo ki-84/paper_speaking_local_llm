@@ -46,7 +46,12 @@ for mode in ["overview", "deep_dive"]:
             row["data"]["manifest"]["renderer"],
         ]
     )[:16]
-    chars = config.DATA / "thumbnails/characters" / key
+    chars = config.safe_path(
+        row["data"]
+        .get("character_assets", {})
+        .get("guide", {})
+        .get("path", f"thumbnails/characters/{key}/guide.png")
+    ).parent
     portraits = {}
     for role in ["guide", "host"]:
         values = []

@@ -33,6 +33,7 @@ try{
  }else{
   const identity=spec.identity;
   if(!identity?.paper_title||!identity?.conference||!['概要解説','詳細解説'].includes(identity?.edition))throw new Error('Missing paper/conference/edition identity');
+  const award=identity.awards?.[0];
   const bg=spec.background?await data(spec.background):null;
   const maya=await data(spec.maya),aiden=await data(spec.aiden);
   const rays=Array.from({length:24},(_,i)=>`<i style="transform:translate(-50%,-50%) rotate(${i*15}deg)"></i>`).join('');
@@ -50,19 +51,23 @@ try{
    .title{position:absolute;left:36px;right:36px;top:198px;text-align:center;line-height:1.08;font-size:88px;font-weight:1000;color:#ffec58;-webkit-text-stroke:7px #10172c;paint-order:stroke fill;text-shadow:0 8px #10172c,0 11px 15px #0009}
    .title span{display:block}.title span:last-child{color:white}.tag{position:absolute;bottom:18px;left:440px;right:440px;text-align:center;font-size:30px;font-weight:900;color:#142340;background:#ffe962;border:4px solid #142340;border-radius:12px;padding:8px;white-space:nowrap}
    .name{position:absolute;bottom:20px;color:white;font-size:25px;font-weight:900;background:#101c39cc;padding:4px 18px;border-radius:10px}.name.m{left:88px}.name.a{right:88px}
+   .award{position:absolute;left:350px;right:350px;top:497px;height:128px;padding:7px 12px;background:#ffec80f7;color:#10213c;border:4px solid #15213d;border-radius:16px;text-align:center;box-shadow:0 4px 0 #15213d;display:flex;flex-direction:column;justify-content:center}
+   .award-label{font-size:32px;font-weight:900;line-height:1.15;text-wrap:balance}.award-name{font-size:26px;font-weight:800;line-height:1.15;text-wrap:balance;overflow-wrap:anywhere}
   </style></head><body><div class="rays">${rays}</div>${bg?`<img class="idea" src="${bg}">`:`<div class="idea" style="background:linear-gradient(145deg,#f7d75a,#74d8d1);display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:900;color:#122f41">${esc(spec.topic||'AI × NEW IDEA')}</div>`}
   <img class="portrait maya" src="${maya}"><img class="portrait aiden" src="${aiden}"><div class="bang left">!?</div><div class="bang right">!!</div>
   <div class="paper-name"><span>${esc(identity.paper_title)}</span></div><div class="identity"><div class="edition">${esc(identity.edition)}</div><div class="conference">${esc(identity.conference)}</div></div>
-  <div class="title">${spec.lines.map(s=>`<span>${esc(s)}</span>`).join('')}</div><div class="tag">英語で学ぶAI</div><div class="name m">MAYA</div><div class="name a">AIDEN</div></body></html>`);
+  <div class="title">${spec.lines.map(s=>`<span>${esc(s)}</span>`).join('')}</div>${award?`<div class="award"><div class="award-label">${esc(award.label)}</div><div class="award-name">${esc(award.name)}</div></div>`:''}<div class="tag">英語で学ぶAI</div><div class="name m">MAYA</div><div class="name a">AIDEN</div></body></html>`);
   await page.evaluate(()=>document.fonts.ready);
   await page.evaluate(()=>{
    const paper=document.querySelector('.paper-name'),name=paper.firstElementChild;
    for(let size=44;size>=24;size-=1){name.style.fontSize=size+'px';if(name.scrollWidth<=name.clientWidth&&name.offsetHeight<=paper.clientHeight-20)break;}
    const box=document.querySelector('.title');for(let i=0;i<25;i++){if([...box.children].every(e=>e.scrollWidth<=e.clientWidth)&&box.offsetHeight<=190)break;box.style.fontSize=parseFloat(getComputedStyle(box).fontSize)-2+'px';}
+   const award=document.querySelector('.award');if(award){for(let i=0;i<14;i++){if(award.scrollHeight<=award.clientHeight&&[...award.children].every(e=>e.scrollWidth<=e.clientWidth))break;for(const e of award.children)e.style.fontSize=(parseFloat(getComputedStyle(e).fontSize)-1)+'px';}}
   });
   const overflow=await page.evaluate(()=>{
    const name=document.querySelector('.paper-name'),text=name.firstElementChild,title=document.querySelector('.title'),row=document.querySelector('.identity');
-   return text.offsetHeight>name.clientHeight-20||title.offsetHeight>190||row.children[0].getBoundingClientRect().right>row.children[1].getBoundingClientRect().left-16||[...document.querySelectorAll('.paper-name span,.title span,.edition,.conference,.tag')].some(e=>e.scrollWidth>e.clientWidth||e.getBoundingClientRect().bottom>720);
+   const award=document.querySelector('.award');
+   return (award&&(award.scrollHeight>award.clientHeight||[...award.children].some(e=>e.getBoundingClientRect().top<award.getBoundingClientRect().top+4||e.getBoundingClientRect().bottom>award.getBoundingClientRect().bottom-4)))||text.offsetHeight>name.clientHeight-20||title.offsetHeight>190||row.children[0].getBoundingClientRect().right>row.children[1].getBoundingClientRect().left-16||[...document.querySelectorAll('.paper-name span,.title span,.edition,.conference,.tag,.award-label,.award-name')].some(e=>e.scrollWidth>e.clientWidth||e.getBoundingClientRect().bottom>720);
   });
   if(overflow)throw new Error('Thumbnail title overflows');
   await page.screenshot({path:output});

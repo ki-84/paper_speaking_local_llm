@@ -9,7 +9,7 @@ import wave
 
 import imageio_ffmpeg
 
-from . import config, db, video, video_overlay
+from . import config, db, publication, video, video_overlay
 
 VERSION = "story-film-2"
 
@@ -642,8 +642,14 @@ def step(job, runtime):
         seconds = round(seconds)
         return f"{seconds // 60}:{seconds % 60:02}"
 
-    description = (
-        manifest["packaging"].get("description", "")
+    project = db.one(
+        "SELECT * FROM video_projects WHERE id=?", (manifest["project_id"],)
+    )
+    # Previews precede the learning stage, so their manifest may not have a
+    # description yet. Use the rendered film's frozen title for both kinds.
+    project["data"]["modes"][manifest["mode"]]["packaging"] = manifest["packaging"]
+    description = publication.without_urls(
+        publication.description(project, manifest["mode"])
         + "\n\n"
         + "\n".join(stamp(t) + " " + label for t, label in starts if t < duration)
     )
@@ -673,6 +679,7 @@ def step(job, runtime):
         thumbnail=str(thumbnail.relative_to(config.DATA)),
         description=description,
         description_file=str(description_file.relative_to(config.DATA)),
+        description_version=publication.DESCRIPTION_VERSION,
         duration=duration,
         media_duration=actual,
         bytes=paths["mp4"].stat().st_size,

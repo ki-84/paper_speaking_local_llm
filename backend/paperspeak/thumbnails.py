@@ -10,7 +10,7 @@ import time
 from . import config, db, publication, video, video_overlay
 from .runtime import GPUUnavailable, PracticePreempted
 
-VERSION = "surprised-pixel-2-identity"
+VERSION = "surprised-pixel-3-awards"
 
 
 def get(project_id, mode):
@@ -208,6 +208,120 @@ def render(spec, output):
         timeout=90,
         capture_output=True,
     )
+
+
+def recompose(project, mode):
+    """Refresh fixed labels from saved local art, retaining every previous set."""
+    publication.ensure(project)
+    publication.package(project)
+    previous = get(project["id"], mode)
+    if not previous or previous["state"] != "ready":
+        raise ValueError("A completed thumbnail set is required")
+    identity = publication.identity(project, mode)
+    renderer = video.file_digest(config.ROOT / "scripts/render_thumbnail.mjs")
+    old = previous["data"]
+    if (
+        old["manifest"].get("version") == VERSION
+        and old["manifest"].get("identity") == identity
+        and old["manifest"].get("renderer") == renderer
+    ):
+        return previous["id"]
+    sources = []
+    for candidate in old["candidates"]:
+        source = config.safe_path(candidate["png"]).with_suffix(".json")
+        spec = json.loads(source.read_text())
+        for key in ("maya", "aiden", "background"):
+            if spec.get(key):
+                asset = config.safe_path(spec[key])
+                if not asset.is_file():
+                    raise ValueError("Saved thumbnail art is unavailable: " + key)
+                # Preserve provenance of the actual illustrations being reused.
+                spec[key] = str(asset)
+        spec["identity"] = identity
+        sources.append((candidate, spec))
+    manifest = old["manifest"] | {
+        "version": VERSION,
+        "identity": identity,
+        "packaging": project["data"]["modes"][mode]["packaging"],
+        "renderer": renderer,
+        "recomposed_from": previous["id"],
+        "saved_art": [
+            {
+                key: video.file_digest(config.safe_path(spec[key]))
+                for key in ("maya", "aiden", "background")
+                if spec.get(key)
+            }
+            for _, spec in sources
+        ],
+    }
+    fingerprint = video.digest(manifest)
+    ident = fingerprint[:32]
+    root = config.DATA / "thumbnails" / ident
+    mapping, candidates = {}, []
+    for index, (original, spec) in enumerate(sources):
+        candidate = json.loads(db.dumps(original))
+        candidate["id"] = video.digest([fingerprint, original["id"]])[:32]
+        mapping[original["id"]] = candidate["id"]
+        png = root / f"thumbnail-{index}.png"
+        jpg = png.with_suffix(".jpg")
+        # Stable paths permit a retry to reuse successfully composed candidates.
+        if not png.is_file() or not jpg.is_file():
+            render(spec, png)
+            subprocess.run(
+                [
+                    __import__("imageio_ffmpeg").get_ffmpeg_exe(),
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-y",
+                    "-i",
+                    str(png),
+                    "-q:v",
+                    "2",
+                    str(jpg),
+                ],
+                check=True,
+                timeout=30,
+            )
+        candidate.update(
+            identity=identity,
+            png=str(png.relative_to(config.DATA)),
+            jpg=str(jpg.relative_to(config.DATA)),
+            sha256=video.file_digest(png),
+            recomposed_from=original["id"],
+        )
+        candidates.append(candidate)
+    data = json.loads(db.dumps(old))
+    selected_id = mapping.get(old.get("selected_id"), candidates[0]["id"])
+    data.update(
+        manifest=manifest,
+        candidates=candidates,
+        phase="complete",
+        selected_id=selected_id,
+        recommended_id=mapping.get(old.get("recommended_id"), selected_id),
+        label_review={
+            "identity": identity,
+            "renderer_overflow_check": True,
+            "saved_art_reused": True,
+        },
+    )
+    now = time.time()
+    with db.connection() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO thumbnail_sets VALUES (?,?,?,?,?,?,?,?)",
+            (
+                ident,
+                project["id"],
+                mode,
+                fingerprint,
+                "ready",
+                db.dumps(data),
+                now,
+                now,
+            ),
+        )
+    select(ident, selected_id, automatic=old.get("selection_source") != "manual")
+    return ident
 
 
 def _attempt(row, key, action, fallback):
@@ -437,7 +551,7 @@ def step(job, runtime):
 
         def review():
             result = runtime.ask(
-                'Compare three YouTube thumbnails for the supplied film. Check recognizable surprised Maya on left and Aiden on right, catchy readable large Japanese text at phone size, and truthful correspondence to the film. Also check the fixed paper name, publication conference/year, and Japanese edition badge match IDENTITY exactly and remain readable. The publication year is not the later award year. Pick the clearest, most compelling candidate. issues must describe problems in the SELECTED candidate only; ignore imperfections in alternatives. Return {"selected_index":0,"notes_ja":"reason","issues":[]}. No popularity/view-count guarantees.\nIDENTITY: '
+                'Compare three YouTube thumbnails for the supplied film. Check recognizable surprised Maya on left and Aiden on right, catchy readable large Japanese text at phone size, and truthful correspondence to the film. Also check the fixed paper name, publication conference/year, Japanese edition badge, and verified award name/year match IDENTITY exactly and remain readable. No award may be claimed unless present in IDENTITY.awards. The publication year is not the later award year. Pick the clearest, most compelling candidate. issues must describe problems in the SELECTED candidate only; ignore imperfections in alternatives. Return {"selected_index":0,"notes_ja":"reason","issues":[]}. No popularity/view-count guarantees.\nIDENTITY: '
                 + db.dumps(identity)
                 + "\nFILM: "
                 + db.dumps(project["data"]["modes"][mode]["packaging"]),

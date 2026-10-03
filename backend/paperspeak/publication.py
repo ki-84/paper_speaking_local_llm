@@ -10,8 +10,9 @@ from bs4 import BeautifulSoup
 
 from . import awards, config, db
 
-VERSION = "paper-venue-edition-1"
-LOOKUP_VERSION = "official-records-2"
+VERSION = "paper-venue-edition-awards-2"
+LOOKUP_VERSION = "official-records-3-virtual"
+DESCRIPTION_VERSION = "paper-awards-no-urls-1"
 EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
 ALIASES = {
     "ICML": r"\bICML\b|International Conference on Machine Learning",
@@ -57,6 +58,45 @@ def parse_page(saved, paper):
         m.get("name", "").lower(): m.get("content", "") for m in soup.find_all("meta")
     }
     url = urlparse(saved["url"])
+    virtual = re.fullmatch(
+        r"/virtual/((?:19|20)\d{2})/(?:oral|poster|spotlight)/\d+/?", url.path
+    )
+    official_venue = {
+        "icml.cc": "ICML",
+        "iclr.cc": "ICLR",
+        "neurips.cc": "NeurIPS",
+    }.get((url.hostname or "").removeprefix("www."))
+    if virtual and official_venue and url.scheme == "https":
+        edition = virtual[1]
+        matching_title = any(
+            awards.normalized(h.get_text(" ", strip=True))
+            == awards.normalized(paper["title"])
+            for h in soup.find_all(["h1", "h2", "h3", "h4"])
+        )
+        # These virtual pages can contain both a paper title and an event title.
+        # Require the actual event heading to agree with the official program URL.
+        event = next(
+            (
+                t.get_text(" ", strip=True)
+                for t in soup.find_all("title")
+                if re.fullmatch(
+                    re.escape(official_venue) + r"\s+" + edition,
+                    t.get_text(" ", strip=True),
+                    re.I,
+                )
+            ),
+            None,
+        )
+        if matching_title and event:
+            return confirmed(
+                paper,
+                official_venue,
+                edition,
+                saved["url"],
+                event,
+                source_sha256=saved["sha256"],
+                source_kind="official-conference-program",
+            )
     program = re.fullmatch(r"/((?:19|20)\d{2})/program/papers/\d+/?", url.path)
     if (
         url.hostname in {"roboticsconference.org", "www.roboticsconference.org"}
@@ -134,7 +174,7 @@ def resolve(paper):
         except Exception:
             # Missing bibliographic data must not stop content creation.
             continue
-    journal = paper["data"].get("journal_ref", "")
+    journal = paper["data"].get("journal_ref") or ""
     name, date = venue(journal), re.search(r"(?:19|20)\d{2}", journal)
     if name and date:
         return confirmed(
@@ -183,13 +223,23 @@ def resolve(paper):
 
 
 def ensure(project):
+    paper = db.one("SELECT * FROM papers WHERE id=?", (project["paper_id"],))
+    context = project["data"].setdefault("award_context", {})
+    prizes = awards.verified(
+        {
+            "title": paper["title"],
+            "awards": [*context.get("awards", []), *paper["data"].get("awards", [])],
+        }
+    )
+    context["awards"] = list(
+        {(a["venue"], a["year"], a["name"]): a for a in prizes}.values()
+    )
     existing = project["data"].get("publication", {})
     if existing and (
         existing.get("status") == "verified"
         or existing.get("lookup_version") == LOOKUP_VERSION
     ):
         return
-    paper = db.one("SELECT * FROM papers WHERE id=?", (project["paper_id"],))
     result = resolve(paper)
     if result["status"] == "unconfirmed":
         result["lookup_version"] = LOOKUP_VERSION
@@ -202,6 +252,42 @@ def ensure(project):
         )
 
 
+def award_identity(project):
+    context = project["data"].get("award_context", {})
+    verified = awards.verified(context | {"title": project["data"]["paper_title"]})
+    result = []
+    for prize in verified:
+        name = re.sub(
+            r"^" + re.escape(prize["venue"]) + r"\s+" + str(prize["year"]) + r"\s+",
+            "",
+            prize["name"],
+            flags=re.I,
+        )
+        # Official award pages often group their winners under plural headings.
+        name = {
+            "Outstanding Papers": "Outstanding Paper Award",
+            "Best Papers": "Best Paper Award",
+        }.get(name, name)
+        japanese = {
+            "Outstanding Paper Award": "優秀論文賞",
+            "Best Paper Award": "最優秀論文賞",
+            "Test of Time Award": "Test of Time賞",
+            "Outstanding Systems Paper in Memory of Seth Teller Award": "優秀システム論文賞",
+        }.get(name, name)
+        item = prize | {
+            "name": name,
+            "source_name": prize["name"],
+            "name_ja": japanese,
+            "label": f"{prize['venue']} {prize['year']} {japanese}",
+        }
+        if not any(
+            (a["venue"], a["year"], a["name"]) == (item["venue"], item["year"], name)
+            for a in result
+        ):
+            result.append(item)
+    return result
+
+
 def identity(project, mode):
     return {
         "version": VERSION,
@@ -209,6 +295,7 @@ def identity(project, mode):
         "conference": project["data"].get("publication", {}).get("label", "学会未確認"),
         "edition": EDITIONS[mode],
         "publication": project["data"].get("publication", {}),
+        "awards": award_identity(project),
     }
 
 
@@ -236,6 +323,7 @@ def package(project):
             paper_title=meta["paper_title"],
             conference=meta["conference"],
             edition=meta["edition"],
+            awards=meta["awards"],
         )
         p["title"] = title(
             meta["paper_title"], meta["conference"], meta["edition"], p["hook_title_ja"]
@@ -262,3 +350,140 @@ def package(project):
             )
             candidates.append(candidate)
         p["candidates"] = candidates
+
+
+def without_urls(text):
+    """Keep readable reference labels, but never export clickable URL targets."""
+    text = re.sub(r"\[([^\]]+)\]\((?:https?://|www\.)[^)]+\)", r"\1", text)
+    text = re.sub(r"<(?:https?://|www\.)[^>]+>", "", text)
+    text = re.sub(r"(?:https?://|ftp://|www\.)[^\s<>]+", "", text, flags=re.I)
+    return re.sub(
+        r"\n{3,}", "\n\n", "\n".join(line.rstrip() for line in text.splitlines())
+    ).strip()
+
+
+def description(project, mode, *, references=None):
+    """YouTube copy without URLs; the original URLs remain in source records."""
+    if references is None:
+        ids = [
+            project["paper_id"],
+            *[
+                r["paper_id"]
+                for r in project["data"].get("references", [])
+                if r.get("paper_id")
+            ],
+        ]
+        references = [
+            db.one("SELECT * FROM papers WHERE id=?", (pid,))
+            for pid in dict.fromkeys(ids)
+        ]
+    meta = identity(project, mode)
+    lines = [
+        project["data"]["modes"][mode]["packaging"]["title"],
+        "",
+        "論文名：" + meta["paper_title"],
+        "発表学会：" + meta["conference"],
+    ]
+    for prize in meta["awards"]:
+        lines.append(
+            f"受賞：{prize['venue']} {prize['year']} — {prize['name']}（{prize['name_ja']}）"
+        )
+    topic = (
+        "背景・課題・発想を数式なしで学びます。"
+        if mode == "overview"
+        else "原理・数式・具体例・実験を詳しく学びます。"
+    )
+    lines += [
+        "",
+        "図解とMaya・Aidenの自然な英語の会話で、AI論文の"
+        + topic
+        + "英語・日本語の字幕付きです。英語表現を聞き取り、動画を止めて声に出したり、自分の言葉で説明したりしてみてください。",
+        "",
+        "音声・会話・補助図はローカルAIを使って作成した学習用教材です。仮の計算例は論文の実験結果と区別しています。",
+        "",
+        "参考文献",
+    ]
+    for paper in references:
+        if not paper:
+            continue
+        ident = paper.get("source_id", "")
+        suffix = (
+            f"（arXiv: {ident}{paper.get('version', '')}）"
+            if re.fullmatch(r"(?:\d{4}\.\d{4,5}|[a-z-]+/\d{7})", ident)
+            else ""
+        )
+        lines.append(paper["title"] + suffix)
+    lines += ["", "#AI論文 #英語学習 #機械学習"]
+    return without_urls("\n".join(lines))
+
+
+def refresh_completed(project):
+    """Repair downloadable metadata, leaving immutable film manifests untouched."""
+    from . import story_video, video
+
+    if project["state"] != "ready":
+        raise ValueError("Only completed projects can be refreshed")
+    ensure(project)
+    package(project)
+    changed = []
+    for mode, track in project["data"]["modes"].items():
+        if not track.get("packaging"):
+            continue
+        track["packaging"]["description"] = description(project, mode)
+        track["description_version"] = DESCRIPTION_VERSION
+        lesson = db.one("SELECT * FROM lessons WHERE id=?", (track["lesson_id"],))
+        lesson["data"]["packaging"] = track["packaging"]
+        db.execute(
+            "UPDATE lessons SET data=?,updated=? WHERE id=?",
+            (db.dumps(lesson["data"]), time.time(), lesson["id"]),
+        )
+        for export in db.all(
+            "SELECT * FROM video_exports WHERE lesson_id=? AND state='ready'",
+            (lesson["id"],),
+        ):
+            record = export["data"]
+            old = record.get("description", "")
+            chapters = re.findall(r"^\d{1,3}:\d{2}(?::\d{2})?\s+.+$", old, re.M)
+            new = without_urls(
+                track["packaging"]["description"] + "\n\n" + "\n".join(chapters)
+            )
+            new_title = story_video.portable_title(track["packaging"]["title"])
+            if record.get("manifest", {}).get("preview"):
+                new_title += " — Preview"
+            if old != new or record.get("title") != new_title:
+                record.setdefault("packaging_history", []).append(
+                    {
+                        "title": record.get("title"),
+                        "description": old,
+                        "description_version": record.get("description_version"),
+                        "replaced_at": time.time(),
+                    }
+                )
+                changed.append(export["id"])
+            if record.get("description_file"):
+                path = config.safe_path(record["description_file"])
+                if path.is_file() and path.read_text() != new:
+                    history = path.with_name(
+                        "description-" + video.file_digest(path)[:16] + ".txt"
+                    )
+                    if not history.is_file():
+                        history.write_bytes(path.read_bytes())
+                pending = path.with_suffix(".pending.txt")
+                pending.write_text(new, encoding="utf-8")
+                pending.replace(path)
+            record.update(
+                description=new,
+                title=new_title,
+                description_version=DESCRIPTION_VERSION,
+                identity=identity(project, mode),
+            )
+            db.execute(
+                "UPDATE video_exports SET data=?,updated=? WHERE id=?",
+                (db.dumps(record), time.time(), export["id"]),
+            )
+    db.execute(
+        "UPDATE video_projects SET data=?,updated=? WHERE id=?",
+        (db.dumps(project["data"]), time.time(), project["id"]),
+    )
+    db.event("video_project", {"id": project["id"]})
+    return changed

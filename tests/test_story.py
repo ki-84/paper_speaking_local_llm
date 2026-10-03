@@ -1003,3 +1003,113 @@ def test_history_budget_keeps_later_papers_and_result_tables(database):
     assert len(chosen) == 24
     assert chosen[0]["source_ids"] == ["result-table"]
     assert any(c["id"] == "later" for c in chosen)
+
+
+@pytest.mark.parametrize("mode", ["overview", "deep_dive"])
+def test_final_script_uses_actual_opening_joke_and_requests_recap_and_goodbye(
+    database, mode
+):
+    project = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    first = {
+        "title": "The opening",
+        "title_ja": "導入",
+        "focus": "A useful question",
+        "summary": "A shared dilemma",
+        "word_budget": 400,
+        "claim_ids": [],
+        "utterances": [
+            {
+                "speaker": "host",
+                "text": "My imaginary robot has apparently joined a coffee union.",
+            }
+        ],
+    }
+    middle = {
+        "title": "A new idea",
+        "title_ja": "発想",
+        "focus": "Mechanism",
+        "word_budget": 400,
+        "claim_ids": [],
+    }
+    last = {
+        "title": "The payoff",
+        "title_ja": "まとめ",
+        "focus": "The supported takeaway",
+        "word_budget": 400,
+        "claim_ids": [],
+    }
+    track = project["data"]["modes"][mode]
+    track.update(
+        scenes=[first, middle, last], packaging={"hook": "An everyday dilemma"}
+    )
+    ending = story._script_prompt(project, mode, last, 2)
+    assert story.CLOSING_BRIEF in ending
+    assert "coffee union" in ending.split("ACTUAL OPENING EXCHANGE", 1)[1]
+    assert "word budget" in ending and "remaining limitation" in ending
+    assert (
+        "Do not summarize the whole paper or say goodbye in this intermediate scene"
+        in story._script_prompt(project, mode, middle, 1)
+    )
+    for name in ("LoRA", "A Robot Learning Paper"):
+        project["data"]["paper_title"] = name
+        assert story.CLOSING_BRIEF in story.story_beats(project, mode)[-1]
+
+
+def test_farewell_survives_bounded_editing_without_duplicate_turns_or_new_claims(
+    database,
+):
+    track = {
+        "scenes": [
+            {
+                "utterances": [
+                    {"id": "opening", "speaker": "host", "text": "Here is a question."}
+                ]
+            },
+            {
+                "utterances": [
+                    {
+                        "id": "claim",
+                        "speaker": "guide",
+                        "text": "The qualified takeaway.",
+                        "source_ids": ["source"],
+                        "visual_focus": 2,
+                    }
+                ]
+            },
+        ]
+    }
+    story._ensure_farewell(track)
+    turns = track["scenes"][-1]["utterances"]
+    assert [u["speaker"] for u in turns[-2:]] == ["guide", "host"]
+    assert all(
+        u["source_ids"] == [] and u["kind"] == "narration" and u["visual_focus"] == 2
+        for u in turns[-2:]
+    )
+    assert turns[-1]["text"] == "See you!"
+    ids = [u["id"] for u in turns]
+    story._ensure_farewell(track)
+    assert [u["id"] for u in turns] == ids
+    assert len(track["scenes"][0]["utterances"]) == 1
+
+
+def test_authored_farewell_is_kept_with_its_original_recording(database):
+    track = {
+        "scenes": [
+            {
+                "utterances": [
+                    {
+                        "id": "goodbye",
+                        "speaker": "host",
+                        "text": "The coffee union approves. See you next time!",
+                        "audio": "audio/keep.wav",
+                    }
+                ]
+            }
+        ]
+    }
+    story._ensure_farewell(track)
+    assert len(track["scenes"][0]["utterances"]) == 1
+    assert track["scenes"][0]["utterances"][0]["audio"] == "audio/keep.wav"

@@ -67,6 +67,27 @@ def test_conference_year_takes_priority_over_review_upload_date():
     assert publication.parse_page(doc, {"title": PAPER})["label"] == "ICLR 2022"
 
 
+@pytest.mark.parametrize(
+    "path,description,title,expected",
+    [
+        ("/2026/program/papers/159/", "RSS 2026, Sydney", PAPER, "RSS 2026"),
+        ("/2026/program/papers/159/", "RSS 2025, Sydney", PAPER, None),
+        ("/2026/program/papers/159/", "RSS 2026, Sydney", "Another paper", None),
+        ("/2026/program/awards/", "RSS 2026, Sydney", PAPER, None),
+    ],
+)
+def test_rss_program_requires_matching_paper_and_conference_edition(
+    path, description, title, expected
+):
+    saved = {
+        "html": f'<title>{title} · Robotics: Science and Systems</title><meta name="description" content="{description}"><h3>{title}</h3>',
+        "url": "https://roboticsconference.org" + path,
+        "sha256": "a" * 64,
+    }
+    result = publication.parse_page(saved, {"title": PAPER})
+    assert (result["label"] if result else None) == expected
+
+
 def test_offline_reuses_confirmed_bibliography_and_exposes_it(database, monkeypatch):
     row = paper(database)
     result = publication.parse_page(document(), row)
@@ -116,6 +137,32 @@ def test_corrupt_pdf_does_not_stop_generation(database):
         publication.resolve(paper(database, pdf_path="papers/corrupt.pdf"))["status"]
         == "unconfirmed"
     )
+
+
+def test_unconfirmed_record_is_rechecked_once_when_lookup_improves(
+    database, monkeypatch
+):
+    row = paper(database, journal_ref="ICML 2016")
+    project = {
+        "paper_id": row["id"],
+        "data": {"publication": {"status": "unconfirmed", "label": "学会未確認"}},
+    }
+    publication.ensure(project)
+    assert project["data"]["publication"]["label"] == "ICML 2016"
+    project["data"]["publication"] = {"status": "unconfirmed", "label": "学会未確認"}
+    calls = []
+
+    def unavailable(paper):
+        calls.append(1)
+        return {"status": "unconfirmed", "label": "学会未確認"}
+
+    monkeypatch.setattr(publication, "resolve", unavailable)
+    publication.ensure(project)
+    publication.ensure(project)
+    assert len(calls) == 1
+    monkeypatch.setattr(publication, "LOOKUP_VERSION", "next-record-lookup")
+    publication.ensure(project)
+    assert len(calls) == 2
 
 
 def test_title_and_thumbnail_share_identity_without_mutating_story_hooks(database):

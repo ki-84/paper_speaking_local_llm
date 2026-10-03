@@ -89,9 +89,24 @@ it will unpack. They reach the substantive question within the first 30 seconds.
 Only the first scene has this orientation, so later scenes continue the
 conversation. Planning, hook selection, scripts and editorial review all share
 this policy; reviews preserve the introduction rather than treating it as filler.
-The track records `opening_policy.version = topic-before-hook-1`. The spoken
+The track records `opening_policy.version = topic-before-hook-2`. A short,
+paper-specific joke or playful misunderstanding in the opening sets up a
+callback in the ending. The spoken
 introduction uses the same local speech, Japanese translation, captions and
 sentence-practice pipeline as the rest of the conversation.
+
+The final scene reserves about 30–45 seconds within its existing word budget
+for the paper's problem, key idea, supported result and a remaining limitation.
+Aiden adds his own takeaway, the two call back to the actual opening joke or
+analogy, and finish with a friendly spoken goodbye. The final writer and editor
+receive the opening's actual first exchanges, rather than only its outline,
+to make the callback consistent. Both the general and LoRA deep-dive plans use
+this ending, and intermediate scenes do not say goodbye. The track records
+`closing_policy.version = summary-callback-farewell-1`. A short, non-factual
+two-voice farewell is retained if bounded repairs or length edits remove the
+authored goodbye; this fallback is recorded and never adds research claims.
+All closing speech uses the existing local TTS, translation, subtitle,
+mouth-animation and same-audio English practice pipeline.
 
 Run `PYTHONPATH=backend .venv/bin/pytest -q` and the frontend build before
 deployment. `tests/test_story.py` covers project idempotency, job controls,

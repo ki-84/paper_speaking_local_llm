@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import re
 import time
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
 from . import awards, config, db
 
 VERSION = "paper-venue-edition-1"
+LOOKUP_VERSION = "official-records-2"
 EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
 ALIASES = {
     "ICML": r"\bICML\b|International Conference on Machine Learning",
@@ -54,6 +56,34 @@ def parse_page(saved, paper):
     meta = {
         m.get("name", "").lower(): m.get("content", "") for m in soup.find_all("meta")
     }
+    url = urlparse(saved["url"])
+    program = re.fullmatch(r"/((?:19|20)\d{2})/program/papers/\d+/?", url.path)
+    if (
+        url.hostname in {"roboticsconference.org", "www.roboticsconference.org"}
+        and program
+    ):
+        edition = program[1]
+        description = meta.get("description", "")
+        matching_title = any(
+            awards.normalized(h.get_text(" ", strip=True))
+            == awards.normalized(paper["title"])
+            for h in soup.find_all(["h1", "h2", "h3", "h4"])
+        )
+        if (
+            matching_title
+            and soup.title
+            and venue(soup.title.get_text()) == "RSS"
+            and re.search(r"\bRSS\s+" + edition + r"\b", description)
+        ):
+            return confirmed(
+                paper,
+                "RSS",
+                edition,
+                saved["url"],
+                description,
+                source_sha256=saved["sha256"],
+                source_kind="official-conference-program",
+            )
     title = meta.get("citation_title") or (
         soup.h1.get_text(" ", strip=True) if soup.h1 else ""
     )
@@ -153,10 +183,16 @@ def resolve(paper):
 
 
 def ensure(project):
-    if project["data"].get("publication"):
+    existing = project["data"].get("publication", {})
+    if existing and (
+        existing.get("status") == "verified"
+        or existing.get("lookup_version") == LOOKUP_VERSION
+    ):
         return
     paper = db.one("SELECT * FROM papers WHERE id=?", (project["paper_id"],))
     result = resolve(paper)
+    if result["status"] == "unconfirmed":
+        result["lookup_version"] = LOOKUP_VERSION
     project["data"]["publication"] = result
     if result["status"] == "verified":
         paper["data"]["publication"] = result

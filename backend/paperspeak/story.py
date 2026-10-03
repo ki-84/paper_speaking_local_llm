@@ -30,13 +30,24 @@ log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
 VERSION = "youtube-dual-1"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
-OPENING_VERSION = "topic-before-hook-1"
+OPENING_VERSION = "topic-before-hook-2"
 OPENING_BRIEF = (
     "Begin with a brief, natural 15–25-second topic introduction. Maya first says what paper or research idea we are exploring today "
     "and what useful question the viewer will understand, in one or two sentences; a phrase like 'Today, we're looking at...' is welcome. "
     "Use an approachable topic or method name; do not merely read a long formal title. Aiden then asks a relevant, curious or lightly witty question. "
+    "Include one short, warm joke or playful misunderstanding tied to this paper's problem or the recurring analogy. Maya answers with a light witty response and a useful explanation. "
+    "Make this opening joke easy to call back to at the end; keep it respectful, understandable and free of invented scientific claims. "
     "Bridge smoothly into the central hook rather than dropping the viewer into an unexplained analogy. "
     "Reach the substantive question within the first 30 seconds. Keep the introduction specific to this paper, with no long greetings, channel promotion or subscribe requests. "
+)
+CLOSING_VERSION = "summary-callback-farewell-1"
+CLOSING_BRIEF = (
+    "Reserve the final 30–45 seconds for a satisfying ending inside this scene's word budget. "
+    "Maya gives a concise paper-specific recap: the problem, the key idea, what the evidence actually showed, and one remaining limitation. "
+    "Aiden adds a short takeaway in his own words. Bring back the actual opening joke or analogy in one light exchange, so the humor has a payoff. "
+    "Finish with a warm spoken goodbye from the two presenters, such as 'Thanks for watching. We'll see you next time!' and 'See you!'. "
+    "The closing must sound like the end of a complete film. Do not introduce a new topic or end on an unanswered question. "
+    "An overview may invite the viewer to the separate deep dive before the final farewell. No long promotion or subscribe request. "
 )
 MODES = {
     "overview": {
@@ -62,7 +73,8 @@ BEATS = {
         "Reveal the new idea intuitively through the recurring analogy. Explain what changes and what stays fixed, with no equations, algebra or proof claims.",
         "Walk through a relatable hypothetical use case from beginning to end. Let Aiden make a plausible mistake, then correct it. Do not replace this example with a parameter-count calculation.",
         "Use one representative experiment to answer whether the idea actually works. Preserve the tested model/task/comparison and limitations; avoid benchmark shopping lists.",
-        "Resolve the opening question and the recurring joke. Explain what remains difficult and why this idea matters, then invite the curious viewer to the separate mathematical film.",
+        "Resolve the opening question and the recurring joke. Explain what remains difficult and why this idea matters, then invite the curious viewer to the separate mathematical film. "
+        + CLOSING_BRIEF,
     ],
     "deep_dive": [
         OPENING_BRIEF
@@ -75,7 +87,8 @@ BEATS = {
         "Derive the parameter/storage cost with dimensions, then separate trainable parameters, optimizer memory and base-model memory. Preserve resource-test conditions.",
         "Read one controlled experiment carefully: model, task, metric, comparison and result. Explain what it supports and what it does not.",
         "Explain empirical evidence about the rank hypothesis and what the measurements actually establish. Use the source figure/equation and avoid claiming a universal proof.",
-        "Explain limitations and choices, revisit the worked example, and answer the film's central question. Finish with a useful takeaway rather than a list of repeated claims.",
+        "Explain limitations and choices, revisit the worked example, and answer the film's central question. "
+        + CLOSING_BRIEF,
     ],
 }
 SYSTEM = (
@@ -124,7 +137,8 @@ def story_beats(project, mode):
         "Derive a meaningful cost, scaling law or implication from the formalism; distinguish analysis from measured results.",
         "Read one controlled experiment: model, task, metric, comparison, result and what it can establish.",
         "Explain a representative ablation or theoretical result and its assumptions; use a checked original figure where useful.",
-        "Explain limitations and choices, revisit the worked example, and resolve the film’s central question.",
+        "Explain limitations and choices, revisit the worked example, and resolve the film’s central question. "
+        + CLOSING_BRIEF,
     ]
 
 
@@ -235,6 +249,7 @@ def get(ident):
                 "expressions",
                 "duration_check",
                 "opening_policy",
+                "closing_policy",
             )
             if k in track
         }
@@ -972,7 +987,7 @@ def _script_prompt(project, mode, scene, index):
         f"Write scene {index + 1} of ONE continuous {mode} film, not a standalone chapter. Target {budget} spoken words. "
         f"Total scene must be {round(budget * 0.8)}–{round(budget * 1.15)} words. Use 8–10 utterances: host questions usually 15–35 words, guide answers usually 40–65 words. "
         "Aiden is a curious audience proxy, NOT a second lecturer. He must not deliver long technical explanations before Maya answers. "
-        "Every utterance introduces a concrete question, example, causal explanation or insight; no filler acknowledgments. "
+        "Use meaningful questions, examples, causal explanations and insights; no filler acknowledgments. Allow a brief warm goodbye only at the end of the final scene. "
         "Use one recurring playful analogy with a clearly explained boundary. Aiden must challenge an intuitive misconception; "
         "Maya answers it without sounding like a textbook. Humor should emerge from the problem, not be tacked on. "
         "Do not invent historical anecdotes, quotations or measured results. Hypothetical examples must say imagine or suppose. "
@@ -995,7 +1010,12 @@ def _script_prompt(project, mode, scene, index):
             else "Continue naturally from the previous scene; do not repeat the film's topic introduction. "
         )
         + "After the first scene's introduction, ease into the chosen hook. The last scene resolves the opening question and recurring analogy. "
-        'Return {"summary":"what this scene adds", "utterances":[{"speaker":"host|guide","text":"natural spoken paragraph",'
+        + (
+            CLOSING_BRIEF
+            if index == len(track["scenes"]) - 1
+            else "Do not summarize the whole paper or say goodbye in this intermediate scene. "
+        )
+        + 'Return {"summary":"what this scene adds", "utterances":[{"speaker":"host|guide","text":"natural spoken paragraph",'
         '"kind":"paper|background|example|question|humor","source_ids":["ID"],"visual_focus":0}],'
         '"visual":{"type":"flow|timeline|comparison|matrix|equation|example|original","original_asset_id":"optional supplied original asset ID, deep dive only","nodes":[{"en":"short label","ja":"日本語"}],'
         '"equations":[{"latex":"only in deep_dive, accurate supplied equation","en":"meaning","ja":"意味"}],'
@@ -1012,6 +1032,15 @@ def _script_prompt(project, mode, scene, index):
         + json.dumps(scene)
         + "\nPREVIOUS SCENES: "
         + json.dumps(preceding)
+        + "\nACTUAL OPENING EXCHANGE (use its joke for the final callback): "
+        + json.dumps(
+            [
+                {k: u[k] for k in ("speaker", "text")}
+                for u in track["scenes"][0].get("utterances", [])[:6]
+            ]
+            if index == len(track["scenes"]) - 1
+            else []
+        )
         + "\nEVIDENCE: "
         + json.dumps(context_for(project, scene))
         + "\nAVAILABLE ORIGINAL FIGURES (deep dive only): "
@@ -1179,6 +1208,14 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             if kind == "editorial" and index == 0
             else ""
         )
+        + (
+            "For this FINAL scene, check the concise paper recap, the actual opening-joke callback, and a warm spoken farewell. "
+            "These are part of the intended ending, not filler. Use necessary local edits to the final paragraphs to restore a missing recap or farewell, retaining scientific qualifications. "
+            + CLOSING_BRIEF
+            if kind == "editorial"
+            and index == len(project["data"]["modes"][mode]["scenes"]) - 1
+            else ""
+        )
         + "Propose only necessary LOCAL corrections. Preserve the overall length and all accurate passages. "
         "Flag actual contradictions or unsupported specifics, not a missing date, a stylistic preference, or a valid paraphrase. Do not add a date or a numerical claim unless explicitly needed by the scene. "
         "Use the exact utterance ID, never its position. Keep each reason under 180 characters; do not include deliberation, speculation or an internal monologue. "
@@ -1194,6 +1231,17 @@ def _review_scene(project, runtime, mode, scene, index, kind):
                 s.get("summary", s["focus"])
                 for s in project["data"]["modes"][mode]["scenes"][:index]
             ]
+        )
+        + "\nACTUAL OPENING EXCHANGE: "
+        + json.dumps(
+            [
+                {k: u[k] for k in ("speaker", "text")}
+                for u in project["data"]["modes"][mode]["scenes"][0].get(
+                    "utterances", []
+                )[:6]
+            ]
+            if index == len(project["data"]["modes"][mode]["scenes"]) - 1
+            else []
         )
         + "\nOTHER FILM (avoid retelling it; a brief prerequisite recap is fine): "
         + json.dumps(
@@ -2114,8 +2162,18 @@ def _script_step(project, runtime, mode):
                     "version": OPENING_VERSION,
                     "seconds": [15, 25],
                     "topic_before_hook": True,
+                    "humor_callback": True,
                 }
                 scene["beat_goal"] = story_beats(project, mode)[0]
+            if index == len(track["scenes"]) - 1:
+                track["closing_policy"] = {
+                    "version": CLOSING_VERSION,
+                    "seconds": [30, 45],
+                    "paper_summary": True,
+                    "opening_joke_callback": True,
+                    "spoken_farewell": True,
+                }
+                scene["beat_goal"] = story_beats(project, mode)[-1]
             known = set(source_lookup(project))
 
             def valid(r):
@@ -2302,7 +2360,40 @@ def _script_step(project, runtime, mode):
                     scene.pop("visual_ready", None)
             return
         track["length_edited"] = True
+    _ensure_farewell(track)
     track["phase"] = "tts"
+
+
+def _ensure_farewell(track):
+    """Keep a friendly ending even after bounded edits remove the last turn."""
+    scene = track["scenes"][-1]
+    endings = scene["utterances"][-2:]
+    farewell = r"\b(?:see you (?:next time|soon)|see you[!.]|goodbye|bye(?: for now)?[!.]|until next time|take care[!.]|catch you next time)"
+    if endings and re.search(farewell, endings[-1]["text"], re.I):
+        return
+    for speaker, text in [
+        ("guide", "Thanks for exploring this paper with us. We'll see you next time!"),
+        ("host", "See you!"),
+    ]:
+        scene["utterances"].append(
+            {
+                "id": db.uid(),
+                "speaker": speaker,
+                "text": text,
+                "kind": "narration",
+                "source_ids": [],
+                "visual_focus": endings[-1].get("visual_focus", 0) if endings else 0,
+            }
+        )
+    scene.setdefault("editing_records", []).append(
+        {
+            "reason": "Retain a short spoken farewell after bounded editing",
+            "version": CLOSING_VERSION,
+        }
+    )
+    track.setdefault("closing_policy", {}).update(
+        version=CLOSING_VERSION, spoken_farewell=True, farewell_fallback=True
+    )
 
 
 def _tts_step(project, runtime, mode):

@@ -1,0 +1,33 @@
+{
+  "recorded_at": 1791032616.5503142,
+  "run_id": "b347d41f69cf49589443525064343fd0",
+  "project_id": "a057ab1cb5924f1aa27a8e60390cb574",
+  "selected_paper": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+  "publication": {
+    "status": "verified",
+    "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+    "venue": "RSS",
+    "year": 2026,
+    "label": "RSS 2026",
+    "source_url": "https://roboticsconference.org/2026/program/papers/159/",
+    "source_text": "RSS 2026, July 13, 2026 - July 17, 2026, Sydney, Australia",
+    "checked_at": 1791032397.6482542,
+    "source_sha256": "f9eda47d449f0db7d3e8e7aba7f59a090550eba87e007580cae989bb026c9b1f",
+    "source_kind": "official-conference-program"
+  },
+  "opening_version": "topic-before-hook-2",
+  "closing_version": "summary-callback-farewell-1",
+  "scope": "New script-generation and editing policy deployed before this project had any scripted turns. Full films and their actual spoken humor/closing are still in production; unit tests check callback context, farewell retention, intermediate-scene behavior, and title-matched RSS publication evidence.",
+  "tests": {
+    "full_suite_passed": 256,
+    "ruff": "passed"
+  },
+  "checks": {
+    "generation_running": true,
+    "scripts_not_started_at_deployment": true,
+    "completed_reading_notes_preserved": true,
+    "confirmed_publication": true,
+    "old_lesson_jobs_remain_paused": true
+  },
+  "phase": "plan"
+}

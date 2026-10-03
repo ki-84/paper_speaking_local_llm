@@ -149,7 +149,7 @@ def test_three_network_failures_fall_back_without_inventing_attention(
     fresh = db.one("SELECT * FROM nightly_video_runs WHERE id=?", (run["id"],))
     assert len(calls) == 3
     assert fresh["data"]["attention"] == {}
-    assert fresh["data"]["phase"] == "collect"
+    assert fresh["data"]["phase"] == "award_sources"
     assert not fresh["data"]["attention_source"]["available"]
     assert fresh["data"]["warnings"]
 

@@ -816,6 +816,7 @@ class Settings(BaseModel):
     model_profile: Literal["qwen-q8", "qwen-q6", "muse-q6"]
     max_auto_backlog: int = Field(ge=1, le=5)
     nightly_video_enabled: bool | None = None
+    nightly_video_awards_first: bool | None = None
     nightly_video_hour: int | None = Field(default=None, ge=0, le=23)
     nightly_video_minute: int | None = Field(default=None, ge=0, le=59)
     nightly_video_categories: list[str] | None = Field(

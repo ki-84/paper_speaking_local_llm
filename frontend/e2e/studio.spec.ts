@@ -238,12 +238,14 @@ test("nightly videos are independent of old lesson automation", async ({ page })
   await expect(page.getByRole("heading", { name: "夜間に解説・詳解を自動作成" })).toBeVisible();
   const old = await (await page.request.get('/api/settings')).json();
   await page.getByLabel("毎晩、新しい注目論文から2本の動画と英語教材を作る").check();
+  await page.getByLabel("最近のAI・ロボティクス学会の優秀論文賞を優先する").check();
   await page.getByLabel("開始時刻 · 日本時間").fill('02:15');
   await page.getByRole('button', {name:/Save settings/}).click();
   await expect.poll(async()=> (await (await page.request.get('/api/settings')).json()).nightly_video_minute).toBe(15);
   const current = await (await page.request.get('/api/settings')).json();
   expect(current.discovery_enabled).toBe(old.discovery_enabled);
   expect(current.nightly_video_enabled).toBe(true);
+  expect(current.nightly_video_awards_first).toBe(true);
   await page.request.put('/api/settings',{data:old});
 });
 
@@ -259,4 +261,13 @@ test("library nightly start is idempotent and can pause and resume", async ({ pa
   await expect(panel.getByRole('button',{name:'続きから再開'})).toBeVisible();
   await panel.getByRole('button',{name:'続きから再開'}).click();
   await expect(panel.getByText('論文を探索中',{exact:true})).toBeVisible();
+});
+
+test("nightly selection shows the verified conference award source", async ({page}) => {
+  const source='https://roboticsconference.org/2026/program/awards/';
+  await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'award-run',day:'2026-10-03',state:'ready',job:null,data:{selected:{title:'A useful robot method',awards:[{venue:'RSS',year:2026,name:'Outstanding Paper Award',official_url:source}]},timings:{}}}]}));
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await expect(panel.getByRole('link',{name:'RSS 2026 · Outstanding Paper Award'})).toHaveAttribute('href',source);
+  await expect(panel.getByText(/公式受賞情報確認済み/)).toBeVisible();
 });

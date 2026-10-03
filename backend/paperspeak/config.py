@@ -15,6 +15,7 @@ DEFAULTS = {
     "nightly_video_hour": 2,
     "nightly_video_minute": 0,
     "nightly_video_categories": ["cs.AI", "cs.LG", "cs.CL", "cs.CV", "cs.RO"],
+    "nightly_video_awards_first": True,
     "discovery_enabled": True,
     "schedule_hour": 3,
     "schedule_minute": 0,

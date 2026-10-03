@@ -1,0 +1,991 @@
+{
+  "checked_at": "2026-10-03T17:38:20.491383+09:00",
+  "scope": "Official award pages and exact-title arXiv metadata; no production jobs started.",
+  "sources": [
+    {
+      "source": {
+        "venue": "ICLR",
+        "year": 2026,
+        "url": "https://blog.iclr.cc/category/iclr-2026/"
+      },
+      "checked_at": 1791016700.545503,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 2
+    },
+    {
+      "source": {
+        "venue": "ICML",
+        "year": 2026,
+        "url": "https://blog.icml.cc/category/icml-2026/"
+      },
+      "checked_at": 1791016700.5987754,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 2
+    },
+    {
+      "source": {
+        "venue": "NeurIPS",
+        "year": 2026,
+        "url": "https://neurips.cc/virtual/2026/awards_detail"
+      },
+      "status": "unavailable",
+      "reason": "Client error '403 Forbidden' for url 'https://neurips.cc/virtual/2026/awards_detail'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
+      "winner_count": 0
+    },
+    {
+      "source": {
+        "venue": "AAAI",
+        "year": 2026,
+        "url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+      },
+      "checked_at": 1791016702.2058194,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 8
+    },
+    {
+      "source": {
+        "venue": "RSS",
+        "year": 2026,
+        "url": "https://roboticsconference.org/2026/program/awards/"
+      },
+      "checked_at": 1791016702.2178106,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 3
+    },
+    {
+      "source": {
+        "venue": "ICRA",
+        "year": 2026,
+        "url": "https://2026.ieee-icra.org/"
+      },
+      "checked_at": 1791016702.2580457,
+      "failures": [],
+      "status": "no confirmed winners",
+      "winner_count": 0
+    },
+    {
+      "source": {
+        "venue": "CoRL",
+        "year": 2026,
+        "url": "https://www.corl.org/program/awards"
+      },
+      "status": "unavailable",
+      "reason": "Client error '404 Not Found' for url 'https://www.corl.org/program/awards'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "winner_count": 0
+    },
+    {
+      "source": {
+        "venue": "IROS",
+        "year": 2026,
+        "url": "https://2026.ieee-iros.org/"
+      },
+      "checked_at": 1791016703.5695467,
+      "failures": [
+        {
+          "url": "https://2026.ieee-iros.org/attend/iros-sdc-travel-award-program/",
+          "reason": "Client error '403 Forbidden' for url 'https://2026.ieee-iros.org/attend/iros-sdc-travel-award-program/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+        },
+        {
+          "url": "https://2026.ieee-iros.org/contribute/call-for-iros-award-nominations/",
+          "reason": "Client error '403 Forbidden' for url 'https://2026.ieee-iros.org/contribute/call-for-iros-award-nominations/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+        }
+      ],
+      "status": "no confirmed winners",
+      "winner_count": 0
+    },
+    {
+      "source": {
+        "venue": "ICLR",
+        "year": 2025,
+        "url": "https://blog.iclr.cc/category/iclr-2025/"
+      },
+      "checked_at": 1791016703.6130943,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 3
+    },
+    {
+      "source": {
+        "venue": "ICML",
+        "year": 2025,
+        "url": "https://blog.icml.cc/category/icml-2025/"
+      },
+      "checked_at": 1791016704.2183769,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 6
+    },
+    {
+      "source": {
+        "venue": "NeurIPS",
+        "year": 2025,
+        "url": "https://neurips.cc/virtual/2025/awards_detail"
+      },
+      "checked_at": 1791016704.2515683,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 4
+    },
+    {
+      "source": {
+        "venue": "AAAI",
+        "year": 2025,
+        "url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+      },
+      "checked_at": 1791016704.286622,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 6
+    },
+    {
+      "source": {
+        "venue": "RSS",
+        "year": 2025,
+        "url": "https://roboticsconference.org/2025/program/awards/"
+      },
+      "checked_at": 1791016704.3019457,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 4
+    },
+    {
+      "source": {
+        "venue": "ICRA",
+        "year": 2025,
+        "url": "https://2025.ieee-icra.org/"
+      },
+      "checked_at": 1791016705.3483162,
+      "failures": [
+        {
+          "url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "reason": "Client error '403 Forbidden' for url 'https://2025.ieee-icra.org/program/awards-and-finalists/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+        },
+        {
+          "url": "https://2025.ieee-icra.org/announcements/ieee-robotics-and-automation-society-ras-announces-award-winning-papers-and-demonstrations-at-the-ieee-international-conference-on-robotics-and-automation-icra/",
+          "reason": "Client error '403 Forbidden' for url 'https://2025.ieee-icra.org/announcements/ieee-robotics-and-automation-society-ras-announces-award-winning-papers-and-demonstrations-at-the-ieee-international-conf"
+        }
+      ],
+      "status": "no confirmed winners",
+      "winner_count": 0
+    },
+    {
+      "source": {
+        "venue": "CoRL",
+        "year": 2025,
+        "url": "https://2025.corl.org/program/awards"
+      },
+      "checked_at": 1791016705.368157,
+      "failures": [],
+      "status": "verified winners",
+      "winner_count": 3
+    },
+    {
+      "source": {
+        "venue": "IROS",
+        "year": 2025,
+        "url": "https://iros25.org/"
+      },
+      "status": "unavailable",
+      "reason": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)",
+      "winner_count": 0
+    }
+  ],
+  "resolved": [
+    {
+      "source_id": "2510.19315",
+      "version": "v3",
+      "title": "Transformers are Inherently Succinct",
+      "abstract": "We study succinctness as a measure of the expressive power of transformers. Succinctness -- how compactly a formalism can describe a language relative to other formalisms -- is a classical notion in logic and automata theory. We prove that fixed-precision transformers are remarkably succinct: they can be exponentially more succinct than both linear temporal logic (LTL) and recurrent neural networks, and, by extension, state-space models, and doubly exponentially more succinct than finite automata. In other words, there exist families of languages describable by polynomial-size transformers whose smallest equivalent LTL formula or recurrent neural network is exponentially large, and whose smallest equivalent automaton is doubly exponentially large. We also establish matching upper bounds, showing that any fixed-precision transformer can be converted to an LTL formula with at most an exponential blow-up -- improving a prior doubly exponential translation. As a consequence of this succinctness, we show that basic verification problems for transformers, such as emptiness and equivalence, are provably intractable: specifically, EXPSPACE-complete.",
+      "authors": [
+        "Pascal Bergsträßer",
+        "Ryan Cotterell",
+        "Anthony W. Lin"
+      ],
+      "categories": [
+        "cs.FL",
+        "cs.LG",
+        "cs.LO"
+      ],
+      "published": "2025-10-22T07:25:54Z",
+      "updated": "2026-05-15T08:20:00Z",
+      "url": "https://arxiv.org/abs/2510.19315v3",
+      "awards": [
+        {
+          "title": "Transformers are Inherently Succinct",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "paper_url": "https://openreview.net/forum?id=Yxz92UuPLQ",
+          "retrieved_at": 1791015662.8662012,
+          "source_sha256": "d230764d75d4dd88e9ae3648b44a8f77f48bbe96cfce9865f446168423287ef7",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2601.15165",
+      "version": "v4",
+      "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "abstract": "Diffusion Large Language Models (dLLMs) break the rigid left-to-right constraint of traditional LLMs, enabling token generation in arbitrary orders. Intuitively, this flexibility implies a solution space that strictly supersets the fixed autoregressive trajectory, theoretically unlocking superior reasoning potential. However, in this paper, we find that for general reasoning tasks (e.g., mathematics and coding), arbitrary order generation may in fact limit the reasoning potential of dLLMs. We observe that dLLMs tend to exploit this order flexibility to bypass high-uncertainty tokens that are crucial for exploration, which can lead to a premature collapse of solution coverage. This observation motivates a rethink of RL approaches for dLLMs, where considerable complexities, such as handling combinatorial trajectories and intractable likelihoods, are often devoted to preserving this flexibility. We show that effective reasoning can be elicited by simply forgoing arbitrary order and applying standard Group Relative Policy Optimization (GRPO) instead. Our approach, JustGRPO, is minimalist yet surprisingly effective (e.g., 89.1% accuracy on GSM8K) while fully retaining the parallel decoding ability of dLLMs. Project page: https://nzl-thu.github.io/the-flexibility-trap",
+      "authors": [
+        "Zanlin Ni",
+        "Shenzhi Wang",
+        "Yang Yue",
+        "Tianyu Yu",
+        "Weilin Zhao",
+        "Yeguo Hua",
+        "Tianyi Chen",
+        "Jun Song",
+        "Cheng Yu",
+        "Bo Zheng",
+        "Gao Huang"
+      ],
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-01-21T16:41:58Z",
+      "updated": "2026-06-08T15:43:52Z",
+      "url": "https://arxiv.org/abs/2601.15165v4",
+      "awards": [
+        {
+          "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71086",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2505.17638",
+      "version": "v2",
+      "title": "Why Diffusion Models Don't Memorize: The Role of Implicit Dynamical Regularization in Training",
+      "abstract": "Diffusion models have achieved remarkable success across a wide range of generative tasks. A key challenge is understanding the mechanisms that prevent their memorization of training data and allow generalization. In this work, we investigate the role of the training dynamics in the transition from generalization to memorization. Through extensive experiments and theoretical analysis, we identify two distinct timescales: an early time $τ_\\mathrm{gen}$ at which models begin to generate high-quality samples, and a later time $τ_\\mathrm{mem}$ beyond which memorization emerges. Crucially, we find that $τ_\\mathrm{mem}$ increases linearly with the training set size $n$, while $τ_\\mathrm{gen}$ remains constant. This creates a growing window of training times with $n$ where models generalize effectively, despite showing strong memorization if training continues beyond it. It is only when $n$ becomes larger than a model-dependent threshold that overfitting disappears at infinite training times. These findings reveal a form of implicit dynamical regularization in the training dynamics, which allow to avoid memorization even in highly overparameterized settings. Our results are supported by numerical experiments with standard U-Net architectures on realistic and synthetic datasets, and by a theoretical analysis using a tractable random features model studied in the high-dimensional limit.",
+      "authors": [
+        "Tony Bonnaire",
+        "Raphaël Urfin",
+        "Giulio Biroli",
+        "Marc Mézard"
+      ],
+      "categories": [
+        "cs.LG",
+        "cond-mat.dis-nn",
+        "stat.ML"
+      ],
+      "published": "2025-05-23T08:58:47Z",
+      "updated": "2025-10-28T13:54:07Z",
+      "url": "https://arxiv.org/abs/2505.17638v2",
+      "awards": [
+        {
+          "title": "Why Diffusion Models Don’t Memorize: The Role of Implicit Dynamical Regularization in Training",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Best Paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/loc/san-diego/awards_detail",
+          "paper_url": "https://neurips.cc/virtual/2025/poster/119372",
+          "retrieved_at": 1791015665.4221385,
+          "source_sha256": "fa5d53247738a8290bd08f67f02626fc62fe3494e0e590c7ac042abde85156fd",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2603.05562",
+      "version": "v1",
+      "title": "Model Change for Description Logic Concepts",
+      "abstract": "We consider the problem of modifying a description logic concept in light of models represented as pointed interpretations. We call this setting model change, and distinguish three main kinds of changes: eviction, which consists of only removing models; reception, which incorporates models; and revision, which combines removal with incorporation of models in a single operation. We introduce a formal notion of revision and argue that it does not reduce to a simple combination of eviction and reception, contrary to intuition. We provide positive and negative results on the compatibility of eviction and reception for EL and ALC description logic concepts and on the compatibility of revision for ALC concepts.",
+      "authors": [
+        "Ana Ozaki",
+        "Jandson S. Ribeiro"
+      ],
+      "categories": [
+        "cs.LO",
+        "cs.AI"
+      ],
+      "published": "2026-03-05T11:55:43Z",
+      "updated": "2026-03-05T11:55:43Z",
+      "url": "https://arxiv.org/abs/2603.05562v1",
+      "awards": [
+        {
+          "title": "Model Change for Description Logic Concepts",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791015661.6651266,
+          "source_sha256": "591a89bfd7a005332a94006145db4522cd5100b18967bed7c0a372e35d3bda89",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2604.04539",
+      "version": "v2",
+      "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+      "abstract": "Reinforcement learning (RL) is a core approach for robot control when expert demonstrations are unavailable. On-policy methods such as Proximal Policy Optimization (PPO) are widely used for their stability, but their reliance on narrowly distributed on-policy data limits accurate policy evaluation in high-dimensional state and action spaces. Off-policy methods can overcome this limitation by learning from a broader state-action distribution, yet suffer from slow convergence and instability, as fitting a value function over diverse data requires many gradient updates, causing critic errors to accumulate through bootstrapping. We present FlashSAC, a fast and stable off-policy RL algorithm built on Soft Actor-Critic. Motivated by scaling laws observed in supervised learning, FlashSAC sharply reduces gradient updates while compensating with larger models and higher data throughput. To maintain stability at increased scale, FlashSAC explicitly bounds weight, feature, and gradient norms, curbing critic error accumulation. Across over 60 tasks in 10 simulators, FlashSAC consistently outperforms PPO and strong off-policy baselines in both final performance and training efficiency, with the largest gains on high-dimensional tasks such as dexterous manipulation. In sim-to-real humanoid locomotion, FlashSAC reduces training time from hours to minutes, demonstrating the promise of off-policy RL for sim-to-real transfer.",
+      "authors": [
+        "Donghu Kim",
+        "Youngdo Lee",
+        "Minho Park",
+        "Kinam Kim",
+        "I Made Aswin Nahendra",
+        "Takuma Seno",
+        "Sehee Min",
+        "Daniel Palenicek",
+        "Florian Vogt",
+        "Danica Kragic",
+        "Jan Peters",
+        "Jaegul Choo",
+        "Hojoon Lee"
+      ],
+      "categories": [
+        "cs.LG",
+        "cs.RO"
+      ],
+      "published": "2026-04-06T09:03:41Z",
+      "updated": "2026-05-15T07:15:36Z",
+      "url": "https://arxiv.org/abs/2604.04539v2",
+      "awards": [
+        {
+          "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+          "venue": "RSS",
+          "year": 2026,
+          "name": "Outstanding Paper Award",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2026/program/awards/",
+          "paper_url": "https://roboticsconference.org/2026/program/papers/99/",
+          "retrieved_at": 1791015662.3008652,
+          "source_sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321",
+          "area": "robotics"
+        }
+      ]
+    },
+    {
+      "source_id": "2505.20829",
+      "version": "v2",
+      "title": "Learning a Unified Policy for Position and Force Control in Legged Loco-Manipulation",
+      "abstract": "Robotic loco-manipulation tasks often involve contact-rich interactions with the environment, requiring the joint modeling of contact force and robot position. However, recent visuomotor policies often focus solely on learning position or force control, overlooking their co-learning. In this work, we propose the first unified policy for legged robots that jointly models force and position control learned without reliance on force sensors. By simulating diverse combinations of position and force commands alongside external disturbance forces, we use reinforcement learning to learn a policy that estimates forces from historical robot states and compensates for them through position and velocity adjustments. This policy enables a wide range of manipulation behaviors under varying force and position inputs, including position tracking, force application, force tracking, and compliant interactions. Furthermore, we demonstrate that the learned policy enhances trajectory-based imitation learning pipelines by incorporating essential contact information through its force estimation module, achieving approximately 39.5% higher success rates across four challenging contact-rich manipulation tasks compared to position-control policies. Extensive experiments on both a quadrupedal manipulator and a humanoid robot validate the versatility and robustness of the proposed policy across diverse scenarios.",
+      "authors": [
+        "Peiyuan Zhi",
+        "Peiyang Li",
+        "Jianqin Yin",
+        "Baoxiong Jia",
+        "Siyuan Huang"
+      ],
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2025-05-27T07:44:35Z",
+      "updated": "2025-10-04T13:34:15Z",
+      "url": "https://arxiv.org/abs/2505.20829v2",
+      "awards": [
+        {
+          "title": "Learning a Unified Policy for Position and Force Control in Legged Loco-Manipulation",
+          "venue": "CoRL",
+          "year": 2025,
+          "name": "Best Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.corl.org/program/awards",
+          "paper_url": "",
+          "retrieved_at": 1791015665.0557508,
+          "source_sha256": "ab03cd6216bec7357c8a2da8b62aab7ce00dcf9a4f6ca173e80f67f8065a0d2f",
+          "area": "robotics"
+        }
+      ]
+    },
+    {
+      "source_id": "2505.06120",
+      "version": "v1",
+      "title": "LLMs Get Lost In Multi-Turn Conversation",
+      "abstract": "Large Language Models (LLMs) are conversational interfaces. As such, LLMs have the potential to assist their users not only when they can fully specify the task at hand, but also to help them define, explore, and refine what they need through multi-turn conversational exchange. Although analysis of LLM conversation logs has confirmed that underspecification occurs frequently in user instructions, LLM evaluation has predominantly focused on the single-turn, fully-specified instruction setting. In this work, we perform large-scale simulation experiments to compare LLM performance in single- and multi-turn settings. Our experiments confirm that all the top open- and closed-weight LLMs we test exhibit significantly lower performance in multi-turn conversations than single-turn, with an average drop of 39% across six generation tasks. Analysis of 200,000+ simulated conversations decomposes the performance degradation into two components: a minor loss in aptitude and a significant increase in unreliability. We find that LLMs often make assumptions in early turns and prematurely attempt to generate final solutions, on which they overly rely. In simpler terms, we discover that *when LLMs take a wrong turn in a conversation, they get lost and do not recover*.",
+      "authors": [
+        "Philippe Laban",
+        "Hiroaki Hayashi",
+        "Yingbo Zhou",
+        "Jennifer Neville"
+      ],
+      "categories": [
+        "cs.CL",
+        "cs.HC"
+      ],
+      "published": "2025-05-09T15:21:44Z",
+      "updated": "2025-05-09T15:21:44Z",
+      "url": "https://arxiv.org/abs/2505.06120v1",
+      "awards": [
+        {
+          "title": "LLMs Get Lost In Multi-Turn Conversation",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "paper_url": "https://openreview.net/forum?id=VKGTGGcwl6",
+          "retrieved_at": 1791015662.8662012,
+          "source_sha256": "d230764d75d4dd88e9ae3648b44a8f77f48bbe96cfce9865f446168423287ef7",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2602.01338",
+      "version": "v2",
+      "title": "High-accuracy sampling for diffusion models and log-concave distributions",
+      "abstract": "We present algorithms for diffusion model sampling which obtain $δ$-error in $\\mathrm{polylog}(1/δ)$ steps, given access to $\\widetilde O(δ)$-accurate score estimates in $L^2$. This is an exponential improvement over all previous results. Specifically, under minimal data assumptions, the complexity is $\\widetilde O(d_\\star \\mathrm{polylog}(1/δ))$ where $d_\\star$ is the intrinsic dimension of the data. Further, under a non-uniform $L$-Lipschitz condition, the complexity reduces to $\\widetilde O(L \\mathrm{polylog}(1/δ))$. Our approach also yields the first $\\mathrm{polylog}(1/δ)$ complexity sampler for general log-concave distributions using only gradient evaluations.",
+      "authors": [
+        "Fan Chen",
+        "Sinho Chewi",
+        "Constantinos Daskalakis",
+        "Alexander Rakhlin"
+      ],
+      "categories": [
+        "cs.LG",
+        "math.ST",
+        "stat.ML"
+      ],
+      "published": "2026-02-01T17:05:31Z",
+      "updated": "2026-04-27T16:01:17Z",
+      "url": "https://arxiv.org/abs/2602.01338v2",
+      "awards": [
+        {
+          "title": "High-Accuracy Sampling for Diffusion Models and Log-Concave Distributions",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71132",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2512.14361",
+      "version": "v1",
+      "title": "Causal Structure Learning for Dynamical Systems with Theoretical Score Analysis",
+      "abstract": "Real world systems evolve in continuous-time according to their underlying causal relationships, yet their dynamics are often unknown. Existing approaches to learning such dynamics typically either discretize time -- leading to poor performance on irregularly sampled data -- or ignore the underlying causality. We propose CaDyT, a novel method for causal discovery on dynamical systems addressing both these challenges. In contrast to state-of-the-art causal discovery methods that model the problem using discrete-time Dynamic Bayesian networks, our formulation is grounded in Difference-based causal models, which allow milder assumptions for modeling the continuous nature of the system. CaDyT leverages exact Gaussian Process inference for modeling the continuous-time dynamics which is more aligned with the underlying dynamical process. We propose a practical instantiation that identifies the causal structure via a greedy search guided by the Algorithmic Markov Condition and Minimum Description Length principle. Our experiments show that CaDyT outperforms state-of-the-art methods on both regularly and irregularly-sampled data, discovering causal networks closer to the true underlying dynamics.",
+      "authors": [
+        "Nicholas Tagliapietra",
+        "Katharina Ensinger",
+        "Christoph Zimmer",
+        "Osman Mian"
+      ],
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "math.DS"
+      ],
+      "published": "2025-12-16T12:41:22Z",
+      "updated": "2025-12-16T12:41:22Z",
+      "url": "https://arxiv.org/abs/2512.14361v1",
+      "awards": [
+        {
+          "title": "Causal Structure Learning for Dynamical Systems with Theoretical Score Analysis",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791015661.6651266,
+          "source_sha256": "591a89bfd7a005332a94006145db4522cd5100b18967bed7c0a372e35d3bda89",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "2508.10333",
+      "version": "v1",
+      "title": "ReconVLA: Reconstructive Vision-Language-Action Model as Effective Robot Perceiver",
+      "abstract": "Recent advances in Vision-Language-Action (VLA) models have enabled robotic agents to integrate multimodal understanding with action execution. However, our empirical analysis reveals that current VLAs struggle to allocate visual attention to target regions. Instead, visual attention is always dispersed. To guide the visual attention grounding on the correct target, we propose ReconVLA, a reconstructive VLA model with an implicit grounding paradigm. Conditioned on the model's visual outputs, a diffusion transformer aims to reconstruct the gaze region of the image, which corresponds to the target manipulated objects. This process prompts the VLA model to learn fine-grained representations and accurately allocate visual attention, thus effectively leveraging task-specific visual information and conducting precise manipulation. Moreover, we curate a large-scale pretraining dataset comprising over 100k trajectories and 2 million data samples from open-source robotic datasets, further boosting the model's generalization in visual reconstruction. Extensive experiments in simulation and the real world demonstrate the superiority of our implicit grounding method, showcasing its capabilities of precise manipulation and generalization. Our project page is https://zionchow.github.io/ReconVLA/.",
+      "authors": [
+        "Wenxuan Song",
+        "Ziyang Zhou",
+        "Han Zhao",
+        "Jiayi Chen",
+        "Pengxiang Ding",
+        "Haodong Yan",
+        "Yuxin Huang",
+        "Feilong Tang",
+        "Donglin Wang",
+        "Haoang Li"
+      ],
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "published": "2025-08-14T04:20:19Z",
+      "updated": "2025-08-14T04:20:19Z",
+      "url": "https://arxiv.org/abs/2508.10333v1",
+      "awards": [
+        {
+          "title": "ReconVLA: Reconstructive Vision-Language-Action Model as Effective Robot Perceiver",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791015661.6651266,
+          "source_sha256": "591a89bfd7a005332a94006145db4522cd5100b18967bed7c0a372e35d3bda89",
+          "area": "ai"
+        }
+      ]
+    }
+  ],
+  "unresolved": [],
+  "shortlist": [
+    {
+      "source_id": "2603.05562",
+      "version": "v1",
+      "title": "Model Change for Description Logic Concepts",
+      "abstract": "We consider the problem of modifying a description logic concept in light of models represented as pointed interpretations. We call this setting model change, and distinguish three main kinds of changes: eviction, which consists of only removing models; reception, which incorporates models; and revision, which combines removal with incorporation of models in a single operation. We introduce a formal notion of revision and argue that it does not reduce to a simple combination of eviction and reception, contrary to intuition. We provide positive and negative results on the compatibility of eviction and reception for EL and ALC description logic concepts and on the compatibility of revision for ALC concepts.",
+      "authors": [
+        "Ana Ozaki",
+        "Jandson S. Ribeiro"
+      ],
+      "categories": [
+        "cs.LO",
+        "cs.AI"
+      ],
+      "published": "2026-03-05T11:55:43Z",
+      "updated": "2026-03-05T11:55:43Z",
+      "url": "https://arxiv.org/abs/2603.05562v1",
+      "awards": [
+        {
+          "title": "Model Change for Description Logic Concepts",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791015661.6651266,
+          "source_sha256": "591a89bfd7a005332a94006145db4522cd5100b18967bed7c0a372e35d3bda89",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "ai"
+    },
+    {
+      "source_id": "2604.04539",
+      "version": "v2",
+      "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+      "abstract": "Reinforcement learning (RL) is a core approach for robot control when expert demonstrations are unavailable. On-policy methods such as Proximal Policy Optimization (PPO) are widely used for their stability, but their reliance on narrowly distributed on-policy data limits accurate policy evaluation in high-dimensional state and action spaces. Off-policy methods can overcome this limitation by learning from a broader state-action distribution, yet suffer from slow convergence and instability, as fitting a value function over diverse data requires many gradient updates, causing critic errors to accumulate through bootstrapping. We present FlashSAC, a fast and stable off-policy RL algorithm built on Soft Actor-Critic. Motivated by scaling laws observed in supervised learning, FlashSAC sharply reduces gradient updates while compensating with larger models and higher data throughput. To maintain stability at increased scale, FlashSAC explicitly bounds weight, feature, and gradient norms, curbing critic error accumulation. Across over 60 tasks in 10 simulators, FlashSAC consistently outperforms PPO and strong off-policy baselines in both final performance and training efficiency, with the largest gains on high-dimensional tasks such as dexterous manipulation. In sim-to-real humanoid locomotion, FlashSAC reduces training time from hours to minutes, demonstrating the promise of off-policy RL for sim-to-real transfer.",
+      "authors": [
+        "Donghu Kim",
+        "Youngdo Lee",
+        "Minho Park",
+        "Kinam Kim",
+        "I Made Aswin Nahendra",
+        "Takuma Seno",
+        "Sehee Min",
+        "Daniel Palenicek",
+        "Florian Vogt",
+        "Danica Kragic",
+        "Jan Peters",
+        "Jaegul Choo",
+        "Hojoon Lee"
+      ],
+      "categories": [
+        "cs.LG",
+        "cs.RO"
+      ],
+      "published": "2026-04-06T09:03:41Z",
+      "updated": "2026-05-15T07:15:36Z",
+      "url": "https://arxiv.org/abs/2604.04539v2",
+      "awards": [
+        {
+          "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+          "venue": "RSS",
+          "year": 2026,
+          "name": "Outstanding Paper Award",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2026/program/awards/",
+          "paper_url": "https://roboticsconference.org/2026/program/papers/99/",
+          "retrieved_at": 1791015662.3008652,
+          "source_sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321",
+          "area": "robotics"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "robotics"
+    },
+    {
+      "source_id": "2602.01338",
+      "version": "v2",
+      "title": "High-accuracy sampling for diffusion models and log-concave distributions",
+      "abstract": "We present algorithms for diffusion model sampling which obtain $δ$-error in $\\mathrm{polylog}(1/δ)$ steps, given access to $\\widetilde O(δ)$-accurate score estimates in $L^2$. This is an exponential improvement over all previous results. Specifically, under minimal data assumptions, the complexity is $\\widetilde O(d_\\star \\mathrm{polylog}(1/δ))$ where $d_\\star$ is the intrinsic dimension of the data. Further, under a non-uniform $L$-Lipschitz condition, the complexity reduces to $\\widetilde O(L \\mathrm{polylog}(1/δ))$. Our approach also yields the first $\\mathrm{polylog}(1/δ)$ complexity sampler for general log-concave distributions using only gradient evaluations.",
+      "authors": [
+        "Fan Chen",
+        "Sinho Chewi",
+        "Constantinos Daskalakis",
+        "Alexander Rakhlin"
+      ],
+      "categories": [
+        "cs.LG",
+        "math.ST",
+        "stat.ML"
+      ],
+      "published": "2026-02-01T17:05:31Z",
+      "updated": "2026-04-27T16:01:17Z",
+      "url": "https://arxiv.org/abs/2602.01338v2",
+      "awards": [
+        {
+          "title": "High-Accuracy Sampling for Diffusion Models and Log-Concave Distributions",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71132",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "ai"
+    },
+    {
+      "source_id": "2512.14361",
+      "version": "v1",
+      "title": "Causal Structure Learning for Dynamical Systems with Theoretical Score Analysis",
+      "abstract": "Real world systems evolve in continuous-time according to their underlying causal relationships, yet their dynamics are often unknown. Existing approaches to learning such dynamics typically either discretize time -- leading to poor performance on irregularly sampled data -- or ignore the underlying causality. We propose CaDyT, a novel method for causal discovery on dynamical systems addressing both these challenges. In contrast to state-of-the-art causal discovery methods that model the problem using discrete-time Dynamic Bayesian networks, our formulation is grounded in Difference-based causal models, which allow milder assumptions for modeling the continuous nature of the system. CaDyT leverages exact Gaussian Process inference for modeling the continuous-time dynamics which is more aligned with the underlying dynamical process. We propose a practical instantiation that identifies the causal structure via a greedy search guided by the Algorithmic Markov Condition and Minimum Description Length principle. Our experiments show that CaDyT outperforms state-of-the-art methods on both regularly and irregularly-sampled data, discovering causal networks closer to the true underlying dynamics.",
+      "authors": [
+        "Nicholas Tagliapietra",
+        "Katharina Ensinger",
+        "Christoph Zimmer",
+        "Osman Mian"
+      ],
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "math.DS"
+      ],
+      "published": "2025-12-16T12:41:22Z",
+      "updated": "2025-12-16T12:41:22Z",
+      "url": "https://arxiv.org/abs/2512.14361v1",
+      "awards": [
+        {
+          "title": "Causal Structure Learning for Dynamical Systems with Theoretical Score Analysis",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791015661.6651266,
+          "source_sha256": "591a89bfd7a005332a94006145db4522cd5100b18967bed7c0a372e35d3bda89",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "ai"
+    },
+    {
+      "source_id": "2510.19315",
+      "version": "v3",
+      "title": "Transformers are Inherently Succinct",
+      "abstract": "We study succinctness as a measure of the expressive power of transformers. Succinctness -- how compactly a formalism can describe a language relative to other formalisms -- is a classical notion in logic and automata theory. We prove that fixed-precision transformers are remarkably succinct: they can be exponentially more succinct than both linear temporal logic (LTL) and recurrent neural networks, and, by extension, state-space models, and doubly exponentially more succinct than finite automata. In other words, there exist families of languages describable by polynomial-size transformers whose smallest equivalent LTL formula or recurrent neural network is exponentially large, and whose smallest equivalent automaton is doubly exponentially large. We also establish matching upper bounds, showing that any fixed-precision transformer can be converted to an LTL formula with at most an exponential blow-up -- improving a prior doubly exponential translation. As a consequence of this succinctness, we show that basic verification problems for transformers, such as emptiness and equivalence, are provably intractable: specifically, EXPSPACE-complete.",
+      "authors": [
+        "Pascal Bergsträßer",
+        "Ryan Cotterell",
+        "Anthony W. Lin"
+      ],
+      "categories": [
+        "cs.FL",
+        "cs.LG",
+        "cs.LO"
+      ],
+      "published": "2025-10-22T07:25:54Z",
+      "updated": "2026-05-15T08:20:00Z",
+      "url": "https://arxiv.org/abs/2510.19315v3",
+      "awards": [
+        {
+          "title": "Transformers are Inherently Succinct",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "paper_url": "https://openreview.net/forum?id=Yxz92UuPLQ",
+          "retrieved_at": 1791015662.8662012,
+          "source_sha256": "d230764d75d4dd88e9ae3648b44a8f77f48bbe96cfce9865f446168423287ef7",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "ai"
+    },
+    {
+      "source_id": "2508.10333",
+      "version": "v1",
+      "title": "ReconVLA: Reconstructive Vision-Language-Action Model as Effective Robot Perceiver",
+      "abstract": "Recent advances in Vision-Language-Action (VLA) models have enabled robotic agents to integrate multimodal understanding with action execution. However, our empirical analysis reveals that current VLAs struggle to allocate visual attention to target regions. Instead, visual attention is always dispersed. To guide the visual attention grounding on the correct target, we propose ReconVLA, a reconstructive VLA model with an implicit grounding paradigm. Conditioned on the model's visual outputs, a diffusion transformer aims to reconstruct the gaze region of the image, which corresponds to the target manipulated objects. This process prompts the VLA model to learn fine-grained representations and accurately allocate visual attention, thus effectively leveraging task-specific visual information and conducting precise manipulation. Moreover, we curate a large-scale pretraining dataset comprising over 100k trajectories and 2 million data samples from open-source robotic datasets, further boosting the model's generalization in visual reconstruction. Extensive experiments in simulation and the real world demonstrate the superiority of our implicit grounding method, showcasing its capabilities of precise manipulation and generalization. Our project page is https://zionchow.github.io/ReconVLA/.",
+      "authors": [
+        "Wenxuan Song",
+        "Ziyang Zhou",
+        "Han Zhao",
+        "Jiayi Chen",
+        "Pengxiang Ding",
+        "Haodong Yan",
+        "Yuxin Huang",
+        "Feilong Tang",
+        "Donglin Wang",
+        "Haoang Li"
+      ],
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "published": "2025-08-14T04:20:19Z",
+      "updated": "2025-08-14T04:20:19Z",
+      "url": "https://arxiv.org/abs/2508.10333v1",
+      "awards": [
+        {
+          "title": "ReconVLA: Reconstructive Vision-Language-Action Model as Effective Robot Perceiver",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791015661.6651266,
+          "source_sha256": "591a89bfd7a005332a94006145db4522cd5100b18967bed7c0a372e35d3bda89",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "robotics"
+    },
+    {
+      "source_id": "2601.15165",
+      "version": "v4",
+      "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "abstract": "Diffusion Large Language Models (dLLMs) break the rigid left-to-right constraint of traditional LLMs, enabling token generation in arbitrary orders. Intuitively, this flexibility implies a solution space that strictly supersets the fixed autoregressive trajectory, theoretically unlocking superior reasoning potential. However, in this paper, we find that for general reasoning tasks (e.g., mathematics and coding), arbitrary order generation may in fact limit the reasoning potential of dLLMs. We observe that dLLMs tend to exploit this order flexibility to bypass high-uncertainty tokens that are crucial for exploration, which can lead to a premature collapse of solution coverage. This observation motivates a rethink of RL approaches for dLLMs, where considerable complexities, such as handling combinatorial trajectories and intractable likelihoods, are often devoted to preserving this flexibility. We show that effective reasoning can be elicited by simply forgoing arbitrary order and applying standard Group Relative Policy Optimization (GRPO) instead. Our approach, JustGRPO, is minimalist yet surprisingly effective (e.g., 89.1% accuracy on GSM8K) while fully retaining the parallel decoding ability of dLLMs. Project page: https://nzl-thu.github.io/the-flexibility-trap",
+      "authors": [
+        "Zanlin Ni",
+        "Shenzhi Wang",
+        "Yang Yue",
+        "Tianyu Yu",
+        "Weilin Zhao",
+        "Yeguo Hua",
+        "Tianyi Chen",
+        "Jun Song",
+        "Cheng Yu",
+        "Bo Zheng",
+        "Gao Huang"
+      ],
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-01-21T16:41:58Z",
+      "updated": "2026-06-08T15:43:52Z",
+      "url": "https://arxiv.org/abs/2601.15165v4",
+      "awards": [
+        {
+          "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71086",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 105.0,
+      "attention": null,
+      "area": "llm"
+    },
+    {
+      "source_id": "2505.06120",
+      "version": "v1",
+      "title": "LLMs Get Lost In Multi-Turn Conversation",
+      "abstract": "Large Language Models (LLMs) are conversational interfaces. As such, LLMs have the potential to assist their users not only when they can fully specify the task at hand, but also to help them define, explore, and refine what they need through multi-turn conversational exchange. Although analysis of LLM conversation logs has confirmed that underspecification occurs frequently in user instructions, LLM evaluation has predominantly focused on the single-turn, fully-specified instruction setting. In this work, we perform large-scale simulation experiments to compare LLM performance in single- and multi-turn settings. Our experiments confirm that all the top open- and closed-weight LLMs we test exhibit significantly lower performance in multi-turn conversations than single-turn, with an average drop of 39% across six generation tasks. Analysis of 200,000+ simulated conversations decomposes the performance degradation into two components: a minor loss in aptitude and a significant increase in unreliability. We find that LLMs often make assumptions in early turns and prematurely attempt to generate final solutions, on which they overly rely. In simpler terms, we discover that *when LLMs take a wrong turn in a conversation, they get lost and do not recover*.",
+      "authors": [
+        "Philippe Laban",
+        "Hiroaki Hayashi",
+        "Yingbo Zhou",
+        "Jennifer Neville"
+      ],
+      "categories": [
+        "cs.CL",
+        "cs.HC"
+      ],
+      "published": "2025-05-09T15:21:44Z",
+      "updated": "2025-05-09T15:21:44Z",
+      "url": "https://arxiv.org/abs/2505.06120v1",
+      "awards": [
+        {
+          "title": "LLMs Get Lost In Multi-Turn Conversation",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "paper_url": "https://openreview.net/forum?id=VKGTGGcwl6",
+          "retrieved_at": 1791015662.8662012,
+          "source_sha256": "d230764d75d4dd88e9ae3648b44a8f77f48bbe96cfce9865f446168423287ef7",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 105.0,
+      "attention": null,
+      "area": "llm"
+    },
+    {
+      "source_id": "2505.20829",
+      "version": "v2",
+      "title": "Learning a Unified Policy for Position and Force Control in Legged Loco-Manipulation",
+      "abstract": "Robotic loco-manipulation tasks often involve contact-rich interactions with the environment, requiring the joint modeling of contact force and robot position. However, recent visuomotor policies often focus solely on learning position or force control, overlooking their co-learning. In this work, we propose the first unified policy for legged robots that jointly models force and position control learned without reliance on force sensors. By simulating diverse combinations of position and force commands alongside external disturbance forces, we use reinforcement learning to learn a policy that estimates forces from historical robot states and compensates for them through position and velocity adjustments. This policy enables a wide range of manipulation behaviors under varying force and position inputs, including position tracking, force application, force tracking, and compliant interactions. Furthermore, we demonstrate that the learned policy enhances trajectory-based imitation learning pipelines by incorporating essential contact information through its force estimation module, achieving approximately 39.5% higher success rates across four challenging contact-rich manipulation tasks compared to position-control policies. Extensive experiments on both a quadrupedal manipulator and a humanoid robot validate the versatility and robustness of the proposed policy across diverse scenarios.",
+      "authors": [
+        "Peiyuan Zhi",
+        "Peiyang Li",
+        "Jianqin Yin",
+        "Baoxiong Jia",
+        "Siyuan Huang"
+      ],
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2025-05-27T07:44:35Z",
+      "updated": "2025-10-04T13:34:15Z",
+      "url": "https://arxiv.org/abs/2505.20829v2",
+      "awards": [
+        {
+          "title": "Learning a Unified Policy for Position and Force Control in Legged Loco-Manipulation",
+          "venue": "CoRL",
+          "year": 2025,
+          "name": "Best Paper Awards",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.corl.org/program/awards",
+          "paper_url": "",
+          "retrieved_at": 1791015665.0557508,
+          "source_sha256": "ab03cd6216bec7357c8a2da8b62aab7ce00dcf9a4f6ca173e80f67f8065a0d2f",
+          "area": "robotics"
+        }
+      ],
+      "retrieval_score": 90.0,
+      "attention": null,
+      "area": "robotics"
+    },
+    {
+      "source_id": "2505.17638",
+      "version": "v2",
+      "title": "Why Diffusion Models Don't Memorize: The Role of Implicit Dynamical Regularization in Training",
+      "abstract": "Diffusion models have achieved remarkable success across a wide range of generative tasks. A key challenge is understanding the mechanisms that prevent their memorization of training data and allow generalization. In this work, we investigate the role of the training dynamics in the transition from generalization to memorization. Through extensive experiments and theoretical analysis, we identify two distinct timescales: an early time $τ_\\mathrm{gen}$ at which models begin to generate high-quality samples, and a later time $τ_\\mathrm{mem}$ beyond which memorization emerges. Crucially, we find that $τ_\\mathrm{mem}$ increases linearly with the training set size $n$, while $τ_\\mathrm{gen}$ remains constant. This creates a growing window of training times with $n$ where models generalize effectively, despite showing strong memorization if training continues beyond it. It is only when $n$ becomes larger than a model-dependent threshold that overfitting disappears at infinite training times. These findings reveal a form of implicit dynamical regularization in the training dynamics, which allow to avoid memorization even in highly overparameterized settings. Our results are supported by numerical experiments with standard U-Net architectures on realistic and synthetic datasets, and by a theoretical analysis using a tractable random features model studied in the high-dimensional limit.",
+      "authors": [
+        "Tony Bonnaire",
+        "Raphaël Urfin",
+        "Giulio Biroli",
+        "Marc Mézard"
+      ],
+      "categories": [
+        "cs.LG",
+        "cond-mat.dis-nn",
+        "stat.ML"
+      ],
+      "published": "2025-05-23T08:58:47Z",
+      "updated": "2025-10-28T13:54:07Z",
+      "url": "https://arxiv.org/abs/2505.17638v2",
+      "awards": [
+        {
+          "title": "Why Diffusion Models Don’t Memorize: The Role of Implicit Dynamical Regularization in Training",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Best Paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/loc/san-diego/awards_detail",
+          "paper_url": "https://neurips.cc/virtual/2025/poster/119372",
+          "retrieved_at": 1791015665.4221385,
+          "source_sha256": "fa5d53247738a8290bd08f67f02626fc62fe3494e0e590c7ac042abde85156fd",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 90.0,
+      "attention": null,
+      "area": "ai"
+    }
+  ],
+  "checks": {
+    "official_verified_ai_candidates": true,
+    "official_verified_robotics_candidates": true,
+    "resolved_ai_paper": true,
+    "resolved_robotics_paper": true,
+    "every_shortlisted_award_verified": true,
+    "older_submission_eligible_when_recently_awarded": true
+  },
+  "status": "passed",
+  "settings_verification": {
+    "status": "passed",
+    "verified": "2026-10-03T08:42:44.504Z",
+    "checks": {
+      "award_priority_saved_and_restored": true,
+      "nightly_0200_jst_enabled": true,
+      "old_automation_stays_disabled": true,
+      "youtube_upload_stays_manual": true
+    },
+    "settings": {
+      "nightly_video_awards_first": true,
+      "nightly_video_enabled": true,
+      "nightly_video_hour": 2,
+      "nightly_video_minute": 0
+    }
+  },
+  "tests": {
+    "python_full_suite_passed": 225,
+    "final_related_passed": 33,
+    "frontend_passed": 14,
+    "frontend_build": "passed"
+  }
+}

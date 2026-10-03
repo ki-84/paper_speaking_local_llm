@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from . import config, db, lessons, local_network, papers, story, thumbnails
+from . import awards, config, db, lessons, local_network, papers, story, thumbnails
 from .runtime import GPUUnavailable, PracticePreempted
 
 ZONE = ZoneInfo("Asia/Tokyo")
@@ -168,6 +168,9 @@ def get(ident):
             "shortlist_summary",
             "review_summary",
             "waiting_reason",
+            "selection_policy",
+            "award_sources",
+            "award_fallback_reason",
         }
     }
     return run
@@ -201,6 +204,14 @@ def start(*, now=None, manual=False):
             "model": db.settings()["model_profile"],
             "manual": manual,
             "categories": db.settings()["nightly_video_categories"],
+            "selection_policy": "awards-first"
+            if db.settings()["nightly_video_awards_first"]
+            else "recent-first",
+            "award_source_index": 0,
+            "award_resolve_index": 0,
+            "award_winners": [],
+            "award_candidates": {},
+            "award_sources": [],
             "timings": {},
         }
         if active:
@@ -290,6 +301,8 @@ def _tried(run, unit, action, fallback):
 
 
 def category(meta):
+    if any(a.get("area") == "robotics" for a in awards.verified(meta)):
+        return "robotics"
     cats = set(meta.get("categories", []))
     if "cs.RO" in cats:
         return "robotics"
@@ -307,8 +320,9 @@ def filmed_ids():
     }
 
 
-def shortlist(candidates, attention, *, now, days, excluded=()):
+def shortlist(candidates, attention, *, now, days, excluded=(), awards_first=False):
     used = filmed_ids() | set(excluded)
+    edition_year = now.astimezone(ZONE).year
     oldest = now - dt.timedelta(days=days)
     recent = db.all(
         "SELECT p.data FROM nightly_video_runs n JOIN video_projects v ON n.project_id=v.id JOIN papers p ON p.id=v.paper_id ORDER BY n.created DESC LIMIT 7"
@@ -327,7 +341,8 @@ def shortlist(candidates, attention, *, now, days, excluded=()):
             )
         except (ValueError, KeyError):
             continue
-        if not oldest <= published <= now:
+        prizes = awards.verified(meta, year=edition_year) if awards_first else []
+        if published > now or (not prizes and published < oldest):
             continue
         signal = attention.get(meta["source_id"])
         hot = (
@@ -337,24 +352,42 @@ def shortlist(candidates, attention, *, now, days, excluded=()):
                 30, 20 / math.sqrt(signal["rank"]) + 2 * math.log1p(signal["upvotes"])
             )
         )
-        freshness = 15 * (1 - (now - published).total_seconds() / (days * 86400))
+        freshness = max(
+            0, 15 * (1 - (now - published).total_seconds() / (days * 86400))
+        )
         balance = 10 / (1 + counts[category(meta)])
+        award_score = (
+            100 + 20 * (max(a["year"] for a in prizes) - edition_year) if prizes else 0
+        )
         eligible.append(
             meta
             | {
-                "retrieval_score": round(hot + freshness + balance, 3),
+                "retrieval_score": round(award_score + hot + freshness + balance, 3),
                 "attention": signal,
                 "area": category(meta),
+                "awards": prizes,
             }
         )
     eligible.sort(key=lambda m: (m["retrieval_score"], m["published"]), reverse=True)
     picks = []
-    for area in ("ai", "llm", "robotics"):
-        first = next((m for m in eligible if m["area"] == area), None)
-        if first:
-            picks.append(first)
-    picks += [m for m in eligible if m not in picks]
-    return sorted(picks[:10], key=lambda m: m["retrieval_score"], reverse=True)
+    # Balance among award winners first. A recent unawarded paper must not
+    # displace a winner merely to fill a domain slot.
+    for pool in (
+        [m for m in eligible if m["awards"]],
+        [m for m in eligible if not m["awards"]],
+    ):
+        balanced = []
+        for area in ("ai", "llm", "robotics"):
+            first = next((m for m in pool if m["area"] == area), None)
+            if first:
+                balanced.append(first)
+        balanced += [m for m in pool if m not in balanced]
+        picks += balanced
+    return sorted(
+        picks[:10],
+        key=lambda m: (bool(m["awards"]), m["retrieval_score"]),
+        reverse=True,
+    )
 
 
 def _sources(pid):
@@ -371,11 +404,12 @@ def _ask(run, runtime, prompt, **kwargs):
 def _finish_search(run, job):
     data = run["data"]
     data["shortlist"] = shortlist(
-        list(data["candidates"].values()),
+        list((data["candidates"] | data.get("award_candidates", {})).values()),
         data["attention"],
         now=dt.datetime.fromtimestamp(data["started"], dt.timezone.utc),
         days=data["window_days"],
         excluded=data.get("excluded_ids", []),
+        awards_first=data.get("selection_policy") == "awards-first",
     )
     data["shortlist_summary"] = [
         {
@@ -383,10 +417,11 @@ def _finish_search(run, job):
             "title": p["title"],
             "area": p["area"],
             "attention": p["attention"],
+            "awards": p["awards"],
         }
         for p in data["shortlist"]
     ]
-    data["paper_count"] = len(data["candidates"])
+    data["paper_count"] = len(data["candidates"] | data.get("award_candidates", {}))
     data.update(phase="read", review_index=0)
     data["timings"]["collection_seconds"] = round(time.time() - data["started"], 2)
     run["state"] = "reading"
@@ -444,8 +479,89 @@ def step(job, runtime):
                 "retrieved_at": time.time(),
                 "available": bool(result),
             },
-            phase="collect",
+            phase="award_sources"
+            if data.get("selection_policy") == "awards-first"
+            else "collect",
         )
+    elif phase == "award_sources":
+        specs = awards.sources(
+            dt.datetime.fromtimestamp(data["started"], ZONE).year, data["categories"]
+        )
+        index = data["award_source_index"]
+        if index >= len(specs):
+            data["phase"] = "award_resolve"
+        else:
+            spec = specs[index]
+            result = _tried(
+                run,
+                f"awards:{spec['venue']}:{spec['year']}",
+                lambda: awards.collect(spec),
+                lambda: {
+                    "papers": [],
+                    "source": spec,
+                    "status": "unavailable",
+                    "checked_at": time.time(),
+                },
+            )
+            if result is None:
+                return False
+            data["award_sources"].append(
+                {k: v for k, v in result.items() if k != "papers"}
+            )
+            existing = {
+                (a["venue"], a["year"], a["name"], awards.normalized(a["title"]))
+                for a in data["award_winners"]
+            }
+            data["award_winners"].extend(
+                a
+                for a in result["papers"]
+                if (a["venue"], a["year"], a["name"], awards.normalized(a["title"]))
+                not in existing
+            )
+            data["award_source_index"] += 1
+            db.patch_job(
+                job["id"],
+                stage=f"学会の受賞情報を確認 · {spec['venue']} {spec['year']}",
+                progress=0.04,
+            )
+    elif phase == "award_resolve":
+        index = data["award_resolve_index"]
+        if index >= len(data["award_winners"]):
+            if not data["award_candidates"]:
+                data["award_fallback_reason"] = (
+                    "公式に受賞と本文の取得先を確認できる未動画化の候補がないため、新着論文も確認します。"
+                )
+            data["phase"] = "collect"
+        else:
+            winner = data["award_winners"][index]
+            result = _tried(
+                run,
+                f"award-paper:{index}",
+                lambda: {"metadata": awards.resolve(winner)},
+                lambda: {"metadata": None},
+            )
+            if result is None:
+                return False
+            meta = result["metadata"]
+            if meta and meta["source_id"] not in filmed_ids():
+                old = data["award_candidates"].get(
+                    meta["source_id"], meta | {"awards": []}
+                )
+                old["awards"].append(winner)
+                data["award_candidates"][meta["source_id"]] = old
+            elif not meta:
+                data["warnings"].append(
+                    {
+                        "unit": f"award-paper:{index}",
+                        "reason": f"{winner['venue']} {winner['year']}: 論文の題名と取得先を一致確認できず、次候補へ進みます。",
+                    }
+                )
+            data["award_resolve_index"] += 1
+            db.patch_job(
+                job["id"],
+                stage=f"受賞論文の取得先を確認 · {index + 1}/{len(data['award_winners'])}",
+                progress=0.08,
+            )
     elif phase == "collect":
         pending = [
             cat for cat in data["categories"] if cat not in data["collected_categories"]
@@ -550,7 +666,7 @@ def step(job, runtime):
                         result = _ask(
                             run,
                             runtime,
-                            'Assess this paper for an engaging, accurate overview and deep-dive video. Separate community attention from scientific evidence. Return {"suitable":true,"content_quality":4,"story_value":4,"why_ja":"何が面白く何を学べるか","cautions_ja":["限界"],"source_ids":["existing ID"]}. Scores 0..5. Do not reject complex math: the deep dive explains it.\nTITLE: '
+                            'Assess this paper for an engaging, accurate overview and deep-dive video. Awards and community attention are recognition, not proof of scientific claims. Explain what viewers will learn from the full text, with limitations. Return {"suitable":true,"content_quality":4,"story_value":4,"why_ja":"何が面白く何を学べるか","cautions_ja":["限界"],"source_ids":["existing ID"]}. Scores 0..5. Do not reject complex math: the deep dive explains it.\nTITLE: '
                             + candidate["title"]
                             + "\nFULL PAPER READING NOTES:\n"
                             + db.dumps(candidate["notes"])[:30000],
@@ -613,6 +729,20 @@ def step(job, runtime):
         ]
         if not suitable:
             return _expand_or_skip(run)
+        winners = [
+            p
+            for p in suitable
+            if awards.verified(
+                p, year=dt.datetime.fromtimestamp(data["started"], ZONE).year
+            )
+        ]
+        if data.get("selection_policy") == "awards-first":
+            if winners:
+                suitable = winners
+            else:
+                data["award_fallback_reason"] = (
+                    "受賞論文から本文を確認できる適した候補がなかったため、確認済みの新着論文から選びました。"
+                )
         selected = max(
             suitable,
             key=lambda p: 7 * p["assessment"]["content_quality"]
@@ -637,7 +767,7 @@ def step(job, runtime):
         story.save(project)
         data.update(
             selected={
-                k: selected[k]
+                k: selected.get(k, [])
                 for k in (
                     "paper_id",
                     "source_id",
@@ -646,6 +776,7 @@ def step(job, runtime):
                     "area",
                     "attention",
                     "assessment",
+                    "awards",
                 )
             },
             phase="production",

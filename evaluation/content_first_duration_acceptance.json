@@ -1,0 +1,285 @@
+{
+  "checked_at": "2026-10-03T23:32:13.873174+00:00",
+  "status": "passed",
+  "duration_policy": {
+    "version": "content-first-1",
+    "priority": [
+      "engagement",
+      "clarity",
+      "supported_explanation"
+    ],
+    "fixed_runtime": false,
+    "word_quotas": false,
+    "pad_short_films": false,
+    "speed_to_fit": false
+  },
+  "editorial_review_version": "content-first-editorial-1",
+  "verification": {
+    "python_suite": {
+      "passed": 285,
+      "seconds": 49.34
+    },
+    "browser_e2e": {
+      "passed": 16,
+      "seconds": 14.2,
+      "isolated_fixtures": true
+    },
+    "frontend_build": "passed",
+    "changed_python_ruff": "passed",
+    "regressions": [
+      "short and long films reach learning without padding scenes",
+      "native audio and alignment preserved even with a legacy speed factor",
+      "short and long scene scripts accepted without word quotas",
+      "outlines preserve narrative beats without equal word budgets",
+      "source-valid repair drafts preferred to arbitrary word-count matches",
+      "unfinished checkpoints retain speech and learning IDs and reset obsolete length-only feedback",
+      "editorial review checks clarity, repetition, useful examples and humor"
+    ],
+    "deployed_lan_ui": {
+      "url": "https://192.168.10.112:8443",
+      "projects_checked": 3,
+      "finished_duration_labels_checked": 6,
+      "thumbnail_downloads": 36,
+      "no_browser_errors": true
+    },
+    "existing_projects_unchanged": 5,
+    "existing_ready_mp4s_unchanged": 28,
+    "paused_jobs_unchanged": true,
+    "nightly_schedule_unchanged": {
+      "discovery_enabled": false,
+      "nightly_video_enabled": true,
+      "nightly_video_hour": 2,
+      "nightly_video_minute": 0,
+      "nightly_video_categories": [
+        "cs.AI",
+        "cs.LG",
+        "cs.CL",
+        "cs.CV",
+        "cs.RO"
+      ],
+      "nightly_video_awards_first": true
+    }
+  },
+  "films": [
+    {
+      "id": "7b57bfd44d4e4aef92e22821cb8931b6",
+      "modes": [
+        {
+          "mode": "overview",
+          "duration_seconds": 900.72,
+          "actual_duration_displayed": true
+        },
+        {
+          "mode": "deep_dive",
+          "duration_seconds": 1890.8,
+          "actual_duration_displayed": true
+        }
+      ]
+    },
+    {
+      "id": "a057ab1cb5924f1aa27a8e60390cb574",
+      "modes": [
+        {
+          "mode": "overview",
+          "duration_seconds": 945.38,
+          "actual_duration_displayed": true
+        },
+        {
+          "mode": "deep_dive",
+          "duration_seconds": 1863.84,
+          "actual_duration_displayed": true
+        }
+      ]
+    },
+    {
+      "id": "bd7642d8e5e244399c5a48e30fe52ec2",
+      "modes": [
+        {
+          "mode": "overview",
+          "duration_seconds": 975.24,
+          "actual_duration_displayed": true
+        },
+        {
+          "mode": "deep_dive",
+          "duration_seconds": 1948.84,
+          "actual_duration_displayed": true
+        }
+      ]
+    }
+  ],
+  "protected_mp4s": [
+    {
+      "export_id": "27ffe90c54564d62ab8c287d96b484a7",
+      "duration_seconds": 1019.72,
+      "sha256": "d99bb9f63ff65984742095ac05206520949ec3faef935402cf3b5a08222fb4d7",
+      "unchanged": true
+    },
+    {
+      "export_id": "c49675038e974e4c8dc017be602c11ba",
+      "duration_seconds": 1036.14,
+      "sha256": "5db87f392b17de27a2334a6fb2ccc94693be65c76d7e5c6a1b67b03b45ad108d",
+      "unchanged": true
+    },
+    {
+      "export_id": "d2059751bfb34b0fa28f1961b66f2cc0",
+      "duration_seconds": 88.68,
+      "sha256": "3c33a4eb56a2ad1d0587aa58cd2e8cb54b41cf7eeb8b79a438852adf32d2f0cb",
+      "unchanged": true
+    },
+    {
+      "export_id": "83769e4beef345ab88d8c152c28aa331",
+      "duration_seconds": 1969.56,
+      "sha256": "2851315e8ee71ebd01ebcfc70f35302080c1dd2f1324a969386fa65fe2cf1bb9",
+      "unchanged": true
+    },
+    {
+      "export_id": "8c9a0d3ab913402091974949b33583d7",
+      "duration_seconds": 87.0,
+      "sha256": "6ee5abf2d89de194f7b250e233147e56a67155892b8e89c8ea1d85842bb0bffb",
+      "unchanged": true
+    },
+    {
+      "export_id": "dc126b2df292467484d0ed909c4d358e",
+      "duration_seconds": 900.72,
+      "sha256": "18925105e179c5a7caf5f301da9f456ebbcc4f86b1baca262480ac1fb597df21",
+      "unchanged": true
+    },
+    {
+      "export_id": "e3725e8da6464c10a3ad7adc27aca03c",
+      "duration_seconds": 85.0,
+      "sha256": "f6379bd88b823084210d55836bed163bb347a8eca7b7193d206e7ce445a30f30",
+      "unchanged": true
+    },
+    {
+      "export_id": "0b0a8a53b587497db62decbbec947a49",
+      "duration_seconds": 1890.8,
+      "sha256": "c697d14c14be10791461e6b346b1430cea1e5f2e91968b1aa49fad927d829799",
+      "unchanged": true
+    },
+    {
+      "export_id": "22e3a996bd80445981c07d6d28e22998",
+      "duration_seconds": 85.36,
+      "sha256": "42e0d953da32bcb9eadc6285ca320e5bc8217016d666288a5091ca288cefe320",
+      "unchanged": true
+    },
+    {
+      "export_id": "e020240123f641c58df245e695b25967",
+      "duration_seconds": 2020.06,
+      "sha256": "7e118a5488b1366bb72fb4132aaa17e5fa41e2d6dc184903a2972a1e18a8ca87",
+      "unchanged": true
+    },
+    {
+      "export_id": "f18332f3572c49118ba8d3361e294322",
+      "duration_seconds": 2020.06,
+      "sha256": "e92e43a8d5e9daa0749aacc1384ea69155f960594ff46372ba48281d575f1fee",
+      "unchanged": true
+    },
+    {
+      "export_id": "729e902a92474279b85a002d2e5275bb",
+      "duration_seconds": 2020.06,
+      "sha256": "8726314a635e93786b51e28ffc594aa93193067362462328e0eb04036bcea962",
+      "unchanged": true
+    },
+    {
+      "export_id": "05fedbdeb9a54f03b53a0ff05975a079",
+      "duration_seconds": 89.08,
+      "sha256": "d22eb1ed45a75ff194911bda612fbc18de2459263f882657af3321d1eeeb0cbe",
+      "unchanged": true
+    },
+    {
+      "export_id": "48a2abcc1f57406ea5ddfea7c53d99fc",
+      "duration_seconds": 89.08,
+      "sha256": "07053151b44b6e3c9989a65b8694f627bc0c127501f2cf1593e5c5343e4f229d",
+      "unchanged": true
+    },
+    {
+      "export_id": "c4329159b0494dfcb56b6ae760721969",
+      "duration_seconds": 1068.4250833333333,
+      "sha256": "f2da7c336e2527f2015a20cefa69116bb3369525ddc558fc9dabc125572d76e3",
+      "unchanged": true
+    },
+    {
+      "export_id": "6569fd1f76204ed09aba7516950e266c",
+      "duration_seconds": 1068.4250833333333,
+      "sha256": "f2da7c336e2527f2015a20cefa69116bb3369525ddc558fc9dabc125572d76e3",
+      "unchanged": true
+    },
+    {
+      "export_id": "9029f46f14854fc2904b93de4fb027db",
+      "duration_seconds": 1068.4250833333333,
+      "sha256": "967909d39ad329afd1bca759b03c5a4fa128d370f95264aa83facec6ef27278f",
+      "unchanged": true
+    },
+    {
+      "export_id": "c7d25ce4466a4d5689e03123a09acaf5",
+      "duration_seconds": 88.64,
+      "sha256": "9925de273fce9834e0abe5096eac9183c07f88af6308df19455b9c9df327b6c4",
+      "unchanged": true
+    },
+    {
+      "export_id": "2e0631191a704f8e83c8e986f8f36623",
+      "duration_seconds": 88.67345833333333,
+      "sha256": "6a41b881e46ecba0a0ac9578226ab4dffb67fcfb4a972692ac9b6441fa866700",
+      "unchanged": true
+    },
+    {
+      "export_id": "577ec023632947af97267f3648998dca",
+      "duration_seconds": 88.67345833333333,
+      "sha256": "dd2a77a5951eee3d889de8fd349df1188129ab2e037bc5ccd880244f0a267a55",
+      "unchanged": true
+    },
+    {
+      "export_id": "6630bd8c6f8743a4919dbb4a7b570df2",
+      "duration_seconds": 1863.84,
+      "sha256": "b0ecfa0537657b92f92eb84e1c90960d51dc73d4fdd6835cc56e332ee7bdc999",
+      "unchanged": true
+    },
+    {
+      "export_id": "a9b9fea129a34ff595ee53b2f2ede9b9",
+      "duration_seconds": 87.84,
+      "sha256": "482e76ea66353ea001d084daee5e9644756ff33b00983370115c2db34f0cac35",
+      "unchanged": true
+    },
+    {
+      "export_id": "4d886c5fb48b4df688c5d4a5b5ff5f1a",
+      "duration_seconds": 945.38,
+      "sha256": "6aaafe0a02cf0040969cb4d4176f80ba898b195f7d4b1c58e3da96067c061960",
+      "unchanged": true
+    },
+    {
+      "export_id": "77cbe218fdea4a67b8f17d73acfb19c6",
+      "duration_seconds": 84.76,
+      "sha256": "54aaacc3b65c80ffa31140c0b33d7f48a40184cdddd08fc60e7f4034f9a6ae5e",
+      "unchanged": true
+    },
+    {
+      "export_id": "0601479643764e64bf3193c4b4555f06",
+      "duration_seconds": 975.24,
+      "sha256": "20f4f9e0d1d00be96622e04bc3ea8642e92a2355ce0e66d7c93024f5e4fa76fb",
+      "unchanged": true
+    },
+    {
+      "export_id": "e090ed9f50c044bdb99d5e1fa751936a",
+      "duration_seconds": 88.72,
+      "sha256": "b6ae568b6f7892466857612b35d2f6ad56e0b53ebe972da5039b84d2b8eabeca",
+      "unchanged": true
+    },
+    {
+      "export_id": "a1bd67d90ec04ed2b0ecf29506471f33",
+      "duration_seconds": 1948.84,
+      "sha256": "0705a8ce801ef70d8177ad9aac19dbfac31070ff58c3b1afc515d3d8c9f23e5e",
+      "unchanged": true
+    },
+    {
+      "export_id": "7448791ecc8245a29879b35e80729f11",
+      "duration_seconds": 88.56,
+      "sha256": "788b455728cbf24dd72e4b7e6e2b14382ff16b10f0ba379dfd6201dd8e353441",
+      "unchanged": true
+    }
+  ],
+  "limits": [
+    "No new full film was generated for this policy change; generation behavior was exercised with controlled local-runtime fixtures. Real video engagement and clarity remain editorial judgments.",
+    "The per-paragraph speech limit and bounded inference/repair units remain technical limits, not runtime targets.",
+    "Previously completed movie/audio revisions are retained; existing tempo processing in unfinished audio is not undone."
+  ]
+}

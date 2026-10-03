@@ -158,9 +158,7 @@ def inspect(ident, screenshots=False, sync=False):
             manifest, config.DATA / "jobs" / ("story-video-" + export["id"])
         )
         checks = {
-            "duration_in_range": story.MODES[mode]["range"][0] * 60
-            <= data["media_duration"]
-            <= story.MODES[mode]["range"][1] * 60,
+            "duration_positive": data["media_duration"] > 0,
             "duration_error_small": abs(data["duration"] - video.media_duration(mp4))
             < 1,
             "equation_policy": data["acceptance"]["equation_scenes"] == 0

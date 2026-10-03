@@ -30,6 +30,22 @@ log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
 VERSION = "youtube-dual-1"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
+EDITORIAL_REVIEW_VERSION = "content-first-editorial-1"
+DURATION_POLICY = {
+    "version": "content-first-1",
+    "priority": ["engagement", "clarity", "supported_explanation"],
+    "fixed_runtime": False,
+    "word_quotas": False,
+    "pad_short_films": False,
+    "speed_to_fit": False,
+}
+CONTENT_BRIEF = (
+    "Prioritize an engaging, clear and complete explanation over a target runtime or word count. "
+    "Give each scene the space its ideas need: important causal reasoning, a concrete example, and useful humor. "
+    "Scenes need not be equally long. Remove repetitive recaps, redundant questions and filler; preserve helpful explanation, scientific qualifications and the joke's payoff. "
+    "Do not pad a short film, cut necessary detail from a long one, or rush speech to fit a duration. "
+    "Finish when the central question has a satisfying answer, the important limitations are clear, and the presenters have said goodbye. "
+)
 OPENING_VERSION = "topic-before-hook-2"
 OPENING_BRIEF = (
     "Begin with a brief, natural 15–25-second topic introduction. Maya first says what paper or research idea we are exploring today "
@@ -42,7 +58,7 @@ OPENING_BRIEF = (
 )
 CLOSING_VERSION = "summary-callback-farewell-1"
 CLOSING_BRIEF = (
-    "Reserve the final 30–45 seconds for a satisfying ending inside this scene's word budget. "
+    "Give the film a satisfying, concise ending with enough space for the following takeaways and farewell. "
     "Maya gives a concise paper-specific recap: the problem, the key idea, what the evidence actually showed, and one remaining limitation. "
     "Aiden adds a short takeaway in his own words. Bring back the actual opening joke or analogy in one light exchange, so the humor has a payoff. "
     "Finish with a warm spoken goodbye from the two presenters, such as 'Thanks for watching. We'll see you next time!' and 'See you!'. "
@@ -52,17 +68,11 @@ CLOSING_BRIEF = (
 MODES = {
     "overview": {
         "label": "解説編",
-        "minutes": 15,
-        "range": [12, 18],
         "scenes": 6,
-        "words": 2450,
     },
     "deep_dive": {
         "label": "詳解編",
-        "minutes": 32,
-        "range": [25, 40],
         "scenes": 10,
-        "words": 4900,
     },
 }
 BEATS = {
@@ -97,7 +107,8 @@ SYSTEM = (
     "Write natural C1 English, but explain scientific ideas for curious people with no machine-learning training. "
     "Maya (guide) is an insightful female engineer; Aiden (host) is a witty, curious male engineer. "
     "Use contractions, varied sentences, concrete imagery and occasional dry humor. Avoid empty agreement and artificial jargon. "
-    "Plans and notes are drafting aids, NOT factual evidence; correct them when the primary source disagrees. "
+    + CONTENT_BRIEF
+    + "Plans and notes are drafting aids, NOT factual evidence; correct them when the primary source disagrees. "
     "Never include private deliberation or speculative self-questioning in a JSON field. "
     "Return the requested JSON object only. Japanese fields must be natural Japanese."
 )
@@ -147,7 +158,9 @@ def create(paper_id, *, profile=None):
     if not paper:
         raise ValueError("Paper not found")
     model = profile or db.settings()["model_profile"]
-    fingerprint = video.digest([paper_id, paper["version"], VERSION, model, MODES])
+    fingerprint = video.digest(
+        [paper_id, paper["version"], VERSION, model, MODES, DURATION_POLICY]
+    )
     with db.connection() as conn:
         conn.execute("BEGIN IMMEDIATE")
         old = conn.execute(
@@ -160,6 +173,7 @@ def create(paper_id, *, profile=None):
             data = {
                 "phase": "sources",
                 "version": VERSION,
+                "duration_policy": DURATION_POLICY,
                 "model": model,
                 "paper_title": paper["title"],
                 "evidence": [],
@@ -177,6 +191,7 @@ def create(paper_id, *, profile=None):
                     "phase": "script",
                     "scenes": [],
                     "preset": preset,
+                    "duration_policy": DURATION_POLICY,
                 }
                 ld = {
                     "format": FORMAT,
@@ -213,6 +228,45 @@ def save(project):
     db.event("video_project", {"id": project["id"], "state": project["state"]})
 
 
+def _without_duration_quotas(value):
+    """Older checkpoints remain usable without instructing the writer to fill time."""
+    if isinstance(value, dict):
+        return {
+            k: _without_duration_quotas(v)
+            for k, v in value.items()
+            if k not in {"word_budget", "target_words", "duration_edited"}
+        }
+    if isinstance(value, list):
+        return [_without_duration_quotas(v) for v in value]
+    return value
+
+
+def _apply_duration_policy(project):
+    """Upgrade unfinished work without discarding scripts, speech or render checkpoints."""
+    data = project["data"]
+    if data.get("duration_policy", {}).get("version") == DURATION_POLICY["version"]:
+        return
+    data["duration_policy"] = dict(DURATION_POLICY)
+    data["records"].append(
+        {"task": "apply_content_first_duration_policy", "time": time.time()}
+    )
+    for key, repair in data["repairs"].items():
+        if key.startswith("script:") and re.search(
+            r"scene is too (?:thin|long)|scene budgets|reach \d+ words",
+            repair.get("error", ""),
+            re.I,
+        ):
+            repair.setdefault("previous_duration_repairs", []).append(
+                {k: repair[k] for k in ("attempts", "error") if k in repair}
+            )
+            repair.update(attempts=0, error="")
+    for mode, track in data["modes"].items():
+        track["duration_policy"] = dict(DURATION_POLICY)
+        track["preset"] = dict(MODES[mode])
+        # Legacy tempo/budget fields are historical evidence only. New stages
+        # ignore them and reuse any audio or complete scenes that already exist.
+
+
 def get(ident):
     project = db.one("SELECT * FROM video_projects WHERE id=?", (ident,))
     if not project:
@@ -227,6 +281,7 @@ def get(ident):
         k: data.get(k)
         for k in (
             "version",
+            "duration_policy",
             "phase",
             "paper_title",
             "publication",
@@ -248,6 +303,7 @@ def get(ident):
                 "packaging",
                 "expressions",
                 "duration_check",
+                "duration_policy",
                 "opening_policy",
                 "closing_policy",
                 "release_check",
@@ -346,17 +402,22 @@ def bounded(project, runtime, key, prompt, validate, fallback, *, max_tokens=550
 
         # A later tiny/incomplete object must not erase an earlier usable draft.
         def score(value):
-            if (
-                key.startswith("script:")
-                and isinstance(value, dict)
-                and len(value.get("utterances", [])) >= 6
-            ):
-                _, mode, index = key.split(":")
-                target = project["data"]["modes"][mode]["scenes"][int(index)][
-                    "word_budget"
-                ]
-                count = sum(len(u.get("text", "").split()) for u in value["utterances"])
-                return 100000 - abs(count - target)
+            if key.startswith("script:"):
+                if not isinstance(value, dict):
+                    return 0
+                mode = key.split(":")[1]
+                try:
+                    validate_script(value, mode, set(source_lookup(project)))
+                    return 100000
+                except (ValueError, TypeError, AttributeError):
+                    return sum(
+                        isinstance(u, dict)
+                        and u.get("speaker") in {"host", "guide"}
+                        and isinstance(u.get("text"), str)
+                        and bool(u["text"].strip())
+                        and english_only(u["text"])
+                        for u in value.get("utterances", []) or []
+                    )
             return (
                 len(json.dumps(value, ensure_ascii=False))
                 if isinstance(value, dict)
@@ -780,7 +841,7 @@ def caption_units(text):
     return result
 
 
-def validate_script(result, mode, known, *, minimum=0, maximum=0):
+def validate_script(result, mode, known):
     utterances = result.get("utterances")
     if not isinstance(utterances, list) or not utterances:
         raise ValueError("A scene needs an actual conversation.")
@@ -813,15 +874,6 @@ def validate_script(result, mode, known, *, minimum=0, maximum=0):
             raise ValueError(
                 "Each utterance must be at most 135 words; keep natural multi-sentence paragraphs."
             )
-    total = sum(len(u["text"].split()) for u in utterances)
-    if total < minimum:
-        raise ValueError(
-            f"The scene is too thin ({total} words). Add concrete explanation, not repetition, to reach {minimum} words."
-        )
-    if maximum and total > maximum:
-        raise ValueError(
-            f"The scene is too long ({total} words). Edit it to at most {maximum} words, retaining the scene's central question and example."
-        )
     return utterances
 
 
@@ -984,10 +1036,10 @@ def _script_prompt(project, mode, scene, index):
         }
         for s in track["scenes"][:index]
     ]
-    budget = scene["word_budget"]
     return (
-        f"Write scene {index + 1} of ONE continuous {mode} film, not a standalone chapter. Target {budget} spoken words. "
-        f"Total scene must be {round(budget * 0.8)}–{round(budget * 1.15)} words. Use 8–10 utterances: host questions usually 15–35 words, guide answers usually 40–65 words. "
+        f"Write scene {index + 1} of ONE continuous {mode} film, not a standalone chapter. "
+        + CONTENT_BRIEF
+        + "Use as many meaningful exchanges as this scene needs. Keep each spoken paragraph within 135 words for reliable local speech synthesis; split a longer explanation into natural conversational turns. This is a per-paragraph technical limit, not a scene length target. "
         "Aiden is a curious audience proxy, NOT a second lecturer. He must not deliver long technical explanations before Maya answers. "
         "Use meaningful questions, examples, causal explanations and insights; no filler acknowledgments. Allow a brief warm goodbye only at the end of the final scene. "
         "Use one recurring playful analogy with a clearly explained boundary. Aiden must challenge an intuitive misconception; "
@@ -1031,7 +1083,7 @@ def _script_prompt(project, mode, scene, index):
         + "\nHOOK: "
         + json.dumps(track["packaging"].get("hook"))
         + "\nSCENE: "
-        + json.dumps(scene)
+        + json.dumps(_without_duration_quotas(scene))
         + "\nPREVIOUS SCENES: "
         + json.dumps(preceding)
         + "\nACTUAL OPENING EXCHANGE (use its joke for the final callback): "
@@ -1193,6 +1245,13 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             _recover_repaired_turns(project, mode, scene, index, record)
             record["version"] = SOURCE_REVIEW_VERSION
             record.pop("complete", None)
+    elif record.get("version") != EDITORIAL_REVIEW_VERSION:
+        if record.get("attempts") or record.get("history"):
+            record.setdefault("previous_versions", []).append(
+                {k: v for k, v in record.items() if k != "previous_versions"}
+            )
+        record.update(version=EDITORIAL_REVIEW_VERSION, attempts=0, history=[])
+        record.pop("complete", None)
     if record.get("complete"):
         return True
     evidence = context_for(project, scene)
@@ -1202,7 +1261,11 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             "Check scientific claims against SOURCE TEXT (not just notes); verify dates, experimental conditions, equations, causality, analogy boundaries and the English/Japanese labels. "
             "Check attribution carefully: a named historical method's alleged failure needs evidence about that method. A later paper's ablation of its own baseline must not be presented as the historical paper's result. Qualify comparisons by source paper and tested task. "
             if kind == "content"
-            else "Check the scene works as part of an entertaining documentary: new insight, a concrete example, clear transitions, natural C1 English, substantive questions and gentle witty humor. Flag repeated explanations; do not request simpler A2 English. "
+            else "Check the scene works as part of an entertaining documentary: new insight, a concrete example, clear transitions, natural C1 English, substantive questions and gentle witty humor. "
+            "Flag repeated explanations within this scene and ideas already explained in earlier scenes; replace redundant recaps with a useful transition. "
+            "Flag unexplained jumps or examples that do not actually illuminate the idea. Improve the explanation locally rather than trimming it to an arbitrary size. "
+            "Keep helpful analogies, appropriate humor and their payoff. Do not request simpler A2 English. "
+            + CONTENT_BRIEF
         )
         + (
             "For this FIRST scene, check that the viewer is told what paper or topic is being introduced and why it is worth understanding BEFORE an unexplained example, joke or analogy. "
@@ -1218,7 +1281,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             and index == len(project["data"]["modes"][mode]["scenes"]) - 1
             else ""
         )
-        + "Propose only necessary LOCAL corrections. Preserve the overall length and all accurate passages. "
+        + "Propose only necessary LOCAL corrections. Preserve accurate, useful passages and the scientific reasoning; the length may change to improve clarity or remove repetition. "
         "Flag actual contradictions or unsupported specifics, not a missing date, a stylistic preference, or a valid paraphrase. Do not add a date or a numerical claim unless explicitly needed by the scene. "
         "Use the exact utterance ID, never its position. Keep each reason under 180 characters; do not include deliberation, speculation or an internal monologue. "
         'Return {"issues":[{"utterance_id":"exact ID","reason":"specific issue","replacement":"corrected full paragraph",'
@@ -1768,8 +1831,9 @@ def _plan_step(project, runtime):
             continue
         preset = MODES[mode]
         prompt = (
-            f"Design ONE {preset['minutes']}-minute {mode} documentary conversation, around {preset['words']} spoken words in {preset['scenes']} connected scenes. "
-            "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
+            f"Design ONE {mode} documentary conversation in {preset['scenes']} connected narrative scenes. These are story beats, not equal time slots. "
+            + CONTENT_BRIEF
+            + "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
             + (
                 "NO equations. Structure: short topic introduction leading into a surprising practical hook, historical problem, prior attempts and their tradeoffs, the new idea, concrete example, evidence and limits, payoff. "
                 if mode == "overview"
@@ -1781,7 +1845,7 @@ def _plan_step(project, runtime):
             "Create THREE different hook/title/thumbnail approaches. Avoid numeric promises in titles and hooks; explain qualified numbers only in the relevant evidence scene. Select the best by how accurately it promises a specific interesting insight. "
             "Titles should invite curiosity and indicate bilingual English learning; avoid hype unsupported by the evidence. "
             'Return {"central_question":"...","recurring_analogy":"...","hook_candidates":[{"title_ja":"...","title_en":"...","hook":"opening exchange idea","thumbnail_ja":"short text"}],'
-            '"selected_hook":0,"scenes":[{"title":"English title","title_ja":"日本語","focus":"new insight","claim_ids":["C1"],"word_budget":400,"visual_type":"flow|timeline|comparison|equation|matrix|example"}]}.\n'
+            '"selected_hook":0,"scenes":[{"title":"English title","title_ja":"日本語","focus":"new insight","claim_ids":["C1"],"visual_type":"flow|timeline|comparison|equation|matrix|example"}]}.\n'
             + "MANDATORY ORDERED STORY BEATS (exactly one scene per beat): "
             + json.dumps(story_beats(project, mode))
             + "\nPAPER: "
@@ -1837,9 +1901,9 @@ def _plan_step(project, runtime):
             return
         track["outline"] = result
         track["scenes"] = result["scenes"]
-        # Fixed overall budget prevents thin, overly numerous chapters.
+        # Narrative beats keep the story coherent; their lengths depend on the idea.
         for i, s in enumerate(track["scenes"]):
-            s["word_budget"] = round(preset["words"] / len(track["scenes"]))
+            s.pop("word_budget", None)
             s["beat_goal"] = story_beats(project, mode)[i]
             if mode == "overview" and s.get("visual_type") in {"matrix", "equation"}:
                 s["visual_type"] = "flow"
@@ -1921,6 +1985,8 @@ def _plan_step(project, runtime):
             runtime,
             f"plan_review:{mode}",
             "Edit this documentary outline and its THREE titles/hooks for scientific accuracy and a compelling coherent story. "
+            + CONTENT_BRIEF
+            + "Check that each scene adds a distinct insight, examples answer real questions, and transitions build curiosity. Remove duplicated explanation from the plan and preserve space for the necessary reasoning. "
             "Correct misleading claims, including parameter savings vs training-data savings, checkpoint size vs training-memory size, keeping the base model vs running a giant model on a laptop, empirical results vs universal guarantees. "
             "Preserve the interesting hook approaches. Do not introduce numerical performance promises, magic or exaggerated claims into titles. "
             "Overview: no equations; use historical predecessors and one concrete analogy. Deep dive: retain mathematical scenes. "
@@ -1928,7 +1994,7 @@ def _plan_step(project, runtime):
             + "MANDATORY ORDERED BEATS: "
             + json.dumps(story_beats(project, mode))
             + "\nOUTLINE: "
-            + json.dumps(track["outline"])
+            + json.dumps(_without_duration_quotas(track["outline"]))
             + "\nEVIDENCE: "
             + json.dumps(plan_evidence(project, mode)),
             lambda r: r
@@ -1952,7 +2018,7 @@ def _plan_step(project, runtime):
             track["outline"] = r
             track["scenes"] = r["scenes"]
             for i, s in enumerate(track["scenes"]):
-                s["word_budget"] = round(MODES[mode]["words"] / len(track["scenes"]))
+                s.pop("word_budget", None)
                 s["beat_goal"] = story_beats(project, mode)[i]
                 if mode == "overview" and s.get("visual_type") in {
                     "matrix",
@@ -2170,7 +2236,7 @@ def _script_step(project, runtime, mode):
             if index == len(track["scenes"]) - 1:
                 track["closing_policy"] = {
                     "version": CLOSING_VERSION,
-                    "seconds": [30, 45],
+                    "length": "as needed for a concise, satisfying ending",
                     "paper_summary": True,
                     "opening_joke_callback": True,
                     "spoken_farewell": True,
@@ -2179,13 +2245,7 @@ def _script_step(project, runtime, mode):
             known = set(source_lookup(project))
 
             def valid(r):
-                r["utterances"] = validate_script(
-                    r,
-                    mode,
-                    known,
-                    minimum=round(scene["word_budget"] * 0.80),
-                    maximum=round(scene["word_budget"] * 1.15),
-                )
+                r["utterances"] = validate_script(r, mode, known)
                 return r
 
             result = bounded(
@@ -2254,114 +2314,6 @@ def _script_step(project, runtime, mode):
         ensure_lora_worked_example(project, track)
         if any(not s.get("visual_ready") for s in track["scenes"]):
             return
-    if not track.get("length_edited"):
-        oversized = [
-            i
-            for i, s in enumerate(track["scenes"])
-            if not s.get("duration_edited")
-            if sum(len(u["text"].split()) for u in s["utterances"])
-            > s["word_budget"] * 1.1
-        ][:2]
-        if oversized:
-            originals = {
-                u["id"]: u for i in oversized for u in track["scenes"][i]["utterances"]
-            }
-
-            def valid_edit(r):
-                edits = {
-                    u["id"]: u["text"]
-                    for s in r.get("scenes", [])
-                    for u in s.get("utterances", [])
-                }
-                if set(edits) != set(originals):
-                    raise ValueError("Keep every supplied utterance ID exactly once")
-                for ident, text in edits.items():
-                    if (
-                        not isinstance(text, str)
-                        or not text.strip()
-                        or not english_only(text)
-                    ):
-                        raise ValueError("Keep natural English speech")
-                    if translation.numeric_values(text) != translation.numeric_values(
-                        originals[ident]["text"]
-                    ):
-                        raise ValueError("Retain all written quantities and conditions")
-                for i in oversized:
-                    s = track["scenes"][i]
-                    count = sum(len(edits[u["id"]].split()) for u in s["utterances"])
-                    if not s["word_budget"] * 0.72 <= count <= s["word_budget"] * 1.1:
-                        raise ValueError(
-                            "Meet the scene budgets by tightening prose, not cutting explanations"
-                        )
-                return edits
-
-            result = bounded(
-                project,
-                runtime,
-                f"length:{mode}:" + ",".join(map(str, oversized)),
-                "Tighten these documentary scenes to their stated word budgets. Remove padding and repeated explanations; retain the scientific reasoning, all written numbers, conditions, examples, jokes and transitions. "
-                'Keep the exact utterance IDs and speaker roles. Do not add claims, simplify to A2, or just remove technical detail. Return {"scenes":[{"utterances":[{"id":"supplied ID","text":"edited spoken paragraph"}]}]}.\n'
-                + json.dumps(
-                    [
-                        {
-                            "target_words": track["scenes"][i]["word_budget"],
-                            "utterances": [
-                                {k: u[k] for k in ("id", "speaker", "text")}
-                                for u in track["scenes"][i]["utterances"]
-                            ],
-                        }
-                        for i in oversized
-                    ]
-                ),
-                valid_edit,
-                lambda _: {},
-                max_tokens=3500,
-            )
-            if result is None:
-                return
-            for i in oversized:
-                scene = track["scenes"][i]
-                scene["duration_edited"] = True
-                if any(
-                    u["id"] in result and u["text"] != result[u["id"]]
-                    for u in scene["utterances"]
-                ):
-                    scene.setdefault("editing_records", []).append(
-                        {
-                            "reason": "duration budget",
-                            "before": [
-                                {k: u[k] for k in ("id", "text")}
-                                for u in scene["utterances"]
-                            ],
-                        }
-                    )
-                    for u in scene["utterances"]:
-                        edited = result.get(u["id"], u["text"])
-                        if edited != u["text"]:
-                            if u.get("audio"):
-                                u.setdefault("audio_history", []).append(
-                                    {
-                                        k: u[k]
-                                        for k in ("audio", "duration", "tts_settings")
-                                    }
-                                )
-                            for k in (
-                                "audio",
-                                "duration",
-                                "tts_settings",
-                                "audio_check",
-                                "aligned",
-                                "sentence_ranges",
-                                "caption_ranges",
-                                "voice_candidates",
-                                "audio_retries",
-                            ):
-                                u.pop(k, None)
-                            u["text"] = edited
-                    scene.pop("reviews", None)
-                    scene.pop("visual_ready", None)
-            return
-        track["length_edited"] = True
     _ensure_farewell(track)
     track["phase"] = "tts"
 
@@ -2443,25 +2395,7 @@ def _tts_step(project, runtime, mode):
                     tts_settings=result.get("generation_settings", {}),
                 )
                 return
-    if "tempo_factor" not in track:
-        from . import story_video
-
-        duration = story_video.spoken_duration(track["scenes"])
-        maximum = MODES[mode]["range"][1] * 60
-        track["tempo_factor"] = (
-            min(1.12, round(duration / (maximum - 12), 5))
-            if duration > maximum
-            else 1.0
-        )
-    factor = track["tempo_factor"]
-    if factor > 1:
-        for scene in track["scenes"]:
-            for u in scene["utterances"]:
-                for recording in [u, *u.get("voice_candidates", [])]:
-                    if recording.get("tempo_applied") != factor:
-                        pace_audio(recording, factor, runtime)
-                        scene["clips_ready"] = False
-                        return
+    # Keep native expressive speech; runtime is never a reason to accelerate WAVs.
     track["phase"] = "align"
 
 
@@ -2610,55 +2544,10 @@ def _align_step(project, runtime, mode):
     duration = story_video.spoken_duration(track["scenes"])
     track["duration_check"] = {
         "seconds": duration,
-        "expected_minutes": MODES[mode]["range"],
-        "within_target": MODES[mode]["range"][0] * 60
-        <= duration
-        <= MODES[mode]["range"][1] * 60,
+        "policy": DURATION_POLICY["version"],
+        "measurement_only": True,
     }
-    if duration < MODES[mode]["range"][0] * 60 and track.get("expansion_round", 0) < 2:
-        track["expansion_round"] = track.get("expansion_round", 0) + 1
-        # Add a substantive example before the payoff; no slow-motion or duplicated audio.
-        extra = dict(track["scenes"][-2])
-        for key in (
-            "utterances",
-            "summary",
-            "visual",
-            "reviews",
-            "visual_ready",
-            "subtitles_ready",
-            "clips_ready",
-            "asset_id",
-            "chapter_id",
-            "render_paths",
-            "duration_edited",
-        ):
-            extra.pop(key, None)
-        extra.update(
-            title="A closer look in practice",
-            title_ja="具体例でもう一歩",
-            focus="Add a new worked example and explain its boundary without repeating earlier explanations.",
-            beat_goal="Develop one new concrete example, then relate it to the central takeaway. Do not retell history or repeat the introduction.",
-            word_budget=max(
-                300, round((MODES[mode]["minutes"] * 60 - duration) / 60 * 155)
-            ),
-        )
-        # Keep the payoff last while retaining published chapter/recording IDs.
-        for i in range(len(track["scenes"])):
-            materialize_scene(project, mode, i)
-        last = track["scenes"][-1]
-        db.execute(
-            "UPDATE chapters SET ordinal=? WHERE id=?",
-            (len(track["scenes"]), last["chapter_id"]),
-        )
-        track["scenes"].insert(len(track["scenes"]) - 1, extra)
-        for key in list(project["data"]["repairs"]):
-            if key in {
-                f"script:{mode}:{len(track['scenes']) - 2}",
-                f"visual:{mode}:{len(track['scenes']) - 2}",
-            }:
-                project["data"]["repairs"].pop(key, None)
-        track["phase"] = "script"
-        return
+    # Audio/source checks determine readiness, not an arbitrary minimum runtime.
     track["phase"] = "learning"
 
 
@@ -3040,6 +2929,7 @@ def step(job, runtime):
     data = project["data"]
     if project["state"] == "ready":
         return True
+    _apply_duration_policy(project)
     phase = data["phase"]
     if phase != "sources":
         publication.ensure(project)

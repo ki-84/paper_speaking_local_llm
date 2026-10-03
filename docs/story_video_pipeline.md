@@ -4,11 +4,39 @@ Open the library, select a saved paper, and press **解説・詳解動画を作�
 The same control is available in the paper's learning page. A repeated click
 reuses the project for that exact stored paper version and generation profile.
 
-The overview aims for 12–18 minutes (15 by default). It follows a practical
-problem, historical attempts, an intuitive reveal, an everyday example,
-representative evidence, and a payoff. It contains no equations. The deep dive
-aims for 25–40 minutes (32 by default), introducing notation before equations,
-working through examples, and distinguishing findings from guarantees.
+The overview follows a practical problem, historical attempts, an intuitive
+reveal, an everyday example, representative evidence, and a payoff. It contains
+no equations. The deep dive introduces notation before equations, works through
+examples, and distinguishes findings from guarantees. Neither film has a fixed
+duration or scene word quota. An engaging, clear explanation determines the
+length; the scene beats organize the story rather than divide it into equal
+time slots.
+
+The `content-first-1` duration policy is saved in new projects, tracks and export
+manifests. Writers and editors preserve useful causal reasoning, concrete
+examples, scientific qualifications and humor, while removing duplicated
+explanations, filler and unexplained jumps. A short film is not expanded to fill
+minutes; a long film is neither trimmed to a word budget nor automatically sped
+up. Actual duration is measured after alignment and shown on finished cards.
+Media-duration, complete-caption and source checks remain in place.
+
+Unfinished older checkpoints adopt this policy when their worker resumes, with
+the adoption recorded. Their scripts, WAVs, alignments and learning IDs are
+reused; already applied audio processing is retained rather than undoing it.
+Legacy word budgets are omitted from writer/editor input. Editorial reviews
+that predate this policy get a fresh bounded review and retain their previous
+records. Finished films are unchanged. The per-paragraph 135-word speech limit
+and finite local inference token budgets remain technical safeguards, not
+film-length targets; a longer explanation uses more conversational turns.
+
+On October 4, 2026, the duration-policy regressions, all 285 Python tests,
+16 isolated browser tests, frontend build and changed-file lint checks passed.
+The deployed LAN studio displayed measured runtimes for both editions of three
+real papers, and all 28 existing ready MP4 hashes remained unchanged. The nightly
+02:00 schedule and paused jobs were preserved. No new full film was generated
+just to validate this change; the generation regressions use controlled local
+runtime fixtures. [content_first_duration_acceptance.json](../evaluation/content_first_duration_acceptance.json)
+records these checks and their limits.
 
 Both use natural C1 American English, Maya and Aiden, bilingual burned-in
 captions, original pixel characters, and structured local diagrams. A paragraph
@@ -37,7 +65,7 @@ jobs, or automatic YouTube upload.
 
 An opening preview appears while generation continues. Finished cards provide
 the MP4, thumbnail, three title suggestions and a description with timestamps
-and source links. The MP4 basename uses the recommended title. Upload and
+and source titles/identifiers without URLs. The MP4 basename uses the recommended title. Upload and
 publication use YouTube Studio manually.
 
 The learning links open the same spoken content, reusable C1 expressions,
@@ -95,15 +123,15 @@ callback in the ending. The spoken
 introduction uses the same local speech, Japanese translation, captions and
 sentence-practice pipeline as the rest of the conversation.
 
-The final scene reserves about 30–45 seconds within its existing word budget
-for the paper's problem, key idea, supported result and a remaining limitation.
+The final scene gives a concise, satisfying recap of the paper's problem, key
+idea, supported result and a remaining limitation, without a fixed time budget.
 Aiden adds his own takeaway, the two call back to the actual opening joke or
 analogy, and finish with a friendly spoken goodbye. The final writer and editor
 receive the opening's actual first exchanges, rather than only its outline,
 to make the callback consistent. Both the general and LoRA deep-dive plans use
 this ending, and intermediate scenes do not say goodbye. The track records
 `closing_policy.version = summary-callback-farewell-1`. A short, non-factual
-two-voice farewell is retained if bounded repairs or length edits remove the
+two-voice farewell is retained if bounded editorial repairs remove the
 authored goodbye; this fallback is recorded and never adds research claims.
 All closing speech uses the existing local TTS, translation, subtitle,
 mouth-animation and same-audio English practice pipeline.

@@ -28,6 +28,9 @@ try{
    expect(identity.awards.length).toBeGreaterThan(0);
    const selected=set.data.candidates.find(c=>c.id===set.data.selected_id);
    const complete=track.videos.find(v=>v.kind===mode&&v.state==='ready');
+   const seconds=complete.data.duration;
+   const durationLabel=`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')} · 完成`;
+   await expect(film.locator(':scope > p').first()).toHaveText(durationLabel);
    expect(complete.data.thumbnail).toBe(selected.png);
    expect(complete.data.description).not.toMatch(/https?:\/\/|www\./i);
    for(const prize of identity.awards){
@@ -48,7 +51,7 @@ try{
     }
    }
    await expect.poll(()=>film.locator('.thumbnail-grid img').evaluateAll(imgs=>imgs.every(i=>i.complete&&i.naturalWidth===1280&&i.naturalHeight===720))).toBeTruthy();
-   record.modes.push({mode,identity,downloads,description_url_free:true,selected_poster_matches:true});
+   record.modes.push({mode,identity,downloads,duration_seconds:seconds,actual_duration_displayed:true,description_url_free:true,selected_poster_matches:true});
   }
   report.projects.push(record);
   if(id===ids[0]){

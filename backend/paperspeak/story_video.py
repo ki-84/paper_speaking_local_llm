@@ -247,6 +247,7 @@ def enqueue(project, mode, *, preview=False):
     manifest = {
         "version": VERSION,
         "release_policy": RELEASE_VERSION,
+        "duration_policy": track.get("duration_policy", {}),
         "project_id": project["id"],
         "mode": mode,
         "preview": preview,

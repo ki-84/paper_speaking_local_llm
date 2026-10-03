@@ -2616,7 +2616,7 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
   };
   const copy=(text:string)=>navigator.clipboard.writeText(text).catch(e=>onError(e.message));
   return <section className="story-project" aria-label="解説・詳解動画">
-    <div className="story-heading"><div><h2>Stories worth watching · 解説と詳解</h2><p>自然なC1英語の会話、動く図解、英日字幕。数式なしの解説編と、原理まで学ぶ詳解編。</p></div>
+    <div className="story-heading"><div><h2>Stories worth watching · 解説と詳解</h2><p>自然なC1英語の会話、動く図解、英日字幕。数式なしの解説編と、原理まで学ぶ詳解編。長さより面白さとわかりやすさを優先します。</p></div>
       {!project ? <button className="primary" disabled={busy} onClick={create}>{busy?"Starting…":"解説・詳解動画を作る"} <Play size={16}/></button>
       : <div className="actions"><Badge state={project.state}>{project.state==="ready"?"2本の動画が完成":project.job?.stage || "Preparing two stories"}</Badge>
         {['queued','running'].includes(project.job?.state) && <button className="secondary" onClick={()=>control('pause')}>Pause · 一時停止</button>}
@@ -2631,7 +2631,7 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
         const preview=track.videos?.find((v:any)=>v.kind===`${mode}_preview`&&v.state==='ready');
         const visible=complete||preview;
         return <article className="story-film" key={mode}><div className="eyebrow">{mode==='overview'?'THE IDEA · 数式なし':'UNDER THE HOOD · 数式と原理'}</div>
-          <h3>{track.packaging?.title || track.label}</h3><p>{track.preset.range.join('〜')}分 · {complete?'完成':track.phase}</p>
+          <h3>{track.packaging?.title || track.label}</h3><p>{complete ? `${minutes(complete.data.duration)} · 完成` : `内容に合わせた長さ · ${track.phase}`}</p>
           {visible && <video controls preload="metadata" poster={fileUrl(visible.data.thumbnail)} src={fileUrl(visible.data.mp4)} />}
           {preview&&!complete&&<small>冒頭約90秒のプレビューです。全体の作成は続いています。</small>}
           <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>Download MP4 · 動画</a>}

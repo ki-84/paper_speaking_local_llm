@@ -331,10 +331,21 @@ def test_speech_check_reads_the_real_recognizer_contract_and_varies_retry_seed(
     assert u["audio"] != first and requests[0]["seed"] != requests[1]["seed"]
 
 
-def test_duration_expansion_keeps_payoff_last_and_preserves_learning_ids(database):
+@pytest.mark.parametrize(
+    "mode,seconds",
+    [
+        ("overview", 8 * 60),
+        ("overview", 24 * 60),
+        ("deep_dive", 16 * 60),
+        ("deep_dive", 50 * 60),
+    ],
+)
+def test_runtime_does_not_add_scenes_or_block_learning(
+    database, monkeypatch, mode, seconds
+):
     result = story.create(paper())
     p = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
-    t = p["data"]["modes"]["overview"]
+    t = p["data"]["modes"][mode]
     a = scene_data(database)
     b = scene_data(database)
     b["title"] = "The payoff"
@@ -342,14 +353,246 @@ def test_duration_expansion_keeps_payoff_last_and_preserves_learning_ids(databas
     for s in [a, b]:
         s.update(subtitles_ready=True, clips_ready=True, word_budget=400)
     t.update(scenes=[a, b], preview_id="existing")
-    previous = story.materialize_scene(p, "overview", 1)["id"]
-    story._align_step(p, None, "overview")
-    assert t["scenes"][-1]["title"] == "The payoff" and len(t["scenes"]) == 3
-    assert story.materialize_scene(p, "overview", 2)["id"] == previous
+    previous = story.materialize_scene(p, mode, 1)["id"]
+    monkeypatch.setattr(story_video, "spoken_duration", lambda _: seconds)
+    story._align_step(p, None, mode)
+    assert t["phase"] == "learning"
+    assert t["scenes"] == [a, b] and t["scenes"][-1]["title"] == "The payoff"
+    assert story.materialize_scene(p, mode, 1)["id"] == previous
     assert (
-        db.one("SELECT ordinal FROM chapters WHERE id=?", (previous,))["ordinal"] == 2
+        db.one("SELECT ordinal FROM chapters WHERE id=?", (previous,))["ordinal"] == 1
     )
-    assert story.materialize_scene(p, "overview", 1)["id"] != previous
+    assert not t.get("expansion_round")
+    assert t["duration_check"] == {
+        "seconds": seconds,
+        "policy": story.DURATION_POLICY["version"],
+        "measurement_only": True,
+    }
+
+
+@pytest.mark.parametrize("legacy_factor", [None, 1.12])
+def test_long_film_keeps_native_audio_and_saved_alignment(
+    database, monkeypatch, legacy_factor
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    track = p["data"]["modes"]["overview"]
+    scene = scene_data(database)
+    track.update(scenes=[scene], phase="tts")
+    if legacy_factor:
+        track["tempo_factor"] = legacy_factor
+    original = db.dumps(scene)
+    monkeypatch.setattr(story_video, "spoken_duration", lambda _: 30 * 60)
+
+    def no_speed_change(*args):
+        pytest.fail("Runtime must not trigger audio acceleration")
+
+    monkeypatch.setattr(story, "pace_audio", no_speed_change)
+    story._tts_step(p, None, "overview")
+    assert track["phase"] == "align"
+    assert db.dumps(scene) == original
+
+
+@pytest.mark.parametrize("paragraphs", [2, 12])
+def test_script_generation_ignores_legacy_scene_word_quotas(
+    database, monkeypatch, paragraphs
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    track = p["data"]["modes"]["overview"]
+    scene = {
+        "title": "A useful example",
+        "title_ja": "具体例",
+        "focus": "Why the idea helps",
+        "claim_ids": ["s1"],
+        "word_budget": 400,
+    }
+    track.update(scenes=[scene], packaging={"hook": "A practical dilemma"})
+    monkeypatch.setattr(story, "source_lookup", lambda _: {"s1": {}})
+    monkeypatch.setattr(story, "context_for", lambda *_: {})
+    utterances = [
+        {
+            "speaker": "guide" if i % 2 else "host",
+            "kind": "paper" if i % 2 else "question",
+            "source_ids": ["s1"] if i % 2 else [],
+            "text": "The useful distinction here is between changing the whole model and changing a small addition. "
+            * 4,
+        }
+        for i in range(paragraphs)
+    ]
+
+    class Writer:
+        def ask(self, prompt, **kwargs):
+            assert story.CONTENT_BRIEF in prompt
+            assert "word_budget" not in prompt and "Target 400" not in prompt
+            return {
+                "utterances": utterances,
+                "summary": "An important distinction",
+                "visual": {},
+            }
+
+    story._script_step(p, Writer(), "overview")
+    assert scene["utterances"] == utterances
+    assert p["data"]["repairs"]["script:overview:0"]["attempts"] == 0
+
+
+def test_duration_policy_upgrade_preserves_unfinished_work_and_audio(database):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    p["data"].pop("duration_policy")
+    candidate = {"utterances": [{"text": "A saved explanation."}]}
+    p["data"]["repairs"]["script:overview:1"] = {
+        "attempts": 3,
+        "error": "The scene is too thin (180 words). Add explanation to reach 320 words.",
+        "candidate": candidate,
+    }
+    track = p["data"]["modes"]["overview"]
+    track.update(
+        scenes=[scene_data(database)],
+        tempo_factor=1.12,
+        preset={"label": "解説編", "minutes": 15, "range": [12, 18], "words": 2450},
+    )
+    before = db.dumps(track["scenes"])
+    story._apply_duration_policy(p)
+    story._apply_duration_policy(p)
+    assert db.dumps(track["scenes"]) == before
+    assert track["duration_policy"]["speed_to_fit"] is False
+    repair = p["data"]["repairs"]["script:overview:1"]
+    assert repair["attempts"] == 0 and repair["error"] == ""
+    assert (
+        repair["candidate"] == candidate
+        and repair["previous_duration_repairs"][0]["attempts"] == 3
+    )
+    assert not {"minutes", "range", "words"} & set(track["preset"])
+    assert (
+        sum(
+            r["task"] == "apply_content_first_duration_policy"
+            for r in p["data"]["records"]
+        )
+        == 1
+    )
+
+
+def test_outline_uses_narrative_beats_instead_of_equal_word_budgets(
+    database, monkeypatch
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    p["data"]["evidence"] = [{"id": "c1", "topic": "mechanism"}]
+    monkeypatch.setattr(story, "plan_evidence", lambda *_: [])
+
+    class Planner:
+        def ask(self, prompt, **kwargs):
+            assert story.CONTENT_BRIEF in prompt
+            assert "-minute" not in prompt and "spoken words in" not in prompt
+            result = story._fallback_plan(p, "overview")
+            for scene in result["scenes"]:
+                scene["word_budget"] = 400  # A legacy response remains usable.
+            return result
+
+    story._plan_step(p, Planner())
+    track = p["data"]["modes"]["overview"]
+    assert len(track["scenes"]) == 6
+    assert all("word_budget" not in s and s["beat_goal"] for s in track["scenes"])
+
+
+def test_repair_candidate_prefers_valid_cited_explanation_over_matching_word_count(
+    database, monkeypatch
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    p["data"]["modes"]["overview"]["scenes"] = [{"word_budget": 400}]
+    monkeypatch.setattr(story, "source_lookup", lambda _: {"s1": {}})
+    short = {
+        "utterances": [
+            {
+                "speaker": "guide",
+                "kind": "paper",
+                "source_ids": ["s1"],
+                "text": "A useful source-backed explanation.",
+            }
+            for _ in range(6)
+        ]
+    }
+    uncited = {
+        "utterances": [
+            {
+                "speaker": "guide",
+                "kind": "paper",
+                "source_ids": ["unknown"],
+                "text": "An unsupported claim. " * 22,
+            }
+            for _ in range(6)
+        ]
+    }
+
+    class Writer:
+        calls = 0
+
+        def ask(self, *args, **kwargs):
+            self.calls += 1
+            return short if self.calls == 1 else uncited
+
+    def unfinished_visual(_):
+        raise ValueError("A separate visual repair is still needed")
+
+    runtime = Writer()
+    for _ in range(3):
+        story.bounded(
+            p, runtime, "script:overview:0", "prompt", unfinished_visual, lambda r: r
+        )
+    assert (
+        story.bounded(
+            p, runtime, "script:overview:0", "prompt", unfinished_visual, lambda r: r
+        )
+        == short
+    )
+
+
+def test_editorial_upgrade_checks_repetition_and_clarity_without_preserving_length(
+    database, monkeypatch
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    scene = scene_data(database)
+    scene["reviews"]["editorial"] = {
+        "complete": True,
+        "attempts": 3,
+        "history": [{"notes": "Legacy length check"}],
+    }
+    p["data"]["modes"]["overview"]["scenes"] = [scene]
+    monkeypatch.setattr(story, "context_for", lambda *_: {})
+
+    class Editor:
+        def ask(self, prompt, **kwargs):
+            assert "ideas already explained in earlier scenes" in prompt
+            assert "unexplained jumps" in prompt
+            assert story.CONTENT_BRIEF in prompt
+            assert "Preserve the overall length" not in prompt
+            return {
+                "issues": [],
+                "notes": "Clear, engaging and no unnecessary repetition.",
+            }
+
+    assert not story._review_scene(p, Editor(), "overview", scene, 0, "editorial")
+    record = scene["reviews"]["editorial"]
+    assert record["version"] == story.EDITORIAL_REVIEW_VERSION
+    assert (
+        record["previous_versions"][0]["history"][0]["notes"] == "Legacy length check"
+    )
+    assert story._review_scene(p, None, "overview", scene, 0, "editorial")
 
 
 def test_small_pitch_preserving_pace_adjustment_keeps_original_audio_and_scales_cues(
@@ -1048,7 +1291,8 @@ def test_final_script_uses_actual_opening_joke_and_requests_recap_and_goodbye(
     ending = story._script_prompt(project, mode, last, 2)
     assert story.CLOSING_BRIEF in ending
     assert "coffee union" in ending.split("ACTUAL OPENING EXCHANGE", 1)[1]
-    assert "word budget" in ending and "remaining limitation" in ending
+    assert "remaining limitation" in ending and story.CONTENT_BRIEF in ending
+    assert "word_budget" not in ending and "30–45 seconds" not in ending
     assert (
         "Do not summarize the whole paper or say goodbye in this intermediate scene"
         in story._script_prompt(project, mode, middle, 1)

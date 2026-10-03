@@ -2545,18 +2545,31 @@ function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onEr
   const control=async(action:string)=>{try{await post(`/jobs/${activeJob.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
   const labels:Record<string,string>={searching:"論文を探索中",reading:"本文を確認中",building:"動画を作成中",ready:"2本が完成",skipped:"今夜は見送り",paused:"一時停止",failed:"作成時の問題",cancelled:"停止済み"};
   return <section className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
-  {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>
+  {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間{run.data.manual&&' · 手動実行'}</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>{run.state==='ready'&&<p>完成した動画を残して、別の論文で追加作成できます。</p>}
   <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}
   {activeRun.data.selected?.awards?.map((a:any)=><p key={`${a.venue}-${a.year}-${a.name}`}><a href={a.official_url} target="_blank" rel="noreferrer">{a.venue} {a.year} · {a.name}</a> · 公式受賞情報確認済み{a.kind==='test-of-time'&&<> · 長年の影響を評価する賞{activeRun.data.selected.published&&<> · 論文発表 {activeRun.data.selected.published.slice(0,4)}年 / 受賞 {a.year}年</>}</>}</p>)}
   {run.data.award_fallback_reason&&<p>{run.data.award_fallback_reason}</p>}
   {run.data.selected?.attention&&<p className="subtle">注目情報: <a href={run.data.selected.attention.source_url} target="_blank" rel="noreferrer">Hugging Face Daily Papers</a> · {new Date(run.data.selected.attention.retrieved_at*1000).toLocaleString()}</p>}
   {run.data.reason&&<p>{run.data.reason}</p>}{run.data.waiting_reason&&(run.state==='building'||run.continuing_run)&&<p>{run.data.waiting_reason}</p>}{activeJob&&<progress max={1} value={run.project?.job?.progress||activeJob.progress||0}/>}
-  {run.project&&<><div className="nightly-tracks">{Object.entries(run.project.data.modes).map(([mode,value])=>{const track=value as any;const film=track.videos.find((v:any)=>v.kind===mode&&v.state==='ready');return <div key={mode}><strong>{track.label}</strong><p>{film?'完成':track.phase}</p>{film&&<a className="primary" href={fileUrl(film.data.mp4)} download={`${film.data.title}.mp4`}>動画をダウンロード</a>}<button className="text-button" onClick={()=>openLesson(track.lesson_id)}>英語練習</button></div>;})}</div><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・動画・サムネイルを見る'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
+  {run.project&&<><NightlyFilmCards project={run.project} openLesson={openLesson}/><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・動画・サムネイルを見る'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
   <details><summary>選定・作成の記録</summary>{run.data.award_sources?.map((r:any,i:number)=><p key={`award-${i}`}><a href={r.source.url} target="_blank" rel="noreferrer">{r.source.venue} {r.source.year}</a>: {r.status==='verified winners'?'受賞確認':r.status==='unavailable'?'取得できず':'受賞を確認できず'}</p>)}{run.data.review_summary?.map((r:any)=><p key={r.paper_id}>{r.title} — {r.assessment.why_ja}</p>)}{Object.entries(run.data.timings||{}).filter(([,v])=>typeof v==='number').map(([k,v])=><p key={k}>{k}: {Math.round(Number(v)/60)}分</p>)}{run.data.warnings?.map((w:any,i:number)=><p key={i}>{w.unit}: {w.reason}</p>)}</details>
-  {runs.length>1&&<details><summary>過去の夜間運転</summary>{runs.slice(1).map(r=><p key={r.id}>{r.day} · {labels[r.state]} · {r.data.selected?.title||r.data.reason}</p>)}</details>}</>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}
+  {runs.length>1&&<details><summary>過去の夜間運転</summary>{runs.slice(1).map(r=><div key={r.id}><p>{r.day} · {labels[r.state]} · {r.data.selected?.title||r.data.reason}</p>{r.project&&<NightlyFilmCards project={r.project} openLesson={openLesson}/>}</div>)}</details>}</>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}
   </section>;
 }
 
+function NightlyFilmCards({project,openLesson}:{project:any;openLesson:(id:string)=>void}) {
+  return <div className="nightly-tracks">{Object.entries(project.data.modes).map(([mode,value])=>{
+    const track=value as any;
+    const film=track.videos.find((v:any)=>v.kind===mode&&v.state==='ready');
+    const thumbs=track.thumbnails?.data;
+    const thumb=thumbs?.candidates?.find((c:any)=>c.id===thumbs.selected_id&&c.png);
+    const title=film?.data.title||track.packaging?.title||track.label;
+    return <article key={mode} aria-label={track.label}><strong>{track.label}</strong><p>{film?'動画完成':track.phase}</p>
+      {thumb?<><img className="nightly-thumbnail" src={fileUrl(thumb.png)} alt={`${track.label}のサムネイル`}/><div className="actions"><a href={fileUrl(thumb.png)} download={`${title}-thumbnail.png`}>サムネイル PNG</a>{thumb.jpg&&<a href={fileUrl(thumb.jpg)} download={`${title}-thumbnail.jpg`}>サムネイル JPEG</a>}</div></>:<p className="subtle">サムネイルは動画と一緒に作成します。</p>}
+      {film&&<a className="primary" href={fileUrl(film.data.mp4)} download={`${film.data.title}.mp4`}>動画をダウンロード</a>}<button className="text-button" onClick={()=>openLesson(track.lesson_id)}>英語練習</button>
+    </article>;
+  })}</div>;
+}
 function ThumbnailChoices({projectId,mode,track,onError,refresh}:{projectId:string;mode:string;track:any;onError:(s:string)=>void;refresh:()=>void}) {
   const [busy,setBusy]=useState(false);
   const row=track.thumbnails;

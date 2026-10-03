@@ -45,6 +45,80 @@ def test_disabled_schedule_and_boot_catch_up(database):
     assert len(db.all("SELECT id FROM nightly_video_runs")) == 1
 
 
+def test_manual_after_completed_day_preserves_history_and_deduplicates(database):
+    db.set_setting("nightly_video_enabled", True)
+    first = raw_run()
+    first["state"] = "ready"
+    first["data"]["phase"] = "complete"
+    nightly.save(first)
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        ids = list(pool.map(lambda _: nightly.start(now=NOW, manual=True), range(10)))
+    assert len(set(ids)) == 1 and ids[0] != first["id"]
+    new = nightly.get(ids[0])
+    assert new["day"] == first["day"]
+    assert new["data"]["manual"] and new["data"]["manual_repeat"]
+    assert nightly.get(first["id"])["state"] == "ready"
+    nightly.schedule(NOW + dt.timedelta(hours=12))
+    assert len(db.all("SELECT id FROM nightly_video_runs")) == 2
+    assert nightly.start(now=NOW) == first["id"]
+
+
+def test_manual_start_reuses_a_previous_day_in_progress(database):
+    first = raw_run()
+    assert nightly.start(now=NOW + dt.timedelta(days=1), manual=True) == first["id"]
+    assert len(db.all("SELECT id FROM nightly_video_runs")) == 1
+
+
+def test_manual_api_after_completion_lists_new_run_first_and_keeps_old(client):
+    first = client.post("/api/nightly-video-runs").json()
+    db.execute("UPDATE nightly_video_runs SET state='ready' WHERE id=?", (first["id"],))
+    db.execute(
+        "UPDATE jobs SET state='completed' WHERE kind='nightly_video' AND target=?",
+        (first["id"],),
+    )
+    added = client.post("/api/nightly-video-runs").json()
+    again = client.post("/api/nightly-video-runs").json()
+    assert added["id"] != first["id"] and again["id"] == added["id"]
+    assert added["day"] == first["day"] and added["data"]["manual_repeat"]
+    history = client.get("/api/nightly-video-runs").json()
+    assert [r["id"] for r in history] == [added["id"], first["id"]]
+    assert history[1]["state"] == "ready"
+
+
+def test_legacy_unique_day_migration_keeps_history_and_project(database):
+    root = story.create(papers.register(meta("2609.00001")))
+    with db.connection() as c:
+        c.execute("DROP TABLE nightly_video_runs")
+        c.execute("""CREATE TABLE nightly_video_runs (
+          id TEXT PRIMARY KEY, day TEXT NOT NULL UNIQUE, state TEXT NOT NULL,
+          project_id TEXT REFERENCES video_projects(id), data TEXT NOT NULL,
+          created REAL NOT NULL, updated REAL NOT NULL)""")
+        c.execute(
+            "INSERT INTO nightly_video_runs VALUES (?,?,?,?,?,?,?)",
+            (
+                "legacy",
+                "2026-10-03",
+                "ready",
+                root["project_id"],
+                db.dumps({"phase": "complete", "history": ["original"]}),
+                1,
+                2,
+            ),
+        )
+    db.init()
+    db.init()
+    old = db.one("SELECT * FROM nightly_video_runs WHERE id='legacy'")
+    assert old["project_id"] == root["project_id"] and old["data"]["history"] == [
+        "original"
+    ]
+    assert old["created"] == 1 and old["updated"] == 2
+    added = nightly.start(now=NOW, manual=True)
+    assert added != "legacy"
+    assert len(db.all("SELECT id FROM nightly_video_runs")) == 2
+    with db.connection() as c:
+        assert not c.execute("PRAGMA foreign_key_check").fetchall()
+
+
 def test_carry_over_and_paused_old_lessons_are_independent(database):
     old = db.enqueue("lesson", "old")
     db.patch_job(old, state="paused")

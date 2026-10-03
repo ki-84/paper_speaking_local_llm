@@ -303,7 +303,9 @@ def get_video_project(ident: str):
 def nightly_video_runs():
     return [
         nightly.get(r["id"])
-        for r in db.all("SELECT id FROM nightly_video_runs ORDER BY day DESC LIMIT 14")
+        for r in db.all(
+            "SELECT id FROM nightly_video_runs ORDER BY day DESC,created DESC LIMIT 14"
+        )
     ]
 
 

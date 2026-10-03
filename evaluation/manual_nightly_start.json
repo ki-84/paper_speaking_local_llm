@@ -1,0 +1,103 @@
+{
+  "checked_at": "2026-10-03T10:19:38.953Z",
+  "checks": {
+    "previous_thumbnails_visible": true,
+    "previous_png_jpeg_downloads": true,
+    "manual_start_created_new_run": true,
+    "new_job_queued_or_running": true,
+    "previous_run_kept": true,
+    "new_run_first": true,
+    "old_thumbnail_links_remain_visible": true,
+    "no_browser_exceptions": true
+  },
+  "downloads": [
+    {
+      "name": "「全体像」を先に固めるAIの発想-thumbnail.png",
+      "href": "/api/files/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-0.png",
+      "status": 200,
+      "type": "image/png",
+      "bytes": 484080
+    },
+    {
+      "name": "「全体像」を先に固めるAIの発想-thumbnail.jpg",
+      "href": "/api/files/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-0.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 315450
+    },
+    {
+      "name": "並列生成の呪い：トークン独立の罠と階層結合-thumbnail.png",
+      "href": "/api/files/thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-0.png",
+      "status": 200,
+      "type": "image/png",
+      "bytes": 408588
+    },
+    {
+      "name": "並列生成の呪い：トークン独立の罠と階層結合-thumbnail.jpg",
+      "href": "/api/files/thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-0.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 278924
+    }
+  ],
+  "errors": [],
+  "previous_id": "4e9d70420b7445edbadad0919686d0fa",
+  "run_id": "9fa6aa630e044f07912000aebff7ca15",
+  "job": {
+    "id": "a20e1c7352354fe38ea23656dc432744",
+    "state": "queued",
+    "stage": "Waiting",
+    "progress": 0,
+    "error": null
+  },
+  "status": "passed",
+  "scope": "Manual same-day start, production migration, earlier thumbnail downloads; new films are still being generated.",
+  "observed_at_jst": "2026-10-03T19:22:12.270733+09:00",
+  "observed_run": {
+    "id": "9fa6aa630e044f07912000aebff7ca15",
+    "state": "reading",
+    "phase": "read",
+    "job": {
+      "id": "a20e1c7352354fe38ea23656dc432744",
+      "state": "running",
+      "stage": "上位候補の本文を確認しています",
+      "progress": 0.15,
+      "error": null
+    },
+    "award_entries": 47,
+    "resolved_award_papers": 39,
+    "test_of_time_candidates": [
+      {
+        "title": "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks",
+        "source_id": "1511.06434"
+      },
+      {
+        "title": "Continuous control with deep reinforcement learning",
+        "source_id": "1509.02971"
+      },
+      {
+        "title": "Asynchronous Methods for Deep Reinforcement Learning",
+        "source_id": "1602.01783"
+      },
+      {
+        "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+        "source_id": "1502.03167"
+      },
+      {
+        "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+        "source_id": "1506.01497"
+      }
+    ]
+  },
+  "schema": {
+    "version": 6,
+    "foreign_key_errors": 0
+  },
+  "old_lesson_jobs_still_paused": 3,
+  "tests": {
+    "python_full_passed": 235,
+    "frontend_e2e_passed": 16,
+    "frontend_build": "passed",
+    "ruff": "passed"
+  }
+}

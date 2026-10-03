@@ -280,3 +280,29 @@ test("Test of Time shows the publication year separately from the award year", a
   await expect(panel.getByRole('link',{name:'NeurIPS 2025 · Test of Time Award'})).toHaveAttribute('href',source);
   await expect(panel.getByText(/長年の影響を評価する賞/)).toContainText('論文発表 2015年 / 受賞 2025年');
 });
+
+test("nightly thumbnails can be downloaded beside films and from past runs", async ({page}) => {
+  const track={
+    label:'解説編', lesson_id:'old-lesson', phase:'complete',
+    videos:[{kind:'overview',state:'ready',data:{title:'Previous film',mp4:'videos/old.mp4'}}],
+    thumbnails:{data:{selected_id:'chosen',candidates:[{id:'chosen',png:'visuals/ui-original.png',jpg:'thumbnails/old.jpg'}]}},
+  };
+  const previous={
+    id:'previous',day:'2026-10-03',state:'ready',job:null,
+    data:{selected:{title:'Previous paper'}},project:{data:{modes:{overview:track}}},
+  };
+  let runs:any[]=[previous];
+  await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:runs}));
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await expect(panel.getByRole('img',{name:'解説編のサムネイル'})).toBeVisible();
+  await expect(panel.getByRole('link',{name:'サムネイル PNG',exact:true})).toHaveAttribute('download','Previous film-thumbnail.png');
+  await expect(panel.getByRole('link',{name:'サムネイル JPEG',exact:true})).toHaveAttribute('download','Previous film-thumbnail.jpg');
+  runs=[{id:'new',day:'2026-10-03',state:'searching',job:null,data:{manual:true}},previous];
+  await page.reload();
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  await panel.locator('summary').filter({hasText:'過去の夜間運転'}).click();
+  await expect(panel.getByRole('img',{name:'解説編のサムネイル'})).toBeVisible();
+  await expect(panel.getByRole('link',{name:'動画をダウンロード',exact:true})).toHaveAttribute('download','Previous film.mp4');
+  await expect(panel.getByRole('link',{name:'サムネイル JPEG',exact:true})).toBeVisible();
+});

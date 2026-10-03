@@ -169,6 +169,8 @@ def get(ident):
             "review_summary",
             "waiting_reason",
             "selection_policy",
+            "manual",
+            "manual_repeat",
             "award_sources",
             "award_fallback_reason",
         }
@@ -182,13 +184,16 @@ def start(*, now=None, manual=False):
     with db.connection() as c:
         c.execute("BEGIN IMMEDIATE")
         old = c.execute(
-            "SELECT id FROM nightly_video_runs WHERE day=?", (day,)
+            "SELECT id,state FROM nightly_video_runs WHERE day=? AND coalesce(json_extract(data,'$.manual_repeat'),0)=0",
+            (day,),
         ).fetchone()
-        if old:
-            return old["id"]
         active = c.execute(
             "SELECT id FROM nightly_video_runs WHERE state IN ('searching','reading','building','paused') OR (state='failed' AND project_id IS NOT NULL) ORDER BY created LIMIT 1"
         ).fetchone()
+        if manual and active:
+            return active["id"]
+        if old and (not manual or old["state"] in ACTIVE):
+            return old["id"]
         ident, stamp = db.uid(), time.time()
         data = {
             "phase": "attention",
@@ -203,6 +208,7 @@ def start(*, now=None, manual=False):
             "review_index": 0,
             "model": db.settings()["model_profile"],
             "manual": manual,
+            "manual_repeat": bool(manual and old),
             "categories": db.settings()["nightly_video_categories"],
             "selection_policy": "awards-first"
             if db.settings()["nightly_video_awards_first"]

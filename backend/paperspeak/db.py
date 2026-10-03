@@ -74,7 +74,7 @@ def init():
           mode TEXT NOT NULL, input_digest TEXT NOT NULL UNIQUE, state TEXT NOT NULL,
           data TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS nightly_video_runs (
-          id TEXT PRIMARY KEY, day TEXT NOT NULL UNIQUE, state TEXT NOT NULL,
+          id TEXT PRIMARY KEY, day TEXT NOT NULL, state TEXT NOT NULL,
           project_id TEXT REFERENCES video_projects(id), data TEXT NOT NULL,
           created REAL NOT NULL, updated REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS attempts (
@@ -101,8 +101,38 @@ def init():
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY,value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS cursors (key TEXT PRIMARY KEY,data TEXT NOT NULL);
-        PRAGMA user_version=5;
         """)
+        c.execute("BEGIN IMMEDIATE")
+        # A scheduled date stays unique, but an explicit manual start after
+        # completion may add a run without replacing the day's history.
+        legacy_day_unique = any(
+            index["unique"]
+            and not index["partial"]
+            and [
+                r["name"]
+                for r in c.execute(
+                    "SELECT name FROM pragma_index_info(?)", (index["name"],)
+                )
+            ]
+            == ["day"]
+            for index in c.execute("PRAGMA index_list('nightly_video_runs')")
+        )
+        if legacy_day_unique:
+            c.execute(
+                "ALTER TABLE nightly_video_runs RENAME TO nightly_video_runs_legacy"
+            )
+            c.execute("""CREATE TABLE nightly_video_runs (
+              id TEXT PRIMARY KEY, day TEXT NOT NULL, state TEXT NOT NULL,
+              project_id TEXT REFERENCES video_projects(id), data TEXT NOT NULL,
+              created REAL NOT NULL, updated REAL NOT NULL)""")
+            c.execute(
+                "INSERT INTO nightly_video_runs SELECT * FROM nightly_video_runs_legacy"
+            )
+            c.execute("DROP TABLE nightly_video_runs_legacy")
+        c.execute("""CREATE UNIQUE INDEX IF NOT EXISTS nightly_video_scheduled_day
+          ON nightly_video_runs(day)
+          WHERE coalesce(json_extract(data,'$.manual_repeat'),0)=0""")
+        c.execute("PRAGMA user_version=6")
         for key, value in config.DEFAULTS.items():
             c.execute(
                 "INSERT OR IGNORE INTO settings VALUES (?,?)", (key, dumps(value))

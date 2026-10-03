@@ -28,15 +28,60 @@ def prize(title="A Useful New Robot Learning Method", venue="RSS", year=2026):
     }
 
 
-def test_blog_winners_are_not_mentions_or_test_of_time():
+def test_blog_distinguishes_research_and_test_of_time_winners_from_mentions():
     html = """<article><h3>Outstanding Papers</h3>
     <p><a href="https://openreview.net/forum?id=win">A Useful New Learning Method</a>, by Authors</p>
     <p>This work extends <a href="https://openreview.net/forum?id=background">An Earlier Learning Method</a>.</p>
     <h3>Honorable Mention</h3><p><a href="https://openreview.net/forum?id=mention">A Different New Learning Method</a></p>
     <h3>Test of Time Award</h3><p><a href="https://openreview.net/forum?id=old">A Classic Learning Method</a></p></article>"""
     rows = awards.parse(document(html), "ICLR", 2026)
-    assert [r["title"] for r in rows] == ["A Useful New Learning Method"]
+    assert [r["title"] for r in rows] == [
+        "A Useful New Learning Method",
+        "A Classic Learning Method",
+    ]
+    assert [r["kind"] for r in rows] == ["research-paper", "test-of-time"]
     assert rows[0]["source_sha256"] == document(html)["sha256"]
+
+
+@pytest.mark.parametrize("name", ["Test of Time Award", "Test-of-Time Paper Award"])
+def test_test_of_time_names_do_not_include_finalists_or_other_awards(name):
+    assert awards.award_kind(name) == "test-of-time"
+    for invalid in [
+        name + " Finalists",
+        name + " Honorable Mention",
+        name + " Runner-up",
+        "Classic Paper Award",
+        "An approach that stands the test of time",
+    ]:
+        assert not awards.winner_name(invalid)
+
+
+def test_neurips_award_talk_card_uses_actual_recipient_in_markdown():
+    html = """<main><table><tr><td>Test of Time Award</td><td>
+    <a href="/virtual/2025/test-of-time/10">Test of Time Award</a>
+    <details>[Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks (Test of Time Award)](https://papers.neurips.cc/paper_files/paper/2015/hash/abc-Abstract.html)</details>
+    </td></tr></table></main>"""
+    rows = awards.parse(
+        document(html, "https://neurips.cc/virtual/2025/awards_detail"),
+        "NeurIPS",
+        2025,
+    )
+    assert len(rows) == 1
+    assert (
+        rows[0]["title"]
+        == "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks"
+    )
+    assert rows[0]["kind"] == "test-of-time"
+    assert rows[0]["year"] == 2025
+    # A generic award talk with no identified paper must not become a paper.
+    assert not awards.parse(document(html.split("<details>")[0]), "NeurIPS", 2025)
+    assert not awards.parse(
+        document(
+            html.replace("https://papers.neurips.cc", "https://unverified.example")
+        ),
+        "NeurIPS",
+        2025,
+    )
 
 
 def test_rss_winners_and_student_prize_under_finalists():
@@ -54,6 +99,35 @@ def test_rss_winners_and_student_prize_under_finalists():
     assert len(rows) == 2
     assert rows[1]["name"] == "Outstanding Student Paper Award"
     assert rows[0]["paper_url"].startswith("https://roboticsconference.org/2026/")
+
+
+def test_rss_separate_test_of_time_card_requires_visible_matching_year():
+    card = """<p>It is our pleasure to announce that the 2025 Test of Time Award goes to:</p>
+    <div><h2>2025 Award Recipient</h2><p><strong>Nathan Michael and colleagues</strong></p>
+    <p>“Cooperative Manipulation and Transportation with Aerial Robots”</p>
+    <p>Robotics: Science and Systems V, 2009</p></div>"""
+    html = f"<main><h1>Test of Time Award</h1>{card}</main>"
+    rows = awards.parse(document(html), "RSS", 2025)
+    assert len(rows) == 1
+    assert (
+        rows[0]["title"]
+        == "Cooperative Manipulation and Transportation with Aerial Robots"
+    )
+    assert rows[0]["kind"] == "test-of-time" and rows[0]["year"] == 2025
+    assert not awards.parse(document(html), "RSS", 2026)
+    assert not awards.parse(
+        document(f"<main><h1>Test of Time Award</h1><!--{card}--></main>"), "RSS", 2026
+    )
+    assert not awards.parse(
+        document(
+            html.replace(
+                "“Cooperative Manipulation and Transportation with Aerial Robots”",
+                "Authors only",
+            )
+        ),
+        "RSS",
+        2025,
+    )
 
 
 def test_neurips_table_distinguishes_winner_from_runner_up():
@@ -266,7 +340,10 @@ def test_no_confirmed_award_records_fallback_reason(database):
     assert updated["data"]["phase"] == "collect"
 
 
-def test_choice_prefers_suitable_award_over_a_higher_scoring_unawarded_paper(database):
+@pytest.mark.parametrize("name", ["Outstanding Paper Award", "Test of Time Award"])
+def test_choice_prefers_suitable_award_over_a_higher_scoring_unawarded_paper(
+    database, name
+):
     now = dt.datetime(2026, 10, 3, tzinfo=nightly.ZONE)
     run_id = nightly.start(now=now)
     run = db.one("SELECT * FROM nightly_video_runs WHERE id=?", (run_id,))
@@ -276,7 +353,7 @@ def test_choice_prefers_suitable_award_over_a_higher_scoring_unawarded_paper(dat
         "title": prize()["title"],
         "published": "2025-01-01T00:00:00Z",
         "categories": ["cs.RO"],
-        "awards": [prize()],
+        "awards": [prize() | {"name": name}],
     }
     new = {
         "source_id": "2610.00001",
@@ -312,7 +389,64 @@ def test_choice_prefers_suitable_award_over_a_higher_scoring_unawarded_paper(dat
     nightly.step(db.one("SELECT * FROM jobs WHERE target=?", (run_id,)), None)
     result = nightly.get(run_id)
     assert result["data"]["selected"]["source_id"] == old["source_id"]
-    assert result["data"]["selected"]["awards"] == [prize()]
+    assert result["data"]["selected"]["awards"] == old["awards"]
+    project = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
+    context = project["data"]["award_context"]
+    assert context["published"] == old["published"]
+    assert context["awards"][0]["kind"] == awards.award_kind(name)
+    assert result["data"]["selected"]["published"] == old["published"]
+    if name == "Test of Time Award":
+        prompt = story.award_context_prompt(project)
+        assert "2025-01-01" in prompt and '"year": 2026' in prompt
+        assert "not a newly published advance" in prompt
+        assert "supplied sources support" in prompt
+    else:
+        assert story.award_context_prompt(project) == ""
+
+
+def test_classic_survives_large_award_pool_but_uses_recent_award_year(database):
+    now = dt.datetime(2026, 10, 3, tzinfo=nightly.ZONE)
+    recent = [
+        {
+            "source_id": f"2609.000{i:02}",
+            "title": f"A Useful Recent Learning Method Number {i}",
+            "published": "2026-09-01T00:00:00Z",
+            "categories": ["cs.LG"],
+            "awards": [
+                prize(f"A Useful Recent Learning Method Number {i}", venue="ICML")
+            ],
+        }
+        for i in range(12)
+    ]
+    classic = {
+        "source_id": "1506.00001",
+        "title": "An Enduring Classic Learning Method",
+        "published": "2015-06-01T00:00:00Z",
+        "categories": ["cs.LG"],
+        "awards": [
+            prize("An Enduring Classic Learning Method", venue="NeurIPS", year=2025)
+            | {"name": "Test of Time Award"}
+        ],
+    }
+    rows = nightly.shortlist(recent + [classic], {}, now=now, days=7, awards_first=True)
+    assert len(rows) == 10
+    assert any(p["source_id"] == classic["source_id"] for p in rows)
+    assert not nightly.shortlist([classic], {}, now=now, days=7, awards_first=False)
+    assert not nightly.shortlist(
+        [classic | {"awards": [classic["awards"][0] | {"year": 2024}]}],
+        {},
+        now=now,
+        days=7,
+        awards_first=True,
+    )
+    assert not nightly.shortlist(
+        [classic],
+        {},
+        now=now,
+        days=7,
+        awards_first=True,
+        excluded=[classic["source_id"]],
+    )
 
 
 def test_moving_current_conference_site_cannot_claim_the_wrong_year():

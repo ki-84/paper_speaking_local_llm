@@ -1065,9 +1065,9 @@ function SettingsPage({
         }}
       >
         <h2>夜間に解説・詳解を自動作成</h2>
-        <label className="check-label"><input type="checkbox" checked={s.nightly_video_enabled} onChange={e=>update("nightly_video_enabled",e.target.checked)}/> 毎晩、新しい注目論文から2本の動画と英語教材を作る</label>
-        <label className="check-label"><input type="checkbox" checked={s.nightly_video_awards_first} onChange={e=>update("nightly_video_awards_first",e.target.checked)}/> 最近のAI・ロボティクス学会の優秀論文賞を優先する</label>
-        <p>最新・前年の開催年を対象に、公式に受賞を確認した未動画化の論文を優先します。適した受賞論文がなければ、新着論文から選びます。</p>
+        <label className="check-label"><input type="checkbox" checked={s.nightly_video_enabled} onChange={e=>update("nightly_video_enabled",e.target.checked)}/> 毎晩、注目論文から2本の動画と英語教材を作る</label>
+        <label className="check-label"><input type="checkbox" checked={s.nightly_video_awards_first} onChange={e=>update("nightly_video_awards_first",e.target.checked)}/> 最近のAI・ロボティクス学会の優秀論文賞・Test of Time賞を優先する</label>
+        <p>最新・前年の受賞を公式に確認した未動画化の論文を優先します。Test of Time賞は古い論文も対象とし、発表年と受賞年を区別します。適した受賞論文がなければ、新着論文から選びます。</p>
         <p>朝の完成を目指し、長引いても続行します。前日の作成が残っている日は追加しません。</p>
         <div className="form-grid"><label>開始時刻 · 日本時間<input type="time" value={`${String(s.nightly_video_hour).padStart(2,"0")}:${String(s.nightly_video_minute).padStart(2,"0")}`} onChange={e=>{const [h,m]=e.target.value.split(":").map(Number);setSaved(false);setS({...s,nightly_video_hour:h,nightly_video_minute:m});}}/></label>
         <label>対象分野<select multiple value={s.nightly_video_categories} onChange={e=>update("nightly_video_categories",Array.from(e.target.selectedOptions,o=>o.value))}>{[["cs.AI","AI"],["cs.LG","機械学習"],["cs.CL","LLM・言語"],["cs.CV","画像・視覚"],["cs.RO","ロボティクス"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></div>
@@ -2547,7 +2547,7 @@ function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onEr
   return <section className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
   {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>
   <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}
-  {activeRun.data.selected?.awards?.map((a:any)=><p key={`${a.venue}-${a.year}-${a.name}`}><a href={a.official_url} target="_blank" rel="noreferrer">{a.venue} {a.year} · {a.name}</a> · 公式受賞情報確認済み</p>)}
+  {activeRun.data.selected?.awards?.map((a:any)=><p key={`${a.venue}-${a.year}-${a.name}`}><a href={a.official_url} target="_blank" rel="noreferrer">{a.venue} {a.year} · {a.name}</a> · 公式受賞情報確認済み{a.kind==='test-of-time'&&<> · 長年の影響を評価する賞{activeRun.data.selected.published&&<> · 論文発表 {activeRun.data.selected.published.slice(0,4)}年 / 受賞 {a.year}年</>}</>}</p>)}
   {run.data.award_fallback_reason&&<p>{run.data.award_fallback_reason}</p>}
   {run.data.selected?.attention&&<p className="subtle">注目情報: <a href={run.data.selected.attention.source_url} target="_blank" rel="noreferrer">Hugging Face Daily Papers</a> · {new Date(run.data.selected.attention.retrieved_at*1000).toLocaleString()}</p>}
   {run.data.reason&&<p>{run.data.reason}</p>}{run.data.waiting_reason&&(run.state==='building'||run.continuing_run)&&<p>{run.data.waiting_reason}</p>}{activeJob&&<progress max={1} value={run.project?.job?.progress||activeJob.progress||0}/>}

@@ -17,10 +17,11 @@ from . import config, db, papers
 VENUES = ("ICLR", "ICML", "NeurIPS", "AAAI", "RSS", "ICRA", "CoRL", "IROS")
 ROBOTICS = {"RSS", "ICRA", "CoRL", "IROS"}
 EXCLUDED = re.compile(
-    r"honou?rable|runner.?up|finalist|nomina|test.of.time|classic|reviewer|editor|"
+    r"honou?rable|runner.?up|finalist|nomina|classic|reviewer|editor|"
     r"competition|challenge|dissertation|position paper",
     re.I,
 )
+TEST_OF_TIME = re.compile(r"\btest\W+of\W+time\b(?:\W+paper)?\W+awards?\b", re.I)
 
 
 def normalized(title):
@@ -28,11 +29,18 @@ def normalized(title):
     return "".join(c for c in value if c.isalnum())
 
 
+def award_kind(name):
+    if EXCLUDED.search(name):
+        return None
+    if TEST_OF_TIME.search(name):
+        return "test-of-time"
+    if re.search(r"\b(best|outstanding)\b.*\bpaper", name, re.I):
+        return "research-paper"
+    return None
+
+
 def winner_name(name):
-    return bool(
-        re.search(r"\b(best|outstanding)\b.*\bpaper", name, re.I)
-        and not EXCLUDED.search(name)
-    )
+    return award_kind(name) is not None
 
 
 def trusted(url):
@@ -154,6 +162,7 @@ def parse(saved, venue, year):
             "venue": venue,
             "year": year,
             "name": name,
+            "kind": award_kind(name),
             "status": "winner",
             "verified": True,
             "official_url": saved["url"],
@@ -162,6 +171,29 @@ def parse(saved, venue, year):
             "source_sha256": saved["sha256"],
             "area": "robotics" if venue in ROBOTICS else "ai",
         }
+
+    # RSS has a separate retrospective page: a year-labeled recipient card
+    # contains authors and then a quoted title, with no paper hyperlink.
+    # Never promote an award-description-only page or a commented old card.
+    if (
+        venue == "RSS"
+        and root.find("h1")
+        and TEST_OF_TIME.search(root.find("h1").get_text(" ", strip=True))
+    ):
+        for heading in root.find_all("h2"):
+            if heading.get_text(" ", strip=True) != f"{year} Award Recipient":
+                continue
+            if not re.search(
+                rf"{year}\s+Test of Time Award goes to", root.get_text(" ", strip=True)
+            ):
+                continue
+            for paragraph in heading.find_next_siblings("p"):
+                title = re.fullmatch(
+                    r'[“"](.+)[”"]', paragraph.get_text(" ", strip=True)
+                )
+                if title:
+                    add(title[1], "Test of Time Award")
+                    break
 
     # NeurIPS/ICML award tables label each paper independently.
     for row in root.find_all("tr"):
@@ -172,12 +204,28 @@ def parse(saved, venue, year):
             and winner_name(cells[0].get_text(" ", strip=True))
         ):
             a = cells[1].find("a", href=True)
-            if a:
+            if a and not winner_name(a.get_text(" ", strip=True)):
                 add(
                     a.get_text(" ", strip=True),
                     cells[0].get_text(" ", strip=True),
                     a["href"],
                 )
+            elif award_kind(cells[0].get_text(" ", strip=True)) == "test-of-time":
+                # NeurIPS links the award talk rather than the paper in this
+                # card. Its official abstract contains the recipient as a
+                # Markdown paper link; do not resolve "Test of Time Award".
+                link = re.search(
+                    r"\[([^\]\n]+)\]\((https://[^\s)]+)\)",
+                    cells[1].get_text(" ", strip=True),
+                )
+                if link and trusted(link[2]):
+                    title = re.sub(
+                        r"\s*\(Test\W+of\W+Time(?:\s+Paper)?\s+Award\)\s*$",
+                        "",
+                        link[1],
+                        flags=re.I,
+                    )
+                    add(title, cells[0].get_text(" ", strip=True), link[2])
     section = ""
     active_year = year
     awaiting_winner = False
@@ -315,7 +363,7 @@ def verified(meta, *, year=None):
             and (year is None or year - 1 <= a["year"] <= year)
             and normalized(a.get("title", "")) == normalized(meta.get("title", ""))
         ):
-            result.append(a)
+            result.append(a | {"kind": award_kind(a["name"])})
     return result
 
 

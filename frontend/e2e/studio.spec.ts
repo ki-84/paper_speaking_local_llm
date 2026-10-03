@@ -237,8 +237,8 @@ test("nightly videos are independent of old lesson automation", async ({ page })
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "夜間に解説・詳解を自動作成" })).toBeVisible();
   const old = await (await page.request.get('/api/settings')).json();
-  await page.getByLabel("毎晩、新しい注目論文から2本の動画と英語教材を作る").check();
-  await page.getByLabel("最近のAI・ロボティクス学会の優秀論文賞を優先する").check();
+  await page.getByLabel("毎晩、注目論文から2本の動画と英語教材を作る").check();
+  await page.getByLabel("最近のAI・ロボティクス学会の優秀論文賞・Test of Time賞を優先する").check();
   await page.getByLabel("開始時刻 · 日本時間").fill('02:15');
   await page.getByRole('button', {name:/Save settings/}).click();
   await expect.poll(async()=> (await (await page.request.get('/api/settings')).json()).nightly_video_minute).toBe(15);
@@ -270,4 +270,13 @@ test("nightly selection shows the verified conference award source", async ({pag
   const panel=page.getByRole('region',{name:'昨夜の動画'});
   await expect(panel.getByRole('link',{name:'RSS 2026 · Outstanding Paper Award'})).toHaveAttribute('href',source);
   await expect(panel.getByText(/公式受賞情報確認済み/)).toBeVisible();
+});
+
+test("Test of Time shows the publication year separately from the award year", async ({page}) => {
+  const source='https://neurips.cc/virtual/2025/awards_detail';
+  await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'classic-run',day:'2026-10-04',state:'ready',job:null,data:{selected:{title:'An enduring learning method',published:'2015-06-01T00:00:00Z',awards:[{venue:'NeurIPS',year:2025,name:'Test of Time Award',kind:'test-of-time',official_url:source}]},timings:{}}}]}));
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await expect(panel.getByRole('link',{name:'NeurIPS 2025 · Test of Time Award'})).toHaveAttribute('href',source);
+  await expect(panel.getByText(/長年の影響を評価する賞/)).toContainText('論文発表 2015年 / 受賞 2025年');
 });

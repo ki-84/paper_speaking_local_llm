@@ -1,0 +1,403 @@
+{
+  "checked_at": "2026-10-03T18:01:29.088027+09:00",
+  "scope": "Read-only official recognition, exact arXiv title matching, and candidate eligibility; no video job started.",
+  "sources": [
+    {
+      "source": {
+        "venue": "ICML",
+        "year": 2026,
+        "url": "https://blog.icml.cc/category/icml-2026/"
+      },
+      "checked_at": 1791018089.1585002,
+      "failures": [],
+      "status": "verified winners",
+      "test_of_time_count": 1
+    },
+    {
+      "source": {
+        "venue": "NeurIPS",
+        "year": 2026,
+        "url": "https://neurips.cc/virtual/2026/awards_detail"
+      },
+      "status": "unavailable",
+      "reason": "Client error '403 Forbidden' for url 'https://neurips.cc/virtual/2026/awards_detail'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+    },
+    {
+      "source": {
+        "venue": "ICML",
+        "year": 2025,
+        "url": "https://blog.icml.cc/category/icml-2025/"
+      },
+      "checked_at": 1791018093.2425485,
+      "failures": [],
+      "status": "verified winners",
+      "test_of_time_count": 1
+    },
+    {
+      "source": {
+        "venue": "NeurIPS",
+        "year": 2025,
+        "url": "https://neurips.cc/virtual/2025/awards_detail"
+      },
+      "checked_at": 1791018093.282928,
+      "failures": [],
+      "status": "verified winners",
+      "test_of_time_count": 1
+    },
+    {
+      "source": {
+        "venue": "RSS",
+        "year": 2026,
+        "url": "https://roboticsconference.org/2026/program/awards/"
+      },
+      "checked_at": 1791018401.4135566,
+      "failures": [],
+      "status": "verified winners",
+      "test_of_time_count": 0
+    },
+    {
+      "source": {
+        "venue": "RSS",
+        "year": 2025,
+        "url": "https://roboticsconference.org/2025/program/awards/"
+      },
+      "checked_at": 1791018401.428836,
+      "failures": [],
+      "status": "verified winners",
+      "test_of_time_count": 1
+    }
+  ],
+  "winners": [
+    {
+      "title": "Asynchronous Methods for Deep Reinforcement Learning",
+      "venue": "ICML",
+      "year": 2026,
+      "name": "ICML 2026 Test of Time Award",
+      "kind": "test-of-time",
+      "status": "winner",
+      "verified": true,
+      "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+      "paper_url": "https://proceedings.mlr.press/v48/mniha16.html",
+      "retrieved_at": 1791015663.0088873,
+      "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+      "area": "ai"
+    },
+    {
+      "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+      "venue": "ICML",
+      "year": 2025,
+      "name": "Test of Time Award",
+      "kind": "test-of-time",
+      "status": "winner",
+      "verified": true,
+      "official_url": "https://icml.cc/virtual/2025/awards_detail",
+      "paper_url": "https://icml.cc/virtual/2025/test-of-time/39855",
+      "retrieved_at": 1791016224.375051,
+      "source_sha256": "eedaabf3d3a690da67c963d5df907015904022d3930c3126976c08d22d05aba9",
+      "area": "ai"
+    },
+    {
+      "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+      "venue": "NeurIPS",
+      "year": 2025,
+      "name": "Test of Time Award",
+      "kind": "test-of-time",
+      "status": "winner",
+      "verified": true,
+      "official_url": "https://neurips.cc/virtual/2025/loc/san-diego/awards_detail",
+      "paper_url": "https://papers.neurips.cc/paper_files/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html",
+      "retrieved_at": 1791015665.4221385,
+      "source_sha256": "fa5d53247738a8290bd08f67f02626fc62fe3494e0e590c7ac042abde85156fd",
+      "area": "ai"
+    },
+    {
+      "title": "Cooperative Manipulation and Transportation with Aerial Robots",
+      "venue": "RSS",
+      "year": 2025,
+      "name": "Test of Time Award",
+      "kind": "test-of-time",
+      "status": "winner",
+      "verified": true,
+      "official_url": "https://roboticsconference.org/2025/program/testoftimeaward/",
+      "paper_url": "",
+      "retrieved_at": 1791015662.8920398,
+      "source_sha256": "e7441b52ea6e7ad27542328b2ce67e9a1be851c3c01e78c23e8965a268c49033",
+      "area": "robotics"
+    }
+  ],
+  "resolved": [
+    {
+      "source_id": "1602.01783",
+      "version": "v2",
+      "title": "Asynchronous Methods for Deep Reinforcement Learning",
+      "abstract": "We propose a conceptually simple and lightweight framework for deep reinforcement learning that uses asynchronous gradient descent for optimization of deep neural network controllers. We present asynchronous variants of four standard reinforcement learning algorithms and show that parallel actor-learners have a stabilizing effect on training allowing all four methods to successfully train neural network controllers. The best performing method, an asynchronous variant of actor-critic, surpasses the current state-of-the-art on the Atari domain while training for half the time on a single multi-core CPU instead of a GPU. Furthermore, we show that asynchronous actor-critic succeeds on a wide variety of continuous motor control problems as well as on a new task of navigating random 3D mazes using a visual input.",
+      "authors": [
+        "Volodymyr Mnih",
+        "Adrià Puigdomènech Badia",
+        "Mehdi Mirza",
+        "Alex Graves",
+        "Timothy P. Lillicrap",
+        "Tim Harley",
+        "David Silver",
+        "Koray Kavukcuoglu"
+      ],
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2016-02-04T18:38:41Z",
+      "updated": "2016-06-16T16:38:45Z",
+      "url": "https://arxiv.org/abs/1602.01783v2",
+      "awards": [
+        {
+          "title": "Asynchronous Methods for Deep Reinforcement Learning",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "ICML 2026 Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://proceedings.mlr.press/v48/mniha16.html",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "1502.03167",
+      "version": "v3",
+      "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+      "abstract": "Training Deep Neural Networks is complicated by the fact that the distribution of each layer's inputs changes during training, as the parameters of the previous layers change. This slows down the training by requiring lower learning rates and careful parameter initialization, and makes it notoriously hard to train models with saturating nonlinearities. We refer to this phenomenon as internal covariate shift, and address the problem by normalizing layer inputs. Our method draws its strength from making normalization a part of the model architecture and performing the normalization for each training mini-batch. Batch Normalization allows us to use much higher learning rates and be less careful about initialization. It also acts as a regularizer, in some cases eliminating the need for Dropout. Applied to a state-of-the-art image classification model, Batch Normalization achieves the same accuracy with 14 times fewer training steps, and beats the original model by a significant margin. Using an ensemble of batch-normalized networks, we improve upon the best published result on ImageNet classification: reaching 4.9% top-5 validation error (and 4.8% test error), exceeding the accuracy of human raters.",
+      "authors": [
+        "Sergey Ioffe",
+        "Christian Szegedy"
+      ],
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2015-02-11T01:44:18Z",
+      "updated": "2015-03-02T20:44:12Z",
+      "url": "https://arxiv.org/abs/1502.03167v3",
+      "awards": [
+        {
+          "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/test-of-time/39855",
+          "retrieved_at": 1791016224.375051,
+          "source_sha256": "eedaabf3d3a690da67c963d5df907015904022d3930c3126976c08d22d05aba9",
+          "area": "ai"
+        }
+      ]
+    },
+    {
+      "source_id": "1506.01497",
+      "version": "v3",
+      "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+      "abstract": "State-of-the-art object detection networks depend on region proposal algorithms to hypothesize object locations. Advances like SPPnet and Fast R-CNN have reduced the running time of these detection networks, exposing region proposal computation as a bottleneck. In this work, we introduce a Region Proposal Network (RPN) that shares full-image convolutional features with the detection network, thus enabling nearly cost-free region proposals. An RPN is a fully convolutional network that simultaneously predicts object bounds and objectness scores at each position. The RPN is trained end-to-end to generate high-quality region proposals, which are used by Fast R-CNN for detection. We further merge RPN and Fast R-CNN into a single network by sharing their convolutional features---using the recently popular terminology of neural networks with 'attention' mechanisms, the RPN component tells the unified network where to look. For the very deep VGG-16 model, our detection system has a frame rate of 5fps (including all steps) on a GPU, while achieving state-of-the-art object detection accuracy on PASCAL VOC 2007, 2012, and MS COCO datasets with only 300 proposals per image. In ILSVRC and COCO 2015 competitions, Faster R-CNN and RPN are the foundations of the 1st-place winning entries in several tracks. Code has been made publicly available.",
+      "authors": [
+        "Shaoqing Ren",
+        "Kaiming He",
+        "Ross Girshick",
+        "Jian Sun"
+      ],
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2015-06-04T07:58:34Z",
+      "updated": "2016-01-06T06:30:17Z",
+      "url": "https://arxiv.org/abs/1506.01497v3",
+      "awards": [
+        {
+          "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/loc/san-diego/awards_detail",
+          "paper_url": "https://papers.neurips.cc/paper_files/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html",
+          "retrieved_at": 1791015665.4221385,
+          "source_sha256": "fa5d53247738a8290bd08f67f02626fc62fe3494e0e590c7ac042abde85156fd",
+          "area": "ai"
+        }
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "title": "Cooperative Manipulation and Transportation with Aerial Robots",
+      "venue": "RSS",
+      "reason": "No unique exact arXiv title match; recipient is confirmed, but not auto-selected without a matching paper."
+    }
+  ],
+  "shortlist": [
+    {
+      "source_id": "1602.01783",
+      "version": "v2",
+      "title": "Asynchronous Methods for Deep Reinforcement Learning",
+      "abstract": "We propose a conceptually simple and lightweight framework for deep reinforcement learning that uses asynchronous gradient descent for optimization of deep neural network controllers. We present asynchronous variants of four standard reinforcement learning algorithms and show that parallel actor-learners have a stabilizing effect on training allowing all four methods to successfully train neural network controllers. The best performing method, an asynchronous variant of actor-critic, surpasses the current state-of-the-art on the Atari domain while training for half the time on a single multi-core CPU instead of a GPU. Furthermore, we show that asynchronous actor-critic succeeds on a wide variety of continuous motor control problems as well as on a new task of navigating random 3D mazes using a visual input.",
+      "authors": [
+        "Volodymyr Mnih",
+        "Adrià Puigdomènech Badia",
+        "Mehdi Mirza",
+        "Alex Graves",
+        "Timothy P. Lillicrap",
+        "Tim Harley",
+        "David Silver",
+        "Koray Kavukcuoglu"
+      ],
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2016-02-04T18:38:41Z",
+      "updated": "2016-06-16T16:38:45Z",
+      "url": "https://arxiv.org/abs/1602.01783v2",
+      "awards": [
+        {
+          "title": "Asynchronous Methods for Deep Reinforcement Learning",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "ICML 2026 Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "paper_url": "https://proceedings.mlr.press/v48/mniha16.html",
+          "retrieved_at": 1791015663.0088873,
+          "source_sha256": "6acf2ab3b466706b731773dfea0540181c6609f0b5c6f08e410fa49b49eaaa6a",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 110.0,
+      "attention": null,
+      "area": "ai"
+    },
+    {
+      "source_id": "1506.01497",
+      "version": "v3",
+      "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+      "abstract": "State-of-the-art object detection networks depend on region proposal algorithms to hypothesize object locations. Advances like SPPnet and Fast R-CNN have reduced the running time of these detection networks, exposing region proposal computation as a bottleneck. In this work, we introduce a Region Proposal Network (RPN) that shares full-image convolutional features with the detection network, thus enabling nearly cost-free region proposals. An RPN is a fully convolutional network that simultaneously predicts object bounds and objectness scores at each position. The RPN is trained end-to-end to generate high-quality region proposals, which are used by Fast R-CNN for detection. We further merge RPN and Fast R-CNN into a single network by sharing their convolutional features---using the recently popular terminology of neural networks with 'attention' mechanisms, the RPN component tells the unified network where to look. For the very deep VGG-16 model, our detection system has a frame rate of 5fps (including all steps) on a GPU, while achieving state-of-the-art object detection accuracy on PASCAL VOC 2007, 2012, and MS COCO datasets with only 300 proposals per image. In ILSVRC and COCO 2015 competitions, Faster R-CNN and RPN are the foundations of the 1st-place winning entries in several tracks. Code has been made publicly available.",
+      "authors": [
+        "Shaoqing Ren",
+        "Kaiming He",
+        "Ross Girshick",
+        "Jian Sun"
+      ],
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2015-06-04T07:58:34Z",
+      "updated": "2016-01-06T06:30:17Z",
+      "url": "https://arxiv.org/abs/1506.01497v3",
+      "awards": [
+        {
+          "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/loc/san-diego/awards_detail",
+          "paper_url": "https://papers.neurips.cc/paper_files/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html",
+          "retrieved_at": 1791015665.4221385,
+          "source_sha256": "fa5d53247738a8290bd08f67f02626fc62fe3494e0e590c7ac042abde85156fd",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 90.0,
+      "attention": null,
+      "area": "ai"
+    },
+    {
+      "source_id": "1502.03167",
+      "version": "v3",
+      "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+      "abstract": "Training Deep Neural Networks is complicated by the fact that the distribution of each layer's inputs changes during training, as the parameters of the previous layers change. This slows down the training by requiring lower learning rates and careful parameter initialization, and makes it notoriously hard to train models with saturating nonlinearities. We refer to this phenomenon as internal covariate shift, and address the problem by normalizing layer inputs. Our method draws its strength from making normalization a part of the model architecture and performing the normalization for each training mini-batch. Batch Normalization allows us to use much higher learning rates and be less careful about initialization. It also acts as a regularizer, in some cases eliminating the need for Dropout. Applied to a state-of-the-art image classification model, Batch Normalization achieves the same accuracy with 14 times fewer training steps, and beats the original model by a significant margin. Using an ensemble of batch-normalized networks, we improve upon the best published result on ImageNet classification: reaching 4.9% top-5 validation error (and 4.8% test error), exceeding the accuracy of human raters.",
+      "authors": [
+        "Sergey Ioffe",
+        "Christian Szegedy"
+      ],
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2015-02-11T01:44:18Z",
+      "updated": "2015-03-02T20:44:12Z",
+      "url": "https://arxiv.org/abs/1502.03167v3",
+      "awards": [
+        {
+          "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/test-of-time/39855",
+          "retrieved_at": 1791016224.375051,
+          "source_sha256": "eedaabf3d3a690da67c963d5df907015904022d3930c3126976c08d22d05aba9",
+          "area": "ai"
+        }
+      ],
+      "retrieval_score": 90.0,
+      "attention": null,
+      "area": "ai"
+    }
+  ],
+  "checks": {
+    "confirmed_official_test_of_time": true,
+    "arxiv_exact_title_matches": true,
+    "old_publications_remain_eligible": true,
+    "recent_award_year_separate": true,
+    "all_priority_entries_are_test_of_time": true,
+    "official_robotics_test_of_time_confirmed": true
+  },
+  "status": "passed",
+  "tests": {
+    "python_full_before_final_rss_card": {
+      "passed": 230
+    },
+    "python_awards_nightly_story": {
+      "passed": 67
+    },
+    "python_final_awards_nightly": {
+      "passed": 39
+    },
+    "frontend_e2e": {
+      "passed": 15
+    },
+    "frontend_build": "passed",
+    "ruff": "passed"
+  },
+  "lan_verification": {
+    "checked_at": "2026-10-03T09:07:33.354Z",
+    "checks": {
+      "test_of_time_setting_visible": true,
+      "awards_first_checked": true,
+      "publication_year_explanation": true,
+      "schedule_preserved": true,
+      "old_automation_stays_off": true,
+      "no_browser_exceptions": true
+    },
+    "errors": [],
+    "settings": {
+      "nightly_video_enabled": true,
+      "nightly_video_awards_first": true,
+      "nightly_video_hour": 2,
+      "nightly_video_minute": 0,
+      "discovery_enabled": false,
+      "daily_limit": 0,
+      "youtube_auto_upload": false
+    },
+    "status": "passed"
+  }
+}

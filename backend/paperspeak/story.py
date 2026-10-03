@@ -85,6 +85,21 @@ def is_lora(project):
     return bool(re.search(r"\bLoRA\b", project["data"]["paper_title"], re.I))
 
 
+def award_context_prompt(project):
+    context = project["data"].get("award_context", {})
+    if not any(a.get("kind") == "test-of-time" for a in context.get("awards", [])):
+        return ""
+    return (
+        "\nTEST OF TIME CONTEXT: "
+        + json.dumps(context, ensure_ascii=False)
+        + "\nThis is an older paper recognized for lasting influence, not a newly published advance. "
+        "Distinguish the paper's publication date from the later award year. Present its innovation in its original historical setting. "
+        "The award is recognition, not proof that the method still leads today's benchmarks. "
+        "Discuss later adoption or modern connections only when the supplied sources support them; otherwise omit those details. "
+        "Do not invent a decade of progress or claim that the authors foresaw present-day systems.\n"
+    )
+
+
 def story_beats(project, mode):
     if mode == "overview" or is_lora(project):
         return BEATS[mode]
@@ -192,6 +207,7 @@ def get(ident):
             "warnings",
             "references",
             "current_mode",
+            "award_context",
         )
     }
     public["modes"] = {}
@@ -969,6 +985,7 @@ def _script_prompt(project, mode, scene, index):
         "Each visual_focus is the zero-based index of the diagram node/formula actually discussed by that paragraph. Match spoken terminology to displayed labels.\n"
         + "PAPER: "
         + project["data"]["paper_title"]
+        + award_context_prompt(project)
         + "\nFULL STORY BEATS: "
         + json.dumps(story_beats(project, mode))
         + "\nHOOK: "
@@ -1441,6 +1458,7 @@ def _sources_step(project, runtime):
             "Copy exact paper titles. Include arxiv_id ONLY if a matching arXiv URL is explicitly printed with that reference; never guess it. "
             'Return {"references":[{"title":"exact title","arxiv_id":"ID from printed URL, otherwise empty","why":"why it helps this story"}]}.\n'
             + data["paper_title"]
+            + award_context_prompt(project)
             + "\n"
             + lessons.source_context(refs)[:26000]
         )
@@ -1692,6 +1710,7 @@ def _plan_step(project, runtime):
             + json.dumps(story_beats(project, mode))
             + "\nPAPER: "
             + data["paper_title"]
+            + award_context_prompt(project)
             + "\nEVIDENCE: "
             + json.dumps(plan_evidence(project, mode))
         )

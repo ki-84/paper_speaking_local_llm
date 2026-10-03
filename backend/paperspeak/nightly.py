@@ -381,6 +381,15 @@ def shortlist(candidates, attention, *, now, days, excluded=(), awards_first=Fal
             first = next((m for m in pool if m["area"] == area), None)
             if first:
                 balanced.append(first)
+        classic = next(
+            (m for m in pool if any(a["kind"] == "test-of-time" for a in m["awards"])),
+            None,
+        )
+        if classic and classic not in balanced:
+            # Keep an enduring idea in the ten-paper candidate pool even when
+            # the recent research-award list is large. Suitability still comes
+            # from reading the paper; this does not force a daily classic.
+            balanced.append(classic)
         balanced += [m for m in pool if m not in balanced]
         picks += balanced
     return sorted(
@@ -668,6 +677,11 @@ def step(job, runtime):
                             runtime,
                             'Assess this paper for an engaging, accurate overview and deep-dive video. Awards and community attention are recognition, not proof of scientific claims. Explain what viewers will learn from the full text, with limitations. Return {"suitable":true,"content_quality":4,"story_value":4,"why_ja":"何が面白く何を学べるか","cautions_ja":["限界"],"source_ids":["existing ID"]}. Scores 0..5. Do not reject complex math: the deep dive explains it.\nTITLE: '
                             + candidate["title"]
+                            + "\nPUBLICATION DATE: "
+                            + candidate["published"]
+                            + "\nVERIFIED AWARDS (award year is not publication year): "
+                            + db.dumps(awards.verified(candidate))
+                            + "\nFor a Test of Time recipient, assess the enduring idea and historical teaching value; do not treat an old paper as a newly published advance or assume modern benchmark leadership. Claims of later influence need sources."
                             + "\nFULL PAPER READING NOTES:\n"
                             + db.dumps(candidate["notes"])[:30000],
                             max_tokens=2000,
@@ -763,6 +777,10 @@ def step(job, runtime):
             reading_includes_structured=True,
             nightly_run_id=run["id"],
             reading_reuse="nightly:" + run["id"],
+            award_context={
+                "published": selected["published"],
+                "awards": awards.verified(selected),
+            },
         )
         story.save(project)
         data.update(
@@ -772,6 +790,7 @@ def step(job, runtime):
                     "paper_id",
                     "source_id",
                     "version",
+                    "published",
                     "title",
                     "area",
                     "attention",

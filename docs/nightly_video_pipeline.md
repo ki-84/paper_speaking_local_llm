@@ -1,0 +1,38 @@
+# Nightly paper stories and local thumbnails
+
+The library now includes **昨夜の動画**. In **Settings → 夜間に解説・詳解を自動作成**, set the start time (Japan time) and paper categories. This schedule is independent of the earlier chapter-lesson discovery switch. The production machine enabled **02:00 Asia/Tokyo** after both films in the first new-paper acceptance run completed and passed media/browser checks. Existing paused lesson jobs are retained.
+
+A run searches the last seven days of arXiv submissions and retrieves the Hugging Face Daily Papers community trending feed. It stores the source URL, rank, upvotes, publication date and retrieval time; attention is not treated as scientific evidence. Up to ten candidates mix AI, language and robotics with a modest recent-domain balance preference. The worker reads up to three usable complete papers, including HTML equations, tables and captions (or PDF pages), then scores the verified idea, evidence and storytelling potential locally. It expands to thirty days if needed and records a reason when nothing usable is found. Previously filmed base arXiv IDs are excluded across revisions.
+
+The chosen paper feeds the existing `paper-story-1` pipeline, with new dialogue and speech. Main-paper reading notes are reused as evidence, never as dialogue. Earlier research is retrieved from the bibliography and read in checkpointed complete-text batches, including its result tables, for historical context. Planning balances notes across references so one long paper does not displace the others. Reviews include passages cited by subsequent local repairs as well as the original outline evidence. The overview completes first; its MP4 and practice lesson are usable while the deep dive continues. Both receive original pixel actors, bilingual burned-in captions, variable pauses, local diagrams, sentence clips, expressions, comprehension questions and YouTube packaging. Uploading and publishing remain manual.
+
+## Recovery and bounded work
+
+`nightly_video_runs.day` is unique and creation takes a SQLite immediate transaction. Repeated manual starts and schedule ticks reuse the same day's run. On boot, an enabled schedule catches up the current day once its start time has passed. It does not create a queue of missed dates. A previous unfinished automatic run, including a paused or failed project needing repair, prevents a new project from being added; that date records a skip reason.
+
+Collection, reading batches, selection, outlines, dialogue, speech, captions, render segments and thumbnail candidates are checkpointed. The worker uses its existing GPU owner and recording priority. Reader, speech and image actors share the card serially. Recording preemption and GPU waits do not consume repair attempts. Service shutdown is also an interruption rather than a malformed model result. A resumed job uses saved results; completed films remain available.
+
+Network/model-response failures get at most three attempts per saved unit. Unavailable full texts move to the next candidate. Missing community attention falls back to arXiv without inventing popularity. Content repair falls back to supported explanations with omissions recorded. Image failures fall back to the original surprised pixel portraits and a simple local composition. A thumbnail's visual review can request up to three corrections, then selects the simple composition. Persistent storage/render failures are reported rather than polled forever. Manual retry can restart infrastructure work after fixing its cause.
+
+## Thumbnail assets
+
+Each film has three 1280×720 PNG/JPEG candidates. Maya is left and Aiden right, with enlarged surprised faces. Only eye and mouth areas can change in the original pixel portraits; the local compositor preserves hair, clothes, silhouette and palette. Generated central art is an illustrative metaphor, not paper evidence or a measurement chart. Large Japanese text and the smaller **英語で学ぶAI** label are added with local Noto CJK fonts after image generation.
+
+The image model is [FLUX.2 klein Base 4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B), revision `a3b4f4849157f664bdbc776fd7453c2783562f4d`. Its official card identifies Apache 2.0 and reference-image editing support. Base sampling uses BF16, 50 steps and guidance 4.0; seed, prompt hash, model revision, output hash and final portrait hashes are saved. Model files are individually hashed in `models.lock.json`. `.venv-image` is independent of ASR/TTS environments; `locks/image.txt` fixes dependencies with package hashes. `scripts/setup.py` and `scripts/prepare_assets.py image` reproduce acquisition. No Qwen-Image 2.1 or paid inference service is used.
+
+The model loads from local files with HF offline settings. The worker and image actor run inside the application's loopback-only inference socket guard, and Chromium rejects network requests while rendering. Acquisition intentionally uses the internet. This restriction covers the application's inference process, rather than changing the machine's firewall or preventing unrelated applications from using the network.
+
+The local multimodal reader recommends one candidate after checking the actual film's promise, recognizable faces and small-screen typography. The film card offers **この案を使う**, PNG/JPEG downloads and **3案を再生成**. Manual choices survive refresh and automatic review. Regeneration retains previous sets and the current poster until a replacement is ready. Selection updates poster metadata without reencoding MP4 or speech. Older work-directory posters receive retained public copies. Backup/restore includes the candidates, portrait cache, histories and nightly records.
+
+## API and verification
+
+- `GET /api/nightly-video-runs`: fourteen recent runs, selection reasons, checkpoints, timings and both film states.
+- `POST /api/nightly-video-runs`: idempotent manual start for today.
+- `GET /api/video-projects/{id}`: existing project with each film's thumbnail set and selected/recommended IDs.
+- `POST /api/video-projects/{id}/thumbnails`, body `{"mode":"overview"}` or `deep_dive`: create another three-candidate set.
+- `PUT /api/thumbnail-sets/{id}/selection`, body `{"candidate_id":"..."}`: select a ready image.
+- Existing `/api/jobs/{id}/pause|resume|retry|cancel` and SSE apply; nightly controls cascade to their project, renderer and thumbnail jobs.
+
+Run the Python tests, frontend build and Playwright tests before deployment. `scripts/nightly_browser_acceptance.mjs PROJECT` checks the actual LAN UI, all image downloads, 1280×720 dimensions, saved manual selection and a 320 px contact sheet. `scripts/story_acceptance.py PROJECT --screenshots --sync` inspects finished media and aligns actual audio/frames; `scripts/story_browser_acceptance.mjs` covers playback and same-script English practice. File-fed microphones check browser capture and local evaluation, not human pronunciation accuracy or physical Mac hardware.
+
+Live acceptance results and measured durations are recorded in `docs/nightly_video_verification.md` after both new-paper films finish. Active-stage timing sums exclude interrupted units; total elapsed time includes restarts, recording interruptions, queue waits and verification work.

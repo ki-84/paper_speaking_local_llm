@@ -11,6 +11,10 @@ LLAMA_PORT = int(os.environ.get("PAPERSPEAK_LLAMA_PORT", "8191"))
 API_PORT = int(os.environ.get("PAPERSPEAK_PORT", "8190"))
 LLAMA_BIN = Path(os.environ.get("PAPERSPEAK_LLAMA_BIN", ROOT / ".tools/llama-server"))
 DEFAULTS = {
+    "nightly_video_enabled": False,
+    "nightly_video_hour": 2,
+    "nightly_video_minute": 0,
+    "nightly_video_categories": ["cs.AI", "cs.LG", "cs.CL", "cs.CV", "cs.RO"],
     "discovery_enabled": True,
     "schedule_hour": 3,
     "schedule_minute": 0,
@@ -35,6 +39,7 @@ def init_dirs():
         "audio",
         "visuals",
         "videos",
+        "thumbnails",
         "recordings",
         "jobs",
         "logs",

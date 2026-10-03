@@ -69,6 +69,14 @@ def init():
           id TEXT PRIMARY KEY, paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
           input_digest TEXT NOT NULL UNIQUE, state TEXT NOT NULL, data TEXT NOT NULL,
           created REAL NOT NULL, updated REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS thumbnail_sets (
+          id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
+          mode TEXT NOT NULL, input_digest TEXT NOT NULL UNIQUE, state TEXT NOT NULL,
+          data TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS nightly_video_runs (
+          id TEXT PRIMARY KEY, day TEXT NOT NULL UNIQUE, state TEXT NOT NULL,
+          project_id TEXT REFERENCES video_projects(id), data TEXT NOT NULL,
+          created REAL NOT NULL, updated REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS attempts (
           id TEXT PRIMARY KEY, lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
           chapter_id TEXT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
@@ -93,7 +101,7 @@ def init():
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY,value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS cursors (key TEXT PRIMARY KEY,data TEXT NOT NULL);
-        PRAGMA user_version=4;
+        PRAGMA user_version=5;
         """)
         for key, value in config.DEFAULTS.items():
             c.execute(

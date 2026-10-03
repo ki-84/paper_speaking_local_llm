@@ -232,3 +232,31 @@ test("a missing system microphone explains the problem and refreshes connected d
   await page.getByRole("button", { name: "Refresh microphones" }).click();
   await expect(page.getByRole("option", { name: "Connected microphone" })).toHaveCount(1);
 });
+
+test("nightly videos are independent of old lesson automation", async ({ page }) => {
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "夜間に解説・詳解を自動作成" })).toBeVisible();
+  const old = await (await page.request.get('/api/settings')).json();
+  await page.getByLabel("毎晩、新しい注目論文から2本の動画と英語教材を作る").check();
+  await page.getByLabel("開始時刻 · 日本時間").fill('02:15');
+  await page.getByRole('button', {name:/Save settings/}).click();
+  await expect.poll(async()=> (await (await page.request.get('/api/settings')).json()).nightly_video_minute).toBe(15);
+  const current = await (await page.request.get('/api/settings')).json();
+  expect(current.discovery_enabled).toBe(old.discovery_enabled);
+  expect(current.nightly_video_enabled).toBe(true);
+  await page.request.put('/api/settings',{data:old});
+});
+
+test("library nightly start is idempotent and can pause and resume", async ({ page }) => {
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await expect(panel).toBeVisible();
+  await panel.getByRole('button',{name:'今すぐ論文を選んで作る'}).click();
+  await expect(panel.getByText('論文を探索中',{exact:true})).toBeVisible();
+  await panel.getByRole('button',{name:'今すぐ論文を選んで作る'}).click();
+  expect((await (await page.request.get('/api/nightly-video-runs')).json()).length).toBe(1);
+  await panel.getByRole('button',{name:'一時停止',exact:true}).click();
+  await expect(panel.getByRole('button',{name:'続きから再開'})).toBeVisible();
+  await panel.getByRole('button',{name:'続きから再開'}).click();
+  await expect(panel.getByText('論文を探索中',{exact:true})).toBeVisible();
+});

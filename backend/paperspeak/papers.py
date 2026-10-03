@@ -37,7 +37,7 @@ def parse_reference(value):
     return m.group(1), m.group(2) or ""
 
 
-def fetch(url, params=None, cache=True, cache_scope="", *, attempts=4, timeout=90):
+def fetch(url, params=None, cache=True, cache_scope="", *, attempts=3, timeout=90):
     u = urlparse(url)
     if u.scheme != "https" or u.hostname not in {
         "arxiv.org",
@@ -263,7 +263,14 @@ def link_visual_sources(sources):
                 break
 
 
-def ingest(paper_id):
+def reading_sources(paper_id):
+    """Complete HTML, including equations/tables/captions, or complete PDF pages."""
+    rows = db.all("SELECT * FROM sources WHERE paper_id=? ORDER BY rowid", (paper_id,))
+    html = [s for s in rows if s["kind"] in {"text", "equation", "table", "figure"}]
+    return html or [s for s in rows if s["kind"] == "page"]
+
+
+def ingest(paper_id, *, attempts=3):
     paper = db.one("SELECT * FROM papers WHERE id=?", (paper_id,))
     if not paper:
         raise ValueError("Paper not found")
@@ -276,13 +283,13 @@ def ingest(paper_id):
     if not meta.get("uploaded"):
         ref = paper["source_id"] + paper["version"]
         try:
-            raw = fetch(f"https://arxiv.org/html/{ref}")
+            raw = fetch(f"https://arxiv.org/html/{ref}", attempts=attempts)
             sources = html_sources(raw, paper_id, f"https://arxiv.org/html/{ref}")
         except (httpx.HTTPStatusError, ValueError):
             pass
         pdf = folder / "paper.pdf"
         if not pdf.exists():
-            pdf.write_bytes(fetch(f"https://arxiv.org/pdf/{ref}"))
+            pdf.write_bytes(fetch(f"https://arxiv.org/pdf/{ref}", attempts=attempts))
     else:
         pdf = config.safe_path(meta["pdf_path"])
     with fitz.open(pdf) as document:

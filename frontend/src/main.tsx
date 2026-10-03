@@ -371,6 +371,7 @@ function App() {
                 </span>
               </div>
             </section>
+            <NightlyVideos version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
             <StoryStudio papers={papers} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
             <div className="section-heading">
               <div>
@@ -1063,7 +1064,12 @@ function SettingsPage({
           }
         }}
       >
-        <h2>A new idea each day</h2>
+        <h2>夜間に解説・詳解を自動作成</h2>
+        <label className="check-label"><input type="checkbox" checked={s.nightly_video_enabled} onChange={e=>update("nightly_video_enabled",e.target.checked)}/> 毎晩、新しい注目論文から2本の動画と英語教材を作る</label>
+        <p>朝の完成を目指し、長引いても続行します。前日の作成が残っている日は追加しません。</p>
+        <div className="form-grid"><label>開始時刻 · 日本時間<input type="time" value={`${String(s.nightly_video_hour).padStart(2,"0")}:${String(s.nightly_video_minute).padStart(2,"0")}`} onChange={e=>{const [h,m]=e.target.value.split(":").map(Number);setSaved(false);setS({...s,nightly_video_hour:h,nightly_video_minute:m});}}/></label>
+        <label>対象分野<select multiple value={s.nightly_video_categories} onChange={e=>update("nightly_video_categories",Array.from(e.target.selectedOptions,o=>o.value))}>{[["cs.AI","AI"],["cs.LG","機械学習"],["cs.CL","LLM・言語"],["cs.CV","画像・視覚"],["cs.RO","ロボティクス"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></div>
+        <h2>従来の論文探索・章教材</h2>
         <label className="check-label">
           <input
             type="checkbox"
@@ -2529,6 +2535,36 @@ function ClipButton({
     </button>
   );
 }
+function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void}) {
+  const [runs,setRuns]=useState<any[]>([]),[busy,setBusy]=useState(false),[expanded,setExpanded]=useState(false);
+  useEffect(()=>{let live=true;api<any[]>("/nightly-video-runs").then(r=>{if(live)setRuns(r);}).catch(e=>{if(live)onError(e.message);});return()=>{live=false;};},[version]);
+  const start=async()=>{setBusy(true);try{await post("/nightly-video-runs");refresh();}catch(e){onError((e as Error).message);}finally{setBusy(false);}};
+  const run=runs[0],activeRun=run?.continuing_run||run,activeJob=activeRun?.job;
+  const control=async(action:string)=>{try{await post(`/jobs/${activeJob.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
+  const labels:Record<string,string>={searching:"論文を探索中",reading:"本文を確認中",building:"動画を作成中",ready:"2本が完成",skipped:"今夜は見送り",paused:"一時停止",failed:"作成時の問題",cancelled:"停止済み"};
+  return <section className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>毎晩の新しい論文を、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
+  {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>
+  <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}
+  {run.data.selected?.attention&&<p className="subtle">注目情報: <a href={run.data.selected.attention.source_url} target="_blank" rel="noreferrer">Hugging Face Daily Papers</a> · {new Date(run.data.selected.attention.retrieved_at*1000).toLocaleString()}</p>}
+  {run.data.reason&&<p>{run.data.reason}</p>}{run.data.waiting_reason&&(run.state==='building'||run.continuing_run)&&<p>{run.data.waiting_reason}</p>}{activeJob&&<progress max={1} value={run.project?.job?.progress||activeJob.progress||0}/>}
+  {run.project&&<><div className="nightly-tracks">{Object.entries(run.project.data.modes).map(([mode,value])=>{const track=value as any;const film=track.videos.find((v:any)=>v.kind===mode&&v.state==='ready');return <div key={mode}><strong>{track.label}</strong><p>{film?'完成':track.phase}</p>{film&&<a className="primary" href={fileUrl(film.data.mp4)} download={`${film.data.title}.mp4`}>動画をダウンロード</a>}<button className="text-button" onClick={()=>openLesson(track.lesson_id)}>英語練習</button></div>;})}</div><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・動画・サムネイルを見る'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
+  <details><summary>選定・作成の記録</summary>{run.data.review_summary?.map((r:any)=><p key={r.paper_id}>{r.title} — {r.assessment.why_ja}</p>)}{Object.entries(run.data.timings||{}).filter(([,v])=>typeof v==='number').map(([k,v])=><p key={k}>{k}: {Math.round(Number(v)/60)}分</p>)}{run.data.warnings?.map((w:any,i:number)=><p key={i}>{w.unit}: {w.reason}</p>)}</details>
+  {runs.length>1&&<details><summary>過去の夜間運転</summary>{runs.slice(1).map(r=><p key={r.id}>{r.day} · {labels[r.state]} · {r.data.selected?.title||r.data.reason}</p>)}</details>}</>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}
+  </section>;
+}
+
+function ThumbnailChoices({projectId,mode,track,onError,refresh}:{projectId:string;mode:string;track:any;onError:(s:string)=>void;refresh:()=>void}) {
+  const [busy,setBusy]=useState(false);
+  const row=track.thumbnails;
+  const select=async(id:string)=>{setBusy(true);try{await api(`/thumbnail-sets/${row.id}/selection`,{method:"PUT",body:JSON.stringify({candidate_id:id})});refresh();}catch(e){onError((e as Error).message);}finally{setBusy(false);}};
+  const regenerate=async()=>{setBusy(true);try{await post(`/video-projects/${projectId}/thumbnails`,{mode});refresh();}catch(e){onError((e as Error).message);}finally{setBusy(false);}};
+  if(!track.packaging||!track.scenes?.length||track.scenes.some((s:any)=>!s.utterances?.length))return null;
+  return <div className="thumbnail-choices"><div className="actions"><h4>サムネイル候補</h4><button className="text-button" disabled={busy||row?.state==='building'} onClick={regenerate}>{row?.state==='building'?'作成中…':row?'3案を再生成':'3案を作る'}</button></div>
+  {row?.data.review?.notes_ja&&<p className="subtle">{row.data.review.notes_ja}</p>}
+  <div className="thumbnail-grid">{row?.data.candidates?.map((c:any,i:number)=><article key={c.id} className={row.data.selected_id===c.id?'selected':''}>{c.png?<img src={fileUrl(c.png)} alt={`候補${i+1}: ${c.lines.join(' ')}`}/>:<p>{c.lines.join(' / ')} · 作成待ち</p>}<small>{row.data.recommended_id===c.id?'AI推奨 · ':''}{row.data.selected_id===c.id?'選択中':`候補 ${i+1}`}</small>{c.png&&<><button className="secondary" disabled={busy||row.data.selected_id===c.id} onClick={()=>select(c.id)}>この案を使う</button><div className="actions"><a href={fileUrl(c.png)} download={`${track.packaging.title}-thumbnail-${i+1}.png`}>PNG</a><a href={fileUrl(c.jpg)} download={`${track.packaging.title}-thumbnail-${i+1}.jpg`}>JPEG</a></div></>}</article>)}</div>
+  {row?.job?.error&&<p role="alert">{row.job.error}</p>}</div>;
+}
+
 type StoryPanelProps = {paperId:string;projectId?:string;version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void};
 
 function StoryStudio({papers, ...props}: Omit<StoryPanelProps,"paperId"> & {papers:Row[]}) {
@@ -2584,6 +2620,7 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
           <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>Download MP4 · 動画</a>}
             {visible&&<a className="secondary" href={fileUrl(visible.data.thumbnail)} download={`${visible.data.title}.png`}>Thumbnail · サムネイル</a>}
             <button className="secondary" onClick={()=>openLesson(track.lesson_id)}>Practice English · 英語練習</button></div>
+          <ThumbnailChoices projectId={project.id} mode={mode} track={track} onError={onError} refresh={refresh}/>
           {track.packaging&&<details><summary>Titles & description · タイトルと説明欄</summary>
             {track.packaging.candidates.map((c:any,i:number)=><div className="story-title" key={i}><span>{c.title_ja}</span><button className="text-button" onClick={()=>copy(c.title_ja)}>Copy</button></div>)}
             <textarea aria-label={`${track.label} YouTube description`} readOnly value={complete?.data.description || track.packaging.description || "動画の完成時に説明文とタイムスタンプを用意します。"}/>

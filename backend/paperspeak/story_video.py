@@ -428,7 +428,28 @@ def _diagram_events(spec, start, duration):
 
 
 def _thumbnail(manifest, work):
-    target = work / "thumbnail.png"
+    from . import thumbnails
+
+    chosen = thumbnails.selected(manifest["project_id"], manifest["mode"])
+    if chosen and config.safe_path(chosen["png"]).is_file():
+        return config.safe_path(chosen["png"])
+    target = (
+        config.DATA
+        / "videos"
+        / "story-posters"
+        / (
+            video.digest(
+                [
+                    manifest["project_id"],
+                    manifest["mode"],
+                    manifest["packaging"],
+                    VERSION,
+                ]
+            )
+            + ".png"
+        )
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
     if not target.is_file():
         spec = work / "thumbnail.json"
         spec.write_text(

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import re
 import shutil
@@ -172,10 +173,25 @@ def schedule():
 
 
 def _set_export(export, state, **data):
-    record = export["data"] | data
-    db.execute("UPDATE video_exports SET state=?,data=?,updated=? WHERE id=?",
-               (state, db.dumps(record), time.time(), export["id"]))
-    db.event("video", {"id": export["id"], "lesson_id": export["lesson_id"], "state": state})
+    # API thumbnail selection can happen while the worker is encoding. Merge
+    # into the latest row and preserve that selection rather than a stale poster.
+    with db.connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        current = conn.execute(
+            "SELECT data FROM video_exports WHERE id=?", (export["id"],)
+        ).fetchone()
+        record = json.loads(current["data"]) if current else export["data"]
+        if record.get("thumbnail_set_id"):
+            data.pop("thumbnail", None)
+            data.pop("thumbnail_jpg", None)
+        record.update(data)
+        conn.execute(
+            "UPDATE video_exports SET state=?,data=?,updated=? WHERE id=?",
+            (state, db.dumps(record), time.time(), export["id"]),
+        )
+    db.event(
+        "video", {"id": export["id"], "lesson_id": export["lesson_id"], "state": state}
+    )
 
 
 def _work(export):

@@ -15,6 +15,10 @@ from huggingface_hub import hf_hub_download
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SPECS = {
+    "image": (
+        "black-forest-labs/FLUX.2-klein-base-4B",
+        "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+    ),
     "phoneme-timit": (
         "vitouphy/wav2vec2-xls-r-300m-timit-phoneme",
         "efb7ae9b88f13db0d42eac8cedbba19739e2a278",
@@ -60,6 +64,17 @@ def sha(path):
 
 
 def wanted(key, name):
+    if key == "image":
+        return (
+            name == "model_index.json"
+            or name.startswith("LICENSE")
+            or (
+                name.split("/", 1)[0]
+                in {"scheduler", "text_encoder", "tokenizer", "transformer", "vae"}
+                and pathlib.Path(name).suffix
+                in {".json", ".txt", ".safetensors", ".jinja"}
+            )
+        )
     if key == "qwen-q8":
         return name in ("Qwen3.8-27B-Q8_0.gguf", "mmproj-BF16.gguf")
     if key == "qwen-q6":
@@ -165,6 +180,7 @@ if __name__ == "__main__":
             "muse-q6",
             "tts",
             "tts-design",
+            "image",
             "asr",
             "aligner",
             "phoneme",

@@ -29,6 +29,7 @@ from .runtime import GPUUnavailable, PracticePreempted
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
 VERSION = "youtube-dual-1"
+SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 MODES = {
     "overview": {
         "label": "解説編",
@@ -79,8 +80,13 @@ SYSTEM = (
 )
 
 
+def is_lora(project):
+    # "Exploration" is a common robotics title, not the LoRA method.
+    return bool(re.search(r"\bLoRA\b", project["data"]["paper_title"], re.I))
+
+
 def story_beats(project, mode):
-    if mode == "overview" or "lora" in project["data"]["paper_title"].lower():
+    if mode == "overview" or is_lora(project):
         return BEATS[mode]
     return [
         "Recap the intuition in at most 100 words, then introduce the necessary prerequisites without retelling history.",
@@ -96,11 +102,11 @@ def story_beats(project, mode):
     ]
 
 
-def create(paper_id):
+def create(paper_id, *, profile=None):
     paper = db.one("SELECT * FROM papers WHERE id=?", (paper_id,))
     if not paper:
         raise ValueError("Paper not found")
-    model = db.settings()["model_profile"]
+    model = profile or db.settings()["model_profile"]
     fingerprint = video.digest([paper_id, paper["version"], VERSION, model, MODES])
     with db.connection() as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -218,6 +224,9 @@ def get(ident):
             for s in track["scenes"]
         ]
         value["videos"] = []
+        from . import thumbnails
+
+        value["thumbnails"] = thumbnails.get(ident, mode)
         for export in db.all(
             "SELECT * FROM video_exports WHERE lesson_id=? ORDER BY created DESC",
             (track["lesson_id"],),
@@ -235,6 +244,7 @@ def get(ident):
                             "ja_srt",
                             "title",
                             "thumbnail",
+                            "thumbnail_jpg",
                             "description",
                             "duration",
                             "bytes",
@@ -383,15 +393,47 @@ def context_for(project, scene):
     selected = [c for c in project["data"]["evidence"] if c["id"] in scene["claim_ids"]]
     lookup = source_lookup(project)
     ids = list(dict.fromkeys(sid for c in selected for sid in c["source_ids"]))
+    # Repairs may cite a source absent from the original outline. Review the
+    # actual cited passage too, rather than repeatedly judging stale notes.
+    ids = list(
+        dict.fromkeys(
+            [
+                *ids,
+                *(
+                    sid
+                    for u in scene.get("utterances", [])
+                    for sid in u.get("source_ids", [])
+                ),
+            ]
+        )
+    )
     anchor = lora_anchor(project, lookup)
     if anchor and anchor not in ids:
         ids.append(anchor)
+    paper_ids = list({lookup[sid]["paper_id"] for sid in ids if sid in lookup})
+    provenance = (
+        {
+            row["id"]: {
+                "title": row["title"],
+                "published": row["data"].get("published"),
+            }
+            for row in db.all(
+                "SELECT id,title,data FROM papers WHERE id IN ("
+                + ",".join("?" for _ in paper_ids)
+                + ")",
+                paper_ids,
+            )
+        }
+        if paper_ids
+        else {}
+    )
     return {
         "claims": selected,
         "sources": [
             {
                 "id": sid,
                 "label": lookup[sid]["data"].get("label"),
+                "paper": provenance.get(lookup[sid]["paper_id"]),
                 "text": lookup[sid]["data"]["text"][:3800],
             }
             for sid in ids
@@ -401,7 +443,7 @@ def context_for(project, scene):
 
 
 def lora_anchor(project, lookup=None):
-    if "lora" not in project["data"]["paper_title"].lower():
+    if not is_lora(project):
         return None
     for ident, s in (lookup or source_lookup(project)).items():
         text = re.sub(r"\s+", "", s["data"]["text"])
@@ -905,14 +947,15 @@ def _script_prompt(project, mode, scene, index):
         "Use one recurring playful analogy with a clearly explained boundary. Aiden must challenge an intuitive misconception; "
         "Maya answers it without sounding like a textbook. Humor should emerge from the problem, not be tacked on. "
         "Do not invent historical anecdotes, quotations or measured results. Hypothetical examples must say imagine or suppose. "
-        "Full fine-tuning starts from pre-trained weights; it does NOT wipe a model's memory or train from scratch. Frozen weights do not guarantee that every original capability survives adaptation. "
+        "Maya and Aiden did not conduct the study: attribute experiments to the paper's authors, never 'we tested' or 'our implementation'. Do not invent a weakness of an earlier method merely to make the new method look necessary. "
         + (
+            "Full fine-tuning starts from pre-trained weights; it does NOT wipe a model's memory or train from scratch. Frozen weights do not guarantee that every original capability survives adaptation. "
+            "Do not promise that LoRA works for every task or makes the base model small enough for any laptop. Low rank is not always rank two. "
             "Keep the paper notation: W-zero is d by k, with k inputs and d outputs. B is d by r and A is r by k. Delta W has the SAME full shape as W-zero; only its factorized representation is small. "
             if lora_anchor(project)
             else ""
         )
-        + "Do not promise that LoRA works for every task or makes the base model small enough for any laptop. Low rank is not always rank two. "
-        "Use ONE simple recurring analogy, such as changing a shared restaurant's recipe card instead of rebuilding its kitchen. Explain why this analogy is incomplete. Avoid frozen brains, surgeons and moving tendons. "
+        + "Use ONE simple recurring analogy chosen for this paper's actual mechanism. Explain where the analogy stops being accurate. Follow the outline; never borrow another paper's mechanism or examples. "
         "In the overview use NO equations, symbols or spoken algebra. In the deep dive explain necessary notation and each mathematical operation using words and examples. "
         "No 'welcome back', recap of every earlier scene, episode announcements, language lesson or chapter title narration. "
         "Obey this scene's beat_goal first. Do not explain later scenes' mechanisms or evidence early: build curiosity, then deliver the planned reveal. "
@@ -996,9 +1039,94 @@ def _fallback_script(project, mode, scene, candidate):
     }
 
 
+def _same_text(a, b):
+    return re.sub(r"\s+", " ", a).strip() == re.sub(r"\s+", " ", b).strip()
+
+
+def _recover_repaired_turns(project, mode, scene, index, record):
+    """Recover pre-speech drafts which the older limiter deleted AFTER repairing."""
+    if any(u.get("audio") for u in scene["utterances"]):
+        return
+    missing = [
+        o
+        for o in scene.get("omissions", [])
+        if o.get("reason") == "unresolved source check"
+    ]
+    if not missing:
+        return
+    draft = (
+        project["data"]["repairs"]
+        .get(f"script:{mode}:{index}", {})
+        .get("candidate", {})
+        .get("utterances", [])
+    )
+    if not draft:
+        return
+    known = set(source_lookup(project))
+
+    def position(text):
+        return max(
+            range(len(draft)),
+            key=lambda i: SequenceMatcher(None, text, draft[i].get("text", "")).ratio(),
+        )
+
+    restored = []
+    for omission in missing:
+        issue = next(
+            (
+                i
+                for review in reversed(record.get("history", []))
+                for i in review.get("issues", [])
+                if _same_text(i.get("replacement", ""), omission["text"])
+            ),
+            None,
+        )
+        if not issue or any(
+            u["id"] == issue.get("utterance_id") for u in scene["utterances"]
+        ):
+            continue
+        rank = position(omission["text"])
+        original = draft[rank]
+        if (
+            SequenceMatcher(None, omission["text"], original.get("text", "")).ratio()
+            < 0.35
+        ):
+            continue
+        turn = original | {k: issue[k] for k in ("kind", "source_ids") if k in issue}
+        turn.update(id=issue["utterance_id"], text=issue["replacement"])
+        try:
+            validate_script({"utterances": [turn]}, mode, known)
+        except ValueError:
+            continue
+        before = next(
+            (
+                i
+                for i, u in enumerate(scene["utterances"])
+                if position(u["text"]) > rank
+            ),
+            len(scene["utterances"]),
+        )
+        scene["utterances"].insert(before, turn)
+        restored.append(omission)
+    if restored:
+        scene["omissions"] = [o for o in scene["omissions"] if o not in restored]
+        scene.setdefault("editing_records", []).append(
+            {
+                "reason": "Retain the last source-backed local correction at the bounded review limit",
+                "recovered": restored,
+            }
+        )
+        scene.pop("visual_ready", None)
+
+
 def _review_scene(project, runtime, mode, scene, index, kind):
     reviews = scene.setdefault("reviews", {})
     record = reviews.setdefault(kind, {"attempts": 0, "history": []})
+    if kind == "content":
+        if record.get("version") != SOURCE_REVIEW_VERSION:
+            _recover_repaired_turns(project, mode, scene, index, record)
+            record["version"] = SOURCE_REVIEW_VERSION
+            record.pop("complete", None)
     if record.get("complete"):
         return True
     evidence = context_for(project, scene)
@@ -1006,6 +1134,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         "Review this conversation and its visual plan. "
         + (
             "Check scientific claims against SOURCE TEXT (not just notes); verify dates, experimental conditions, equations, causality, analogy boundaries and the English/Japanese labels. "
+            "Check attribution carefully: a named historical method's alleged failure needs evidence about that method. A later paper's ablation of its own baseline must not be presented as the historical paper's result. Qualify comparisons by source paper and tested task. "
             if kind == "content"
             else "Check the scene works as part of an entertaining documentary: new insight, a concrete example, clear transitions, natural C1 English, substantive questions and gentle witty humor. Flag repeated explanations; do not request simpler A2 English. "
         )
@@ -1042,9 +1171,16 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         last = record["history"][-1] if record["history"] else {}
         unresolved = (
             {
-                i.get("utterance_id")
-                for i in last.get("issues", [])
-                if isinstance(i, dict)
+                issue.get("utterance_id")
+                for issue in last.get("issues", [])
+                if isinstance(issue, dict)
+                and not any(
+                    u["id"] == issue.get("utterance_id")
+                    and _same_text(u["text"], issue.get("replacement", ""))
+                    and set(u.get("source_ids", []))
+                    == set(issue.get("source_ids", u.get("source_ids", [])))
+                    for u in scene["utterances"]
+                )
             }
             if kind == "content"
             else set()
@@ -1080,6 +1216,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         record["attempts"] += 1
         record["history"].append(result)
         known = set(source_lookup(project))
+        effective = []
         for issue in issues:
             i = next(
                 (
@@ -1096,11 +1233,24 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             }
             u["text"] = issue.get("replacement", "")
             validate_script({"utterances": [u]}, mode, known)
-            scene["utterances"][i] = u
+            previous = scene["utterances"][i]
+            if (
+                not _same_text(previous["text"], u["text"])
+                or previous.get("source_ids", []) != u.get("source_ids", [])
+                or previous.get("kind") != u.get("kind")
+            ):
+                effective.append(issue)
+                scene["utterances"][i] = u
+        result["ignored_noop_corrections"] = len(issues) - len(effective)
+        result["issues"] = effective
         record.update(
-            complete=not issues,
+            complete=not effective,
             passed=not issues,
-            status="checked" if not issues else "repairing",
+            status="checked"
+            if not issues
+            else "repairing"
+            if effective
+            else "best_effort",
         )
         if result.get("visual_issues"):
             scene["visual"] = simple_visual(scene)
@@ -1130,6 +1280,36 @@ def _sources_step(project, runtime):
         "SELECT id FROM sources WHERE paper_id=? LIMIT 1", (project["paper_id"],)
     ):
         papers.ingest(project["paper_id"])
+    # Upgrade reused prose-only notes before planning: equations, comparison
+    # tables and figure captions are first-class evidence, not decorative text.
+    if data.get("reading_reuse") and not data.get("reading_includes_structured"):
+        structured = [
+            s
+            for s in papers.reading_sources(project["paper_id"])
+            if s["kind"] in {"equation", "table", "figure"}
+        ]
+        groups = lessons.source_groups(structured)
+        index = data.get("structured_read_index", 0)
+        if index < len(groups):
+            group = groups[index]
+            result = bounded(
+                project,
+                runtime,
+                f"structured_reading:{index}",
+                'Read these original equations, tables and figure captions. Extract up to eight important qualified claims. For equations retain exact notation and meanings; for results retain task, metric, comparison and conditions. Return {"claims":[{"claim":"accurate statement","topic":"equation|mechanism|result|limitation","source_ids":["ID"]}]}.\n'
+                + lessons.source_context(group),
+                lambda r: _read_claims(r, {s["id"] for s in group}),
+                lambda _: {"claims": []},
+                max_tokens=4000,
+            )
+            if result is not None:
+                for claim in result["claims"]:
+                    data["evidence"].append(
+                        {"id": "C" + str(len(data["evidence"]) + 1), **claim}
+                    )
+                data["structured_read_index"] = index + 1
+            return
+        data["reading_includes_structured"] = True
     if not data.get("originals_checked"):
         if original_catalogue(project):
             data["originals_checked"] = True
@@ -1190,10 +1370,7 @@ def _sources_step(project, runtime):
         data["evidence"] = collect_evidence(project)
         if not data["evidence"]:
             # Papers without an existing lesson get checkpointed reading batches.
-            sources = db.all(
-                "SELECT * FROM sources WHERE paper_id=? AND kind IN ('text','page')",
-                (project["paper_id"],),
-            )
+            sources = papers.reading_sources(project["paper_id"])
             groups = lessons.source_groups(sources)
             index = data.get("reading_index", 0)
             if index < len(groups):
@@ -1219,10 +1396,7 @@ def _sources_step(project, runtime):
                 data["reading_complete"] = index + 1 == len(groups)
                 return
     if data.get("reading_index") and not data.get("reading_complete"):
-        sources = db.all(
-            "SELECT * FROM sources WHERE paper_id=? AND kind IN ('text','page')",
-            (project["paper_id"],),
-        )
+        sources = papers.reading_sources(project["paper_id"])
         groups = lessons.source_groups(sources)
         index = data["reading_index"]
         result = bounded(
@@ -1420,17 +1594,20 @@ def _background_step(project, runtime):
         data["phase"] = "plan"
         return
     ref = refs[index]
-    sources = db.all(
-        "SELECT * FROM sources WHERE paper_id=? AND kind IN ('text','page') ORDER BY rowid",
-        (ref["paper_id"],),
-    )
-    # Introduction and conclusion are enough for historical context, not unreviewed experimental detail.
-    selected = sources[:5] + sources[-2:]
+    # Historical comparisons need the results too. Reading only the opening
+    # paragraphs can invert a method's strengths, especially length control.
+    groups = lessons.source_groups(papers.reading_sources(ref["paper_id"]))
+    batch = data.get("background_read_index", 0)
+    if batch >= len(groups):
+        data["background_index"] = index + 1
+        data["background_read_index"] = 0
+        return
+    selected = groups[batch]
     result = bounded(
         project,
         runtime,
-        f"background:{index}",
-        'Read this earlier paper for historical context. Explain the problem it addressed, the proposed approach, and one remaining limitation. Use only supplied text. Return {"claims":[{"claim":"qualified finding with date context","source_ids":["ID"],"topic":"history"}]}.\n'
+        f"background:{index}:{batch}",
+        'Read this batch of an earlier paper, including results/tables when supplied. Extract up to six findings useful for historical context: its problem, approach, verified strengths, experimental conditions and explicitly supported limitations. Do not invent a limitation to justify a newer method. Return {"claims":[{"claim":"qualified finding with date context","source_ids":["ID"],"topic":"history"}]}.\n'
         + json.dumps(ref)
         + "\n"
         + lessons.source_context(selected)[:24000],
@@ -1441,7 +1618,7 @@ def _background_step(project, runtime):
     if result is not None:
         for c in result["claims"]:
             data["evidence"].append({"id": "C" + str(len(data["evidence"]) + 1), **c})
-        data["background_index"] = index + 1
+        data["background_read_index"] = batch + 1
 
 
 def plan_evidence(project, mode):
@@ -1453,8 +1630,34 @@ def plan_evidence(project, mode):
         "background": 12,
         "equation": 0 if mode == "overview" else 12,
     }
+    evidence = project["data"]["evidence"]
+    historical = [c for c in evidence if c.get("topic") == "history"]
+    if historical:
+        lookup = source_lookup(project)
+        by_paper = {}
+        for c in historical:
+            origin = next(
+                (lookup[sid]["paper_id"] for sid in c["source_ids"] if sid in lookup),
+                "unknown",
+            )
+            by_paper.setdefault(origin, []).append(c)
+        # Complete-paper notes can be numerous. Keep later references visible
+        # and include measured strengths before inventing historical weaknesses.
+        for rows in by_paper.values():
+            rows.sort(
+                key=lambda c: not any(
+                    lookup.get(sid, {}).get("kind") == "table"
+                    for sid in c["source_ids"]
+                )
+            )
+        historical = [
+            rows[i]
+            for i in range(max(map(len, by_paper.values())))
+            for rows in by_paper.values()
+            if i < len(rows)
+        ]
     counts, seen, selected = {}, set(), []
-    for c in project["data"]["evidence"]:
+    for c in [*[c for c in evidence if c.get("topic") != "history"], *historical]:
         topic = c.get("topic", "background")
         key = re.sub(r"\s+", " ", c["claim"].casefold())
         if key in seen or counts.get(topic, 0) >= limits.get(topic, 6):
@@ -1592,7 +1795,7 @@ def _plan_step(project, runtime):
             "Write THREE distinctive opening approaches for an entertaining scientific YouTube conversation, aimed at a general audience. "
             "Promise a concrete insight, not a lecture or a chapter course. Titles and hooks must have NO numerical performance promises and NO magic, universal guarantees or exaggerated superiority. "
             "Use an everyday dilemma, witty question or surprising contrast. The hook describes an actual exchange that Maya and Aiden can speak, not a stage direction needing a real actor to hold props. "
-            "Full fine-tuning does not wipe memory or train from scratch. Never say adaptation preserves all prior abilities. Avoid frozen brains, surgeons or tendons; use a shared restaurant kitchen or another ordinary setting. "
+            "Tie the opening question and everyday analogy to this paper's actual problem and mechanism. Avoid scientific guarantees beyond the supplied experiments. "
             "Keep Japanese titles under 65 characters; mention English learning or bilingual captions naturally. Deep dive titles should invite viewers to understand the mathematics. "
             'Return {"hook_candidates":[{"title_ja":"...","title_en":"...","hook":"specific opening exchange","thumbnail_ja":"under 22 Japanese characters"}],"selected_hook":0}.\n'
             + "MODE: "
@@ -1700,7 +1903,7 @@ def _fallback_plan(project, mode):
         [
             ("The problem worth solving", "解決したい課題"),
             ("Earlier shortcuts", "これまでの工夫"),
-            ("A smaller change", "小さな変更という発想"),
+            ("A new approach", "新しい解決の発想"),
             ("A concrete example", "具体例で理解する"),
             ("What the tests show", "実験からわかること"),
             ("What remains difficult", "残る課題"),
@@ -1719,7 +1922,7 @@ def _fallback_plan(project, mode):
             ("What the method cannot promise", "保証できないこと"),
         ]
     )
-    if mode == "deep_dive" and "lora" not in project["data"]["paper_title"].lower():
+    if mode == "deep_dive" and not is_lora(project):
         names = [
             ("Intuition first", "まず直感から"),
             ("Notation and building blocks", "記号と基本となる考え方"),
@@ -1775,7 +1978,7 @@ def _fallback_plan(project, mode):
 
 def fallback_hooks(project, mode):
     title = project["data"]["paper_title"]
-    if "lora" in title.lower():
+    if is_lora(project):
         angles = (
             [
                 (
@@ -1842,12 +2045,12 @@ def fallback_hooks(project, mode):
         ]
     return [
         {
-            "title_ja": ("" if "lora" in title.lower() else title[:35] + "｜")
+            "title_ja": ("" if is_lora(project) else title[:35] + "｜")
             + ja
             + "・"
             + MODES[mode]["label"]
             + "・英語学習",
-            "title_en": en if "lora" in title.lower() else title + ": " + en,
+            "title_en": en if is_lora(project) else title + ": " + en,
             "hook": hook,
             "thumbnail_ja": thumb,
         }
@@ -2695,10 +2898,14 @@ def _learning_step(project, runtime, mode):
     from . import story_video
 
     track["export_id"] = story_video.enqueue(project, mode)
+    from . import thumbnails
+
+    thumbnails.enqueue(project, mode)
     track["phase"] = "export"
 
 
 def step(job, runtime):
+    started = time.monotonic()
     project = db.one("SELECT * FROM video_projects WHERE id=?", (job["target"],))
     if not project:
         raise ValueError("Video project not found")
@@ -2706,6 +2913,25 @@ def step(job, runtime):
     if project["state"] == "ready":
         return True
     phase = data["phase"]
+    if (
+        phase in {"background", "plan"}
+        and data.get("reading_reuse")
+        and not data.get("reading_includes_structured")
+    ):
+        # Rewind only pre-production planning when older reused notes omitted
+        # standalone equations/tables. Existing speech and finished films stay intact.
+        data["records"].append(
+            {"task": "upgrade_structured_source_reading", "time": time.time()}
+        )
+        for track in data["modes"].values():
+            for key in ("outline", "hooks_refined", "packaging"):
+                track.pop(key, None)
+            track["scenes"] = []
+        phase = data["phase"] = "sources"
+    timing_key = phase
+    if phase == "production":
+        active_mode = data["current_mode"]
+        timing_key = active_mode + ":" + data["modes"][active_mode]["phase"]
     stage = "Preparing documentary sources"
     progress = 0.02
     if phase == "sources":
@@ -2782,6 +3008,10 @@ def step(job, runtime):
                         (export["id"],),
                     )
                 db.patch_job(job["id"], available=time.time() + 15)
+    timings = data.setdefault("stage_seconds", {})
+    timings[timing_key] = round(
+        timings.get(timing_key, 0) + time.monotonic() - started, 3
+    )
     save(project)
     finished = project["state"] == "ready"
     db.patch_job(

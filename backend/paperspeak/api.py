@@ -28,10 +28,12 @@ from . import (
     config,
     db,
     lessons,
+    nightly,
     papers,
     practice,
     recommendation_ja,
     story,
+    thumbnails,
     translation,
     youtube,
 )
@@ -277,14 +279,64 @@ def create_video_project(ident: str):
 
 @app.get("/api/video-projects", dependencies=[Depends(auth)])
 def list_video_projects():
-    return [{"id": p["id"], "paper_id": p["paper_id"], "state": p["state"], "created": p["created"],
-             "title": p["data"]["paper_title"]} for p in db.all("SELECT * FROM video_projects ORDER BY created DESC")]
+    return [
+        {
+            "id": p["id"],
+            "paper_id": p["paper_id"],
+            "state": p["state"],
+            "created": p["created"],
+            "title": p["data"]["paper_title"],
+        }
+        for p in db.all("SELECT * FROM video_projects ORDER BY created DESC")
+    ]
 
 
 @app.get("/api/video-projects/{ident}", dependencies=[Depends(auth)])
 def get_video_project(ident: str):
     try:
         return story.get(ident)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/nightly-video-runs", dependencies=[Depends(auth)])
+def nightly_video_runs():
+    return [
+        nightly.get(r["id"])
+        for r in db.all("SELECT id FROM nightly_video_runs ORDER BY day DESC LIMIT 14")
+    ]
+
+
+@app.post("/api/nightly-video-runs", dependencies=[Depends(auth)])
+def start_nightly_video_run():
+    return nightly.get(nightly.start(manual=True))
+
+
+class ThumbnailRequest(BaseModel):
+    mode: Literal["overview", "deep_dive"]
+
+
+@app.post("/api/video-projects/{ident}/thumbnails", dependencies=[Depends(auth)])
+def regenerate_thumbnails(ident: str, body: ThumbnailRequest):
+    project = db.one("SELECT * FROM video_projects WHERE id=?", (ident,))
+    if not project:
+        raise HTTPException(404, "Video project not found")
+    try:
+        return {
+            "thumbnail_set_id": thumbnails.enqueue(project, body.mode, regenerate=True)
+        }
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+class ThumbnailSelection(BaseModel):
+    candidate_id: str = Field(max_length=64)
+
+
+@app.put("/api/thumbnail-sets/{ident}/selection", dependencies=[Depends(auth)])
+def select_thumbnail(ident: str, body: ThumbnailSelection):
+    try:
+        return thumbnails.select(ident, body.candidate_id)
     except ValueError as e:
         raise HTTPException(404, str(e))
 
@@ -297,23 +349,69 @@ def get_lesson(ident: str):
     l["chapters"] = db.all(
         "SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (ident,)
     )
-    l["visuals"] = db.all("SELECT * FROM visual_assets WHERE lesson_id=? ORDER BY created,id", (ident,))
-    l["videos"] = db.all("SELECT * FROM video_exports WHERE lesson_id=? ORDER BY created DESC", (ident,))
+    l["visuals"] = db.all(
+        "SELECT * FROM visual_assets WHERE lesson_id=? ORDER BY created,id", (ident,)
+    )
+    l["videos"] = db.all(
+        "SELECT * FROM video_exports WHERE lesson_id=? ORDER BY created DESC", (ident,)
+    )
     l["youtube_connected"] = youtube.connected()
     l["youtube_auto_upload"] = youtube.automatic()
-    video_jobs = db.all("SELECT target,kind,id,state,stage,error,progress FROM jobs WHERE kind IN ('chapter_video','full_video','story_video','youtube_upload') AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) ORDER BY created DESC", (ident,))
+    video_jobs = db.all(
+        "SELECT target,kind,id,state,stage,error,progress FROM jobs WHERE kind IN ('chapter_video','full_video','story_video','youtube_upload') AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) ORDER BY created DESC",
+        (ident,),
+    )
     video_job_by_export = {}
     for video_job in video_jobs:
-        video_job_by_export.setdefault((video_job["target"], video_job["kind"]), video_job)
+        video_job_by_export.setdefault(
+            (video_job["target"], video_job["kind"]), video_job
+        )
     for video in l["videos"]:
         stored = video["data"]
-        video["data"] = {key: stored[key] for key in
-            ("mp4", "en_srt", "ja_srt", "duration", "media_duration", "bytes", "sha256", "encoder", "encode_settings", "chapter_count", "title", "thumbnail", "description", "acceptance")
-            if key in stored}
+        video["data"] = {
+            key: stored[key]
+            for key in (
+                "mp4",
+                "en_srt",
+                "ja_srt",
+                "duration",
+                "media_duration",
+                "bytes",
+                "sha256",
+                "encoder",
+                "encode_settings",
+                "chapter_count",
+                "title",
+                "thumbnail",
+                "thumbnail_jpg",
+                "description",
+                "acceptance",
+            )
+            if key in stored
+        }
         if stored.get("youtube"):
-            video["data"]["youtube"] = {key: value for key, value in stored["youtube"].items()
-                if key in {"state", "privacy", "bytes_sent", "video_id", "url", "uploaded_at", "error"}}
-        video["job"] = video_job_by_export.get((video["id"], "story_video" if l["data"].get("format") == story.FORMAT else video["kind"] + "_video"))
+            video["data"]["youtube"] = {
+                key: value
+                for key, value in stored["youtube"].items()
+                if key
+                in {
+                    "state",
+                    "privacy",
+                    "bytes_sent",
+                    "video_id",
+                    "url",
+                    "uploaded_at",
+                    "error",
+                }
+            }
+        video["job"] = video_job_by_export.get(
+            (
+                video["id"],
+                "story_video"
+                if l["data"].get("format") == story.FORMAT
+                else video["kind"] + "_video",
+            )
+        )
         video["upload_job"] = video_job_by_export.get((video["id"], "youtube_upload"))
     l["paper"] = db.one("SELECT * FROM papers WHERE id=?", (l["paper_id"],))
     l["attempts"] = db.all(
@@ -326,7 +424,10 @@ def get_lesson(ident: str):
         (ident,),
     )
     if l["data"].get("format") == story.FORMAT:
-        l["job"] = db.one("SELECT id,state,stage,error FROM jobs WHERE kind='video_project' AND target=? ORDER BY created DESC LIMIT 1", (l["data"]["project_id"],))
+        l["job"] = db.one(
+            "SELECT id,state,stage,error FROM jobs WHERE kind='video_project' AND target=? ORDER BY created DESC LIMIT 1",
+            (l["data"]["project_id"],),
+        )
     translation_jobs = db.all(
         "SELECT target,id,state,stage,error,progress FROM jobs WHERE kind='translate' AND target IN (SELECT id FROM chapters WHERE lesson_id=?) ORDER BY created DESC",
         (ident,),
@@ -376,7 +477,9 @@ class Progress(BaseModel):
 
 @app.put("/api/lessons/{ident}/progress", dependencies=[Depends(auth)])
 def progress(ident: str, body: Progress):
-    chapter = db.one("SELECT * FROM chapters WHERE id=? AND lesson_id=?", (body.chapter_id, ident))
+    chapter = db.one(
+        "SELECT * FROM chapters WHERE id=? AND lesson_id=?", (body.chapter_id, ident)
+    )
     if not chapter:
         raise HTTPException(404, "Chapter not found")
     keys = {v["key"] for v in chapter["data"].get("visuals", [])}
@@ -411,6 +514,7 @@ def get_file(path: str):
         "recordings",
         "visuals",
         "videos",
+        "thumbnails",
     }:
         raise HTTPException(404, "File not found")
     return FileResponse(target)
@@ -571,12 +675,15 @@ def control_job(ident: str, action: Literal["pause", "resume", "retry", "cancel"
     cp.pop("_failures", None)
     db.patch_job(ident, state=state, checkpoint=cp, error=None, available=0)
     if job["kind"] == "video_project":
-        project = db.one("SELECT * FROM video_projects WHERE id=?", (job["target"],))
-        if project:
-            for track in project["data"]["modes"].values():
-                for child in db.all("SELECT id FROM jobs WHERE kind='story_video' AND target IN (SELECT id FROM video_exports WHERE lesson_id=?) AND state IN ('queued','running','paused','failed','cancelled')", (track["lesson_id"],)):
-                    db.patch_job(child["id"], state=state, error=None, available=0)
+        nightly.control_project(job["target"], state)
         db.event("video_project", {"id": job["target"]})
+    if job["kind"] == "nightly_video":
+        nightly.control_run(job["target"], state)
+    if job["kind"] == "thumbnail":
+        db.execute(
+            "UPDATE thumbnail_sets SET state=? WHERE id=? AND state!='ready'",
+            ("building" if state == "queued" else state, job["target"]),
+        )
     if job["kind"] == "practice" and action in {"resume", "retry"}:
         db.execute("UPDATE attempts SET state='pending' WHERE id=?", (job["target"],))
     elif job["kind"] == "practice" and action == "cancel":
@@ -617,7 +724,11 @@ def recommendations():
         row["data"].pop("selection_notes", None)
         row["data"].pop("assessment", None)
         ja = row["data"].get("ja")
-        if ja and ja.get("source_digest") and ja["source_digest"] != recommendation_ja.source_digest(row):
+        if (
+            ja
+            and ja.get("source_digest")
+            and ja["source_digest"] != recommendation_ja.source_digest(row)
+        ):
             row["data"].pop("ja", None)
     return rows
 
@@ -651,7 +762,9 @@ def start_paper_search(body: PaperSearchRequest):
     if active:
         if active["target"] == target:
             return {"job_id": active["id"]}
-        raise HTTPException(409, "先の論文検索が進行中です。完了後に次の検索を始められます。")
+        raise HTTPException(
+            409, "先の論文検索が進行中です。完了後に次の検索を始められます。"
+        )
     return {"job_id": db.enqueue("paper_search", target, {"query": query}, priority=7)}
 
 
@@ -668,7 +781,9 @@ def paper_searches():
             "stage": row["stage"],
             "progress": row["progress"],
             "error": row["error"],
-            "results": [r for r in row["checkpoint"].get("results", []) if r.get("title_ja")],
+            "results": [
+                r for r in row["checkpoint"].get("results", []) if r.get("title_ja")
+            ],
             "found": row["checkpoint"].get("found"),
             "created": row["created"],
         }
@@ -700,6 +815,12 @@ class Settings(BaseModel):
     interests: str = Field(max_length=2000)
     model_profile: Literal["qwen-q8", "qwen-q6", "muse-q6"]
     max_auto_backlog: int = Field(ge=1, le=5)
+    nightly_video_enabled: bool | None = None
+    nightly_video_hour: int | None = Field(default=None, ge=0, le=23)
+    nightly_video_minute: int | None = Field(default=None, ge=0, le=59)
+    nightly_video_categories: list[str] | None = Field(
+        default=None, min_length=1, max_length=12
+    )
 
 
 @app.put("/api/settings", dependencies=[Depends(auth)])
@@ -723,7 +844,12 @@ def update_settings(body: Settings):
     }
     if not set(body.categories) <= allowed:
         raise HTTPException(422, "Choose supported AI categories")
-    for key, value in body.model_dump().items():
+    if (
+        body.nightly_video_categories is not None
+        and not set(body.nightly_video_categories) <= allowed
+    ):
+        raise HTTPException(422, "Choose supported AI categories for nightly videos")
+    for key, value in body.model_dump(exclude_none=True).items():
         db.set_setting(key, value)
     return db.settings()
 

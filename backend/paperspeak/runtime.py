@@ -11,6 +11,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
+from functools import wraps
 from pathlib import Path
 
 import httpx
@@ -28,6 +29,35 @@ class PracticePreempted(Exception):
 
 class ModelBudgetError(ValueError):
     """The caller must reduce this step instead of retrying identical input."""
+
+
+def restart_safe(method):
+    """Model shutdown during service restart is an interruption, not a bad output."""
+
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        if self.shutdown_requested:
+            raise PracticePreempted("Saving the checkpoint for service restart.")
+        try:
+            return method(self, *args, **kwargs)
+        except Exception as exc:
+            if self.shutdown_requested:
+                raise PracticePreempted(
+                    "Saving the checkpoint for service restart."
+                ) from exc
+            detail = str(exc)
+            if isinstance(exc, httpx.HTTPStatusError):
+                detail += exc.response.text[:2000]
+            if re.search(
+                r"CUDA.*out of memory|cudaErrorMemoryAllocation|CUDA error: out of memory",
+                detail,
+                re.I,
+            ):
+                self.close(immediate=True)
+                raise GPUUnavailable("Waiting for GPU memory to be free.") from exc
+            raise
+
+    return call
 
 
 def owned_command(args):
@@ -74,14 +104,18 @@ class Runtime:
         self.vision_gpu_override = vision_gpu
         self.vision_gpu = False
         self.job_kind = None
+        self.shutdown_requested = False
 
     def practice_waiting(self):
         if self.job_kind in {None, "practice"}:
             return False
-        return db.one(
-            "SELECT id FROM jobs WHERE kind='practice' AND state='queued' AND available<=? LIMIT 1",
-            (time.time(),),
-        ) is not None
+        return (
+            db.one(
+                "SELECT id FROM jobs WHERE kind='practice' AND state='queued' AND available<=? LIMIT 1",
+                (time.time(),),
+            )
+            is not None
+        )
 
     def close(self, immediate=False):
         if self.process and self.process.poll() is None:
@@ -210,6 +244,7 @@ class Runtime:
         self.close()
         raise RuntimeError("The language model took too long to start.")
 
+    @restart_safe
     def ask(
         self,
         prompt,
@@ -433,8 +468,10 @@ class Runtime:
             "record_path": str(trace.relative_to(config.DATA)),
             "model": self.mode,
             "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
-            "temperature": payload["temperature"], "top_p": payload["top_p"],
-            "top_k": payload["top_k"], "max_tokens": payload["max_tokens"],
+            "temperature": payload["temperature"],
+            "top_p": payload["top_p"],
+            "top_k": payload["top_k"],
+            "max_tokens": payload["max_tokens"],
             "chat_template_kwargs": payload["chat_template_kwargs"],
         }
         db.event(
@@ -448,6 +485,7 @@ class Runtime:
         )
         return result
 
+    @restart_safe
     def speech(self, mode, request):
         if mode not in {"tts", "tts_design", "asr", "phoneme", "stress"}:
             raise ValueError("Unknown speech operation")
@@ -462,7 +500,11 @@ class Runtime:
             or self.process.poll() is not None
         ):
             self.close()
-            required = (["tts"] if mode == "tts" else ["tts-design"]) if environment == "tts" else ["asr", "aligner"]
+            required = (
+                (["tts"] if mode == "tts" else ["tts-design"])
+                if environment == "tts"
+                else ["asr", "aligner"]
+            )
             for key in required:
                 self.require_assets(key)
             if gpu_info()["free_mib"] < 8000:
@@ -503,7 +545,9 @@ class Runtime:
             if remaining <= 0:
                 self.close()
                 raise RuntimeError("Speech processing timed out.")
-            ready, _, _ = select.select([self.process.stdout], [], [], min(0.5, remaining))
+            ready, _, _ = select.select(
+                [self.process.stdout], [], [], min(0.5, remaining)
+            )
             if ready:
                 break
             if self.practice_waiting():
@@ -518,3 +562,66 @@ class Runtime:
             raise RuntimeError(result["error"])
         self.last_used = time.monotonic()
         return result
+
+    @restart_safe
+    def image(self, request):
+        """Share the owned GPU with speech/reader, yielding promptly to recordings."""
+        import select
+
+        if self.practice_waiting():
+            raise PracticePreempted("Making room for your recording.")
+        if self.mode != "image" or not self.process or self.process.poll() is not None:
+            self.close()
+            self.require_assets("image")
+            if gpu_info()["free_mib"] < 14000:
+                raise GPUUnavailable("Waiting for the GPU to make the thumbnail.")
+            self.log = open(config.DATA / "logs/image.log", "a")
+            self.process = subprocess.Popen(
+                owned_command(
+                    [
+                        str(config.ROOT / ".venv-image/bin/python"),
+                        str(config.ROOT / "backend/paperspeak/image_actor.py"),
+                    ]
+                ),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=self.log,
+                text=True,
+                bufsize=1,
+                env=os.environ
+                | {
+                    "HF_HUB_OFFLINE": "1",
+                    "TRANSFORMERS_OFFLINE": "1",
+                    "HF_HUB_DISABLE_TELEMETRY": "1",
+                    "TOKENIZERS_PARALLELISM": "false",
+                    "PYTHONUNBUFFERED": "1",
+                },
+            )
+            self.mode = "image"
+        self.process.stdin.write(
+            json.dumps(
+                request | {"root": str(config.ROOT), "data_root": str(config.DATA)}
+            )
+            + "\n"
+        )
+        self.process.stdin.flush()
+        deadline = time.monotonic() + 1800
+        while self.process and self.process.poll() is None:
+            if select.select([self.process.stdout], [], [], 0.5)[0]:
+                line = self.process.stdout.readline()
+                if line:
+                    result = json.loads(line)
+                    if "error" in result:
+                        self.close()
+                        raise RuntimeError(result["error"])
+                    self.last_used = time.monotonic()
+                    return result
+                break
+            if self.practice_waiting():
+                self.close(immediate=True)
+                raise PracticePreempted("Making room for your recording.")
+            if time.monotonic() >= deadline:
+                self.close(immediate=True)
+                raise RuntimeError("Local image generation timed out")
+        self.close()
+        raise RuntimeError("Image worker stopped. See data/logs/image.log")

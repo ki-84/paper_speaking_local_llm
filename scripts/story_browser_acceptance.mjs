@@ -9,12 +9,17 @@ import {spawnSync} from 'node:child_process';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require=createRequire(path.join(root,'frontend/package.json'));
 const {chromium,expect}=require('@playwright/test');
+// Completed projects include both scripts and thumbnail sets; allow LAN loading
+// and rendering to settle before checking their practice controls.
+expect.configure({timeout:15000});
 const ident=process.argv[2];
 if(!ident)throw new Error('Supply a video project ID');
 const base=process.env.PAPERSPEAK_URL||'https://192.168.10.112:8443';
 const report={project_id:ident,started:new Date().toISOString(),scope:'Linux Chromium over LAN HTTPS; real movies and practice audio. Optional file-fed microphone tests capture/upload/local evaluation, not human pronunciation accuracy or physical Mac hardware.',checks:{}};
 const microphone=process.argv.includes('--microphone');
-const browser=await chromium.launch({headless:true,args:microphone?['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream',`--use-file-for-fake-audio-capture=${path.join(root,'data/evaluation/story-microphone.wav')}`]:[]});
+const microphoneFile=process.env.PAPERSPEAK_MICROPHONE_FILE||path.join(root,'data/evaluation/story-microphone.wav');
+const captureMs=Number(process.env.PAPERSPEAK_CAPTURE_MS||4400);
+const browser=await chromium.launch({headless:true,args:microphone?['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream',`--use-file-for-fake-audio-capture=${microphoneFile}`]:[]});
 const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1000},permissions:microphone?['microphone']:[]});
 const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -43,9 +48,11 @@ try {
   const chapter=lesson.chapters.find(c=>c.state==='ready');
   await context.request.put(base+`/api/lessons/${lesson.id}/progress`,{data:{chapter_id:chapter.id,turn_index:0,role:'both',speed:1,subtitles:true}});
   await page.goto(base);
-  const panel=page.getByRole('region',{name:'解説・詳解動画'});
+  const studio=page.locator('.story-studio');
+  await studio.locator('select').selectOption(project.paper_id);
+  const panel=studio.getByRole('region',{name:'解説・詳解動画'});
   await expect(panel).toBeVisible();
-  const movies=page.locator('.story-film');
+  const movies=panel.locator('.story-film');
   await expect(movies).toHaveCount(2);
   report.checks.two_film_cards=true;
   if(process.argv.includes('--require-complete')){
@@ -98,7 +105,7 @@ try {
     const posted=page.waitForResponse(r=>r.url().endsWith('/api/attempts')&&r.request().method()==='POST',{timeout:60000});
     await page.locator('.record-button').click();
     await expect(page.locator('.record-button')).toContainText('Done');
-    await page.waitForTimeout(4400);
+    await page.waitForTimeout(captureMs);
     await page.locator('.record-button').click();
     const response=await posted;if(!response.ok())throw new Error('Recording upload failed');
     attemptId=(await response.json()).attempt_id;
@@ -111,12 +118,17 @@ try {
   await page.screenshot({path:path.join(root,'data/evaluation/story-practice.png'),fullPage:true});
   if(process.argv.includes('--require-complete')){
     deepLesson=await api('/lessons/'+project.data.modes.deep_dive.lesson_id);
-    const c=deepLesson.chapters.find(c=>c.data.turns.some(t=>t.text.includes("Let's use a hypothetical example")));
+    const worked=project.data.modes.deep_dive.scenes.find(s=>s.beat==='worked_example') || project.data.modes.deep_dive.scenes.find(s=>/worked example|hypothetical/i.test(s.title));
+    const workedIndex=project.data.modes.deep_dive.scenes.indexOf(worked);
+    const c=deepLesson.chapters.find(c=>workedIndex>=0 && c.data.story_scene===workedIndex) || deepLesson.chapters.find(c=>c.data.turns.some(t=>/hypothetical|for example|imagine|suppose/i.test(t.text)));
     if(!c)throw new Error('The spoken worked example is missing');
-    const i=c.data.turns.findIndex(t=>t.text.includes("Let's use a hypothetical example")),turn=c.data.turns[i];
+    const cue=c.data.turns.findIndex(t=>t.visual && /hypothetical|example|imagine|suppose/i.test(t.text));
+    const i=cue>=0?cue:c.data.turns.findIndex(t=>t.visual),turn=c.data.turns[i];
+    if(!turn)throw new Error('The worked example has no figure cue');
     await context.request.put(base+`/api/lessons/${deepLesson.id}/progress`,{data:{chapter_id:c.id,turn_index:i,role:'both',speed:1,subtitles:true}});
     await page.goto(base);
-    await page.locator('.story-film').nth(1).getByRole('button',{name:'Practice English · 英語練習'}).click();
+    await page.locator('.story-studio select').selectOption(project.paper_id);
+    await page.locator('.story-studio .story-film').nth(1).getByRole('button',{name:'Practice English · 英語練習'}).click();
     await expect(page.locator('.spoken-sentence')).toHaveText(turn.text);
     await expect(page.locator('.sentence-translation')).not.toBeEmpty();
     const img=page.locator('.visual-picture img');

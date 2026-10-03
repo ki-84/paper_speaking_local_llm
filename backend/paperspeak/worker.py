@@ -15,6 +15,7 @@ from . import (
     discovery,
     lessons,
     local_network,
+    nightly,
     paper_search,
     papers,
     phoneme_probe,
@@ -23,6 +24,7 @@ from . import (
     revoice,
     story,
     story_video,
+    thumbnails,
     translation,
     video,
     youtube,
@@ -47,6 +49,7 @@ def run():
 
     def stop(*_):
         stopped.set()
+        runtime.shutdown_requested = True
         runtime.close()
 
     signal.signal(signal.SIGTERM, stop)
@@ -82,6 +85,7 @@ def run():
         while not stopped.is_set():
             if time.time() - last_schedule > 60:
                 discovery.schedule()
+                nightly.schedule()
                 recommendation_ja.schedule()
                 revoice.schedule()
                 video.schedule()
@@ -103,7 +107,9 @@ def run():
                 if job["kind"] == "lesson":
                     done = lessons.lesson_step(job, runtime)
                 elif job["kind"] == "video_project":
-                    project = db.one("SELECT data FROM video_projects WHERE id=?", (job["target"],))
+                    project = db.one(
+                        "SELECT data FROM video_projects WHERE id=?", (job["target"],)
+                    )
                     if project and project["data"]["phase"] != "sources":
                         with local_network.inference_only():
                             done = story.step(job, runtime)
@@ -112,6 +118,11 @@ def run():
                 elif job["kind"] == "story_video":
                     with local_network.inference_only():
                         done = story_video.step(job, runtime)
+                elif job["kind"] == "thumbnail":
+                    with local_network.inference_only():
+                        done = thumbnails.step(job, runtime)
+                elif job["kind"] == "nightly_video":
+                    done = nightly.step(job, runtime)
                 elif job["kind"] == "discover":
                     done = discovery.discovery_step(job, runtime)
                 elif job["kind"] == "practice":
@@ -163,8 +174,11 @@ def run():
                 current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
                 if current and current["state"] == "running":
                     db.patch_job(
-                        job["id"], state="queued", stage=str(e),
-                        available=time.time() + 1, owner=None,
+                        job["id"],
+                        state="queued",
+                        stage=str(e),
+                        available=time.time() + 1,
+                        owner=None,
                     )
             except GPUUnavailable as e:
                 current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
@@ -191,13 +205,19 @@ def run():
                 # A chapter has already exhausted its own bounded repair loop,
                 # or a repeated step error cannot be repaired here. Preserve
                 # its checkpoint and continue with the next chapter.
-                if job["kind"] == "lesson" and (isinstance(e, QualityHold) or failures >= 3):
+                if job["kind"] == "lesson" and (
+                    isinstance(e, QualityHold) or failures >= 3
+                ):
                     held_number = lessons.hold_current_chapter(job["target"], e)
                     if held_number is not None:
                         cp.pop("_failures", None)
                         db.patch_job(
-                            job["id"], state="queued", owner=None,
-                            checkpoint=cp, error=None, available=0,
+                            job["id"],
+                            state="queued",
+                            owner=None,
+                            checkpoint=cp,
+                            error=None,
+                            available=0,
                             stage=f"Chapter {held_number} needs attention; continuing with the next chapter",
                         )
                         continue
@@ -220,8 +240,30 @@ def run():
                         (job["target"],),
                     )
                     db.event("attempt", {"id": job["target"]})
-                if state == "failed" and job["kind"] in {"chapter_video", "full_video", "story_video"}:
-                    export = db.one("SELECT * FROM video_exports WHERE id=?", (job["target"],))
+                if state == "failed" and job["kind"] == "thumbnail":
+                    row = db.one(
+                        "SELECT * FROM thumbnail_sets WHERE id=?", (job["target"],)
+                    )
+                    if row:
+                        row["state"] = "failed"
+                        row["data"]["error"] = str(e)[:1200]
+                        thumbnails.save(row)
+                if state == "failed" and job["kind"] == "nightly_video":
+                    row = db.one(
+                        "SELECT * FROM nightly_video_runs WHERE id=?", (job["target"],)
+                    )
+                    if row:
+                        row["state"] = "failed"
+                        row["data"].update(reason=str(e)[:1200], finished=time.time())
+                        nightly.save(row)
+                if state == "failed" and job["kind"] in {
+                    "chapter_video",
+                    "full_video",
+                    "story_video",
+                }:
+                    export = db.one(
+                        "SELECT * FROM video_exports WHERE id=?", (job["target"],)
+                    )
                     if export:
                         video._set_export(export, "failed", error=str(e)[:1200])
             finally:

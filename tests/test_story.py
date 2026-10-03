@@ -712,6 +712,23 @@ def test_fallback_titles_are_distinct_and_generic_plan_does_not_invent_lora(data
     )
 
 
+def test_robotics_exploration_is_not_mistaken_for_lora(database):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    p["data"].update(paper_title="Exploration for Robot Planning", evidence=[])
+    assert not story.is_lora(p)
+    assert story.lora_anchor(p) is None
+    assert not any(
+        "matrix" in beat.lower() for beat in story.story_beats(p, "deep_dive")
+    )
+    assert not any(
+        "rank" in s["title"].lower()
+        for s in story._fallback_plan(p, "deep_dive")["scenes"]
+    )
+
+
 def test_exact_number_reading_does_not_waste_voice_retries(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
@@ -750,3 +767,239 @@ def test_all_disputed_claims_are_omitted_after_repair_budget(database, monkeypat
     assert s["omissions"][0]["text"] == old
     assert s["reviews"]["content"]["status"] == "best_effort"
     story.validate_script({"utterances": s["utterances"]}, "overview", set())
+
+
+def review_fixture():
+    pid = paper()
+    db.execute(
+        "INSERT INTO sources VALUES (?,?,?,?)",
+        (
+            "s1",
+            pid,
+            "text",
+            db.dumps(
+                {
+                    "label": "Mechanism",
+                    "text": "The method uses a continuous representation.",
+                }
+            ),
+        ),
+    )
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?", (story.create(pid)["project_id"],)
+    )
+    p["data"]["evidence"] = [
+        {
+            "id": "C1",
+            "claim": "The method uses a continuous representation.",
+            "source_ids": ["s1"],
+        }
+    ]
+    scene = {
+        "title": "One mechanism",
+        "focus": "Understand the mechanism",
+        "claim_ids": ["C1"],
+        "visual": {"type": "flow"},
+        "utterances": [
+            {
+                "id": "q",
+                "speaker": "host",
+                "kind": "question",
+                "source_ids": [],
+                "text": "How does the method work?",
+            },
+            {
+                "id": "u",
+                "speaker": "guide",
+                "kind": "paper",
+                "source_ids": ["s1"],
+                "text": "The method uses a continuous representation.",
+            },
+        ],
+        "reviews": {},
+    }
+    p["data"]["modes"]["overview"]["scenes"] = [scene]
+    return p, scene
+
+
+def test_review_limit_keeps_the_correction_it_already_applied(database):
+    p, s = review_fixture()
+    s["reviews"]["content"] = {
+        "attempts": 3,
+        "version": story.SOURCE_REVIEW_VERSION,
+        "history": [
+            {
+                "issues": [
+                    {
+                        "utterance_id": "u",
+                        "replacement": s["utterances"][1]["text"],
+                        "source_ids": ["s1"],
+                        "kind": "paper",
+                    }
+                ]
+            }
+        ],
+    }
+    assert story._review_scene(p, None, "overview", s, 0, "content")
+    assert len(s["utterances"]) == 2
+    assert not s.get("omissions")
+    assert s["reviews"]["content"]["status"] == "best_effort"
+    assert not s["reviews"]["content"]["passed"]
+
+
+def test_noop_model_correction_does_not_loop_or_drop_explanation(database):
+    p, s = review_fixture()
+
+    class Reviewer:
+        calls = 0
+
+        def ask(self, *args, **kwargs):
+            self.calls += 1
+            return {
+                "issues": [
+                    {
+                        "utterance_id": "u",
+                        "replacement": s["utterances"][1]["text"],
+                        "source_ids": ["s1"],
+                        "kind": "paper",
+                        "reason": "The source supports this statement.",
+                    }
+                ],
+                "notes": "No effective correction needed",
+            }
+
+    r = Reviewer()
+    assert not story._review_scene(p, r, "overview", s, 0, "content")
+    assert story._review_scene(p, r, "overview", s, 0, "content")
+    assert r.calls == 1
+    assert len(s["utterances"]) == 2
+    assert s["reviews"]["content"]["history"][-1]["ignored_noop_corrections"] == 1
+
+
+def test_pre_speech_recovery_restores_valid_last_local_correction_in_order(database):
+    p, s = review_fixture()
+    draft = [dict(u) for u in s["utterances"]]
+    p["data"]["repairs"]["script:overview:0"] = {"candidate": {"utterances": draft}}
+    omitted = s["utterances"].pop()
+    s["omissions"] = [{"text": omitted["text"], "reason": "unresolved source check"}]
+    s["reviews"]["content"] = {
+        "attempts": 3,
+        "version": "old-limiter",
+        "history": [
+            {
+                "issues": [
+                    {
+                        "utterance_id": "u",
+                        "replacement": omitted["text"],
+                        "source_ids": ["s1"],
+                        "kind": "paper",
+                    }
+                ]
+            }
+        ],
+    }
+    assert story._review_scene(p, None, "overview", s, 0, "content")
+    assert [u["speaker"] for u in s["utterances"]] == ["host", "guide"]
+    assert s["utterances"][1]["id"] == "u"
+    assert not s["omissions"]
+    assert s["editing_records"][-1]["recovered"]
+
+
+def test_reviewer_gets_citations_added_by_a_local_repair(database):
+    from paperspeak import papers
+
+    pid = papers.register(
+        {"source_id": "2610.12345", "version": "v1", "title": "A new mechanism"}
+    )
+    db.execute(
+        "INSERT INTO sources VALUES (?,?,?,?)",
+        (
+            "new-table",
+            pid,
+            "table",
+            db.dumps({"text": "Length control: 99.9", "label": "Table 2"}),
+        ),
+    )
+    project = {
+        "paper_id": pid,
+        "data": {"paper_title": "A new mechanism", "references": [], "evidence": []},
+    }
+    scene = {"claim_ids": [], "utterances": [{"source_ids": ["new-table"]}]}
+    context = story.context_for(project, scene)
+    assert context["sources"][0]["text"] == "Length control: 99.9"
+
+
+def test_historical_reading_reaches_late_result_tables_and_resumes(
+    database, monkeypatch
+):
+    from paperspeak import papers
+
+    pid = papers.register(
+        {"source_id": "2610.12346", "version": "v1", "title": "An earlier method"}
+    )
+    for ident, kind, text in [
+        ("intro", "text", "An approach"),
+        ("result", "table", "Length control: 99.9"),
+    ]:
+        db.execute(
+            "INSERT INTO sources VALUES (?,?,?,?)",
+            (ident, pid, kind, db.dumps({"text": text, "label": ident})),
+        )
+    monkeypatch.setattr(
+        story.lessons, "source_groups", lambda rows: [[r] for r in rows]
+    )
+    calls = []
+
+    def bounded(project, runtime, key, prompt, valid, fallback, **kwargs):
+        calls.append((key, prompt))
+        return {"claims": []}
+
+    monkeypatch.setattr(story, "bounded", bounded)
+    project = {"data": {"references": [{"paper_id": pid}], "evidence": []}}
+    story._background_step(project, None)
+    assert project["data"].get("background_index", 0) == 0
+    story._background_step(project, None)
+    assert "Length control: 99.9" in calls[1][1]
+    assert calls[0][0] != calls[1][0]
+    story._background_step(project, None)
+    assert project["data"]["background_index"] == 1
+
+
+def test_history_budget_keeps_later_papers_and_result_tables(database):
+    pid = paper()
+    db.execute(
+        "INSERT INTO sources VALUES (?,?,?,?)",
+        ("result-table", pid, "table", db.dumps({"text": "A measured strength"})),
+    )
+    other = papers.register(
+        {"source_id": "2610.12347", "version": "v1", "title": "A later prior method"}
+    )
+    db.execute(
+        "INSERT INTO sources VALUES (?,?,?,?)",
+        ("other-intro", other, "text", db.dumps({"text": "Another approach"})),
+    )
+    evidence = [
+        {
+            "id": str(i),
+            "topic": "history",
+            "claim": f"Finding {i}",
+            "source_ids": ["result-table"],
+        }
+        for i in range(30)
+    ]
+    evidence.append(
+        {
+            "id": "later",
+            "topic": "history",
+            "claim": "The other approach",
+            "source_ids": ["other-intro"],
+        }
+    )
+    p = {
+        "paper_id": pid,
+        "data": {"references": [{"paper_id": other}], "evidence": evidence},
+    }
+    chosen = story.plan_evidence(p, "overview")
+    assert len(chosen) == 24
+    assert chosen[0]["source_ids"] == ["result-table"]
+    assert any(c["id"] == "later" for c in chosen)

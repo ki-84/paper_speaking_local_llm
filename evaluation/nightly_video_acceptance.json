@@ -1,0 +1,1798 @@
+{
+  "run_id": "4e9d70420b7445edbadad0919686d0fa",
+  "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+  "state": "ready",
+  "paper": {
+    "paper_id": "5fb02b53f5ce46a7b8a860055ead12a9",
+    "source_id": "2610.02193",
+    "version": "v1",
+    "title": "Hierarchical Continuous Diffusion Language Models",
+    "area": "llm",
+    "attention": {
+      "rank": 10,
+      "upvotes": 69,
+      "source_url": "https://huggingface.co/papers/2610.02193",
+      "retrieved_at": 1790991642.8198853,
+      "published": "2026-10-01T00:00:00.000Z",
+      "title": "Hierarchical Continuous Diffusion Language Models",
+      "api_url": "https://huggingface.co/api/daily_papers",
+      "signal": "community trending rank"
+    },
+    "assessment": {
+      "suitable": true,
+      "content_quality": 5,
+      "story_value": 5,
+      "why_ja": "本論文は、拡散モデルにおける「並列デコーディング時のトークン独立性」という構造的なボトルネックを、階層的な連続・離散の結合（HC-DLM）によって解決する手法を提案しています。連続的な潜在変数と離散的なトークンが相互にフィードバックし合うことで、パズル（スドク）や数学的推論（カウントダウン）、言語モデル（LM1B）のいずれにおいても既存のベースラインを上回る性能を達成しています。特に、複雑な変分下限の導出や条件付きフローマッチング（CFM）の活用など、理論的かつ実装上の深みがあり、AIの生成メカニズムを深く理解する上で非常に価値が高い内容です。",
+      "cautions_ja": [
+        "スケーラビリティの制約: エンコーダ、連続デノイザー、トークン予測器の3つを同時に最適化する必要があるため、純粋な離散モデルよりも学習コストが高く、大規模な事前学習済みバックボーンへのスケーリングは通常の学術計算リソースでは困難です。",
+        "比較の公平性: 壁時計時間（Wall-clock time）の比較は、ハードウェア環境や学習スケジュールの違いにより、直接的な効率比較として解釈するには注意が必要です。",
+        "潜在変数の長さに依存: スドクタスクでは潜在シーケンス長Mが4を超えると性能が低下するため、モデルの表現力と複雑さのバランス調整が重要です。"
+      ],
+      "source_ids": [
+        "5fb02b53f5ce46a7b8a860055ead12a9:H1",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H4",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H17",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H5",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H6",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H10",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H11",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H19",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H12",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H32",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H38",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H41",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H42",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H48",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H55",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H57",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H63",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H64",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H60",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H68",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H69",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H70",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H73",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H74",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H150",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H157",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H168",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H169",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H170",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H171",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H174",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H185",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H178",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H182",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H183",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H187",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H195",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H188",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H190",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H202",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H206",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H210",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H211",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H215",
+        "5fb02b53f5ce46a7b8a860055ead12a9:H218"
+      ]
+    }
+  },
+  "timings": {
+    "collection_seconds": 24.26,
+    "selection_seconds": 431.62,
+    "production_seconds": 9323.65,
+    "total_seconds": 9755.26,
+    "active_stages": {
+      "sources": 289.023,
+      "background": 44.779,
+      "plan": 479.206,
+      "overview:script": 1026.914,
+      "overview:tts": 722.225,
+      "overview:align": 473.536,
+      "overview:learning": 477.114,
+      "overview:export": 0.01,
+      "deep_dive:script": 1663.752,
+      "deep_dive:tts": 1192.669,
+      "deep_dive:align": 750.579,
+      "deep_dive:learning": 364.537,
+      "deep_dive:export": 0.01
+    },
+    "render_job_elapsed_seconds": {
+      "overview": 251.46,
+      "deep_dive": 356.55
+    }
+  },
+  "films": {
+    "overview": {
+      "state": "ready",
+      "export_id": "c49675038e974e4c8dc017be602c11ba",
+      "mp4": "videos/047c824d205d4e9ca4392ac40dde2dbd/e34bf5d8407c/「全体像」を先に固めるAIの発想.mp4",
+      "minutes": 17.27,
+      "megabytes": 48.78,
+      "sha256": "5db87f392b17de27a2334a6fb2ccc94693be65c76d7e5c6a1b67b03b45ad108d",
+      "checks": {
+        "duration_in_range": true,
+        "duration_error_small": true,
+        "equation_policy": true,
+        "equations_actually_selected": true,
+        "chapters_ready": true,
+        "sentence_clips_exist": true,
+        "japanese_for_every_sentence": true,
+        "expressions_count": true,
+        "questions_available": true,
+        "burned_subtitles": true,
+        "thumbnail_exists": true,
+        "current_renderer": true,
+        "rendered_audio_caption_figure_sync": true
+      },
+      "frames": [
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-01.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-02.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-03.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-04.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-05.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-06.png"
+      ],
+      "sync_samples": [
+        {
+          "time": 12.0,
+          "rgb_mean_error": 0.259,
+          "audio_correlation": 0.99978,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-01.png"
+        },
+        {
+          "time": 170.58,
+          "rgb_mean_error": 0.306,
+          "audio_correlation": 0.99978,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-02.png"
+        },
+        {
+          "time": 365.06,
+          "rgb_mean_error": 0.269,
+          "audio_correlation": 0.9998,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-03.png"
+        },
+        {
+          "time": 510.02,
+          "rgb_mean_error": 0.319,
+          "audio_correlation": 0.9996,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-04.png"
+        },
+        {
+          "time": 680.42,
+          "rgb_mean_error": 0.283,
+          "audio_correlation": 0.99965,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-05.png"
+        },
+        {
+          "time": 869.26,
+          "rgb_mean_error": 0.335,
+          "audio_correlation": 0.99912,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-06.png"
+        },
+        {
+          "time": 60.7,
+          "rgb_mean_error": 0.417,
+          "audio_correlation": 0.9995,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-boundary-60.7.png"
+        },
+        {
+          "time": 121.7,
+          "rgb_mean_error": 0.37,
+          "audio_correlation": 0.9997,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/overview-boundary-121.7.png"
+        }
+      ],
+      "spoken_words": 2600,
+      "practice_sentences": 204,
+      "audio_wer_max": 0.03225806451612903,
+      "local_model": "qwen-q8",
+      "references": [
+        {
+          "title": "Diffusion-LM improves controllable text generation",
+          "why": "Establishes the foundational discrete diffusion approach for language, where tokens are generated in parallel but often lack the cross-token dependency mechanisms that HC-DLM later addresses via a continuous latent.",
+          "arxiv_id": "",
+          "paper_id": "ba09264e35ca4c5685fc504db17fbf77",
+          "url": "https://arxiv.org/abs/2205.14217v1",
+          "published": "2022-05-27T20:12:09Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Latent diffusion for language generation",
+          "why": "Introduces the concept of denoising in a compressed latent space rather than directly on tokens, providing the architectural precedent for using continuous variables to handle complex sequence structures.",
+          "arxiv_id": "",
+          "paper_id": "8e8600a0ff3e4b2ca4506aa6969e98b7",
+          "url": "https://arxiv.org/abs/2212.09462v2",
+          "published": "2022-12-19T13:57:06Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Likelihood-based diffusion language models",
+          "why": "Explores continuous diffusion over token embeddings, highlighting the early attempts to bridge the gap between discrete data and continuous generative processes before the hybrid hierarchical approach.",
+          "arxiv_id": "",
+          "paper_id": "9bfd85ba7f5d43dfb19770575035f02f",
+          "url": "https://arxiv.org/abs/2305.18619v1",
+          "published": "2023-05-30T16:43:31Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Diffuseq: Sequence to sequence text generation with diffusion models",
+          "why": "Demonstrates the application of diffusion models to structured text tasks, illustrating the prior efforts to move beyond simple autoregressive generation and the challenges of handling discrete constraints.",
+          "arxiv_id": "",
+          "paper_id": "2165bfc041024c669762cb4448ab8230",
+          "url": "https://arxiv.org/abs/2210.08933v3",
+          "published": "2022-10-17T10:49:08Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Continuously augmented discrete diffusion model for categorical generative modeling",
+          "why": "Represents a key prior attempt at hybrid discrete-continuous diffusion (CADD), where continuous hints aid discrete tokens, setting the stage for HC-DLM's more tightly coupled hierarchical refinement.",
+          "arxiv_id": "",
+          "paper_id": "9487dcfc5b9742a89b3fdcda4d2f3380",
+          "url": "https://arxiv.org/abs/2510.01329v1",
+          "published": "2025-10-01T18:00:56Z",
+          "status": "downloaded"
+        }
+      ],
+      "review_caveat": "Bounded local-model reviews are recorded; they are not independent accuracy certification."
+    },
+    "deep_dive": {
+      "state": "ready",
+      "export_id": "83769e4beef345ab88d8c152c28aa331",
+      "mp4": "videos/6c0bede980944a07a2ff7dc9548808de/e91f4d03f0c5/並列生成の呪い：トークン独立の罠と階層結合.mp4",
+      "minutes": 32.83,
+      "megabytes": 109.14,
+      "sha256": "2851315e8ee71ebd01ebcfc70f35302080c1dd2f1324a969386fa65fe2cf1bb9",
+      "checks": {
+        "duration_in_range": true,
+        "duration_error_small": true,
+        "equation_policy": true,
+        "equations_actually_selected": true,
+        "chapters_ready": true,
+        "sentence_clips_exist": true,
+        "japanese_for_every_sentence": true,
+        "expressions_count": true,
+        "questions_available": true,
+        "burned_subtitles": true,
+        "thumbnail_exists": true,
+        "current_renderer": true,
+        "rendered_audio_caption_figure_sync": true
+      },
+      "frames": [
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-01.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-02.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-03.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-04.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-05.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-06.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-07.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-08.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-09.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-10.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-02-1.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-02-2.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-03-1.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-03-2.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-07-1.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-07-2.png",
+        "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-07-3.png"
+      ],
+      "sync_samples": [
+        {
+          "time": 12.0,
+          "rgb_mean_error": 0.386,
+          "audio_correlation": 0.99912,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-01.png"
+        },
+        {
+          "time": 228.24,
+          "rgb_mean_error": 0.307,
+          "audio_correlation": 0.99981,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-02.png"
+        },
+        {
+          "time": 453.04,
+          "rgb_mean_error": 0.298,
+          "audio_correlation": 0.99982,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-03.png"
+        },
+        {
+          "time": 606.96,
+          "rgb_mean_error": 0.332,
+          "audio_correlation": 0.99946,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-04.png"
+        },
+        {
+          "time": 780.4,
+          "rgb_mean_error": 0.455,
+          "audio_correlation": 0.99951,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-05.png"
+        },
+        {
+          "time": 986.44,
+          "rgb_mean_error": 0.324,
+          "audio_correlation": 0.9998,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-06.png"
+        },
+        {
+          "time": 1150.44,
+          "rgb_mean_error": 0.323,
+          "audio_correlation": 0.99979,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-07.png"
+        },
+        {
+          "time": 1370.28,
+          "rgb_mean_error": 0.316,
+          "audio_correlation": 0.99947,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-08.png"
+        },
+        {
+          "time": 1568.6,
+          "rgb_mean_error": 0.287,
+          "audio_correlation": 0.99958,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-09.png"
+        },
+        {
+          "time": 1751.8,
+          "rgb_mean_error": 0.235,
+          "audio_correlation": 0.99931,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-10.png"
+        },
+        {
+          "time": 60.7,
+          "rgb_mean_error": 0.475,
+          "audio_correlation": 0.99946,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-boundary-60.7.png"
+        },
+        {
+          "time": 121.7,
+          "rgb_mean_error": 0.484,
+          "audio_correlation": 0.99942,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-boundary-121.7.png"
+        },
+        {
+          "time": 237.0,
+          "rgb_mean_error": 0.345,
+          "audio_correlation": 0.99926,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-02-1.png"
+        },
+        {
+          "time": 276.88,
+          "rgb_mean_error": 0.28,
+          "audio_correlation": 0.99956,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-02-2.png"
+        },
+        {
+          "time": 444.88,
+          "rgb_mean_error": 0.279,
+          "audio_correlation": 0.99992,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-03-1.png"
+        },
+        {
+          "time": 474.56,
+          "rgb_mean_error": 0.304,
+          "audio_correlation": 0.99954,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-03-2.png"
+        },
+        {
+          "time": 1159.28,
+          "rgb_mean_error": 0.314,
+          "audio_correlation": 0.9995,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-07-1.png"
+        },
+        {
+          "time": 1194.6,
+          "rgb_mean_error": 0.307,
+          "audio_correlation": 0.99971,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-07-2.png"
+        },
+        {
+          "time": 1211.04,
+          "rgb_mean_error": 0.287,
+          "audio_correlation": 0.99956,
+          "audio_offset_ms": 21.333,
+          "passed": true,
+          "frame": "evaluation/story-47b1fed445f54a9995643c2c088cbaa0/deep_dive-math-07-3.png"
+        }
+      ],
+      "spoken_words": 5056,
+      "practice_sentences": 393,
+      "audio_wer_max": 0.07142857142857142,
+      "local_model": "qwen-q8",
+      "references": [
+        {
+          "title": "Diffusion-LM improves controllable text generation",
+          "why": "Establishes the foundational discrete diffusion approach for language, where tokens are generated in parallel but often lack the cross-token dependency mechanisms that HC-DLM later addresses via a continuous latent.",
+          "arxiv_id": "",
+          "paper_id": "ba09264e35ca4c5685fc504db17fbf77",
+          "url": "https://arxiv.org/abs/2205.14217v1",
+          "published": "2022-05-27T20:12:09Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Latent diffusion for language generation",
+          "why": "Introduces the concept of denoising in a compressed latent space rather than directly on tokens, providing the architectural precedent for using continuous variables to handle complex sequence structures.",
+          "arxiv_id": "",
+          "paper_id": "8e8600a0ff3e4b2ca4506aa6969e98b7",
+          "url": "https://arxiv.org/abs/2212.09462v2",
+          "published": "2022-12-19T13:57:06Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Likelihood-based diffusion language models",
+          "why": "Explores continuous diffusion over token embeddings, highlighting the early attempts to bridge the gap between discrete data and continuous generative processes before the hybrid hierarchical approach.",
+          "arxiv_id": "",
+          "paper_id": "9bfd85ba7f5d43dfb19770575035f02f",
+          "url": "https://arxiv.org/abs/2305.18619v1",
+          "published": "2023-05-30T16:43:31Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Diffuseq: Sequence to sequence text generation with diffusion models",
+          "why": "Demonstrates the application of diffusion models to structured text tasks, illustrating the prior efforts to move beyond simple autoregressive generation and the challenges of handling discrete constraints.",
+          "arxiv_id": "",
+          "paper_id": "2165bfc041024c669762cb4448ab8230",
+          "url": "https://arxiv.org/abs/2210.08933v3",
+          "published": "2022-10-17T10:49:08Z",
+          "status": "downloaded"
+        },
+        {
+          "title": "Continuously augmented discrete diffusion model for categorical generative modeling",
+          "why": "Represents a key prior attempt at hybrid discrete-continuous diffusion (CADD), where continuous hints aid discrete tokens, setting the stage for HC-DLM's more tightly coupled hierarchical refinement.",
+          "arxiv_id": "",
+          "paper_id": "9487dcfc5b9742a89b3fdcda4d2f3380",
+          "url": "https://arxiv.org/abs/2510.01329v1",
+          "published": "2025-10-01T18:00:56Z",
+          "status": "downloaded"
+        }
+      ],
+      "review_caveat": "Bounded local-model reviews are recorded; they are not independent accuracy certification."
+    }
+  },
+  "longest_shared_word_sequence": 9,
+  "thumbnails": {
+    "overview": {
+      "id": "43c3d70b29af4fc7a94e744bd7d2afa8",
+      "selected_id": "67f6bff450d346b2979ede9fa87335d8",
+      "recommended_id": "67f6bff450d346b2979ede9fa87335d8",
+      "review": {
+        "selected_index": 0,
+        "notes_ja": "提示された映画（タイトル「全体像」を先に固めるAIの発想）と完全に一致しており、中央の「ぼやけた写真」のメタファーを表現する中央の図も説得力があります。テキストも大きく、スマホサイズで読みやすく、マヤとエイドンの驚いた表情もはっきりと認識できます。",
+        "issues": []
+      },
+      "character_assets": {
+        "guide": {
+          "path": "thumbnails/characters/697c2fe415cb621f/guide.png",
+          "sha256": "641b3e3635e371f444d76c81e7c33b1c643552357b5dc669e51ce9f21d852295"
+        },
+        "host": {
+          "path": "thumbnails/characters/697c2fe415cb621f/host.png",
+          "sha256": "19260e56395e643505884b5c5802405eca9f59bfc5b3464d4bf84e2a3f8cce40"
+        }
+      },
+      "candidates": [
+        {
+          "id": "67f6bff450d346b2979ede9fa87335d8",
+          "lines": [
+            "全体像を先に固める",
+            "AIの発想"
+          ],
+          "palette": "teal",
+          "concept": "A central holographic structure forming from a blurred, glowing cloud into a sharp, geometric lattice, representing the transition from abstract shape to concrete form.",
+          "png": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-0.png",
+          "jpg": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-0.jpg",
+          "sha256": "03fdcb7b704b530d93dd33d3091968bb546bda1483a17e4aad33f60336198c46",
+          "generation": {
+            "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/idea-0.png",
+            "sha256": "bc81142b16971d137d1112f10ea3a54ecf6e07b8366af3e6e49c78db23c07eb0",
+            "seconds": 35.48,
+            "peak_allocated_mib": 7997.9,
+            "peak_reserved_mib": 8596.0,
+            "settings": {
+              "width": 1280,
+              "height": 720,
+              "num_inference_steps": 50,
+              "guidance_scale": 4.0,
+              "seed": 2713036371,
+              "dtype": "bfloat16",
+              "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+              "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+              "prompt_sha256": "03bd868139a851157f33da043f602f2d5cb9c57e4bd7150dc719151be7992e0f"
+            }
+          }
+        },
+        {
+          "id": "bb1cef21d4444189ac2769427f887c9e",
+          "lines": [
+            "単語を「独立」から",
+            "解き放つ"
+          ],
+          "palette": "violet",
+          "concept": "A cluster of interconnected glowing nodes floating in a dark space, connected by flexible, translucent threads that allow them to shift and rearrange fluidly without breaking.",
+          "png": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-1.png",
+          "jpg": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-1.jpg",
+          "sha256": "86245926edf6c555bfc7c8da2becf13cebf8e25801a216cd4e3f49ff555b243c",
+          "generation": {
+            "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/idea-1.png",
+            "sha256": "406b304a851dcdb97e5f259cb330d37124231dcd88a025af435035ac75d53c0c",
+            "seconds": 25.92,
+            "peak_allocated_mib": 7997.9,
+            "peak_reserved_mib": 8596.0,
+            "settings": {
+              "width": 1280,
+              "height": 720,
+              "num_inference_steps": 50,
+              "guidance_scale": 4.0,
+              "seed": 2713036372,
+              "dtype": "bfloat16",
+              "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+              "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+              "prompt_sha256": "3d33c1b81b9b7ada6125ac5f750e036d8cdafe218ef8ad5721d8f335d04521c4"
+            }
+          }
+        },
+        {
+          "id": "cab7ed05b1264f94be50d83822d6e206",
+          "lines": [
+            "曖昧さがもたらす",
+            "正確さ"
+          ],
+          "palette": "orange",
+          "concept": "A central sphere that starts as a soft, indistinct mist and gradually sharpens into a precise, crystalline structure, illustrating the stabilization of fluidity into accuracy.",
+          "png": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-2.png",
+          "jpg": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-2.jpg",
+          "sha256": "2fef0cb9b33afc0424b9b498ae826609bf76215f6436a8c400949b6e714cc60d",
+          "generation": {
+            "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/idea-2.png",
+            "sha256": "30fea2e9f9919d63d87082f8a6713bf46771661ed38829f8d2ade15df1717424",
+            "seconds": 25.68,
+            "peak_allocated_mib": 7997.9,
+            "peak_reserved_mib": 8596.0,
+            "settings": {
+              "width": 1280,
+              "height": 720,
+              "num_inference_steps": 50,
+              "guidance_scale": 4.0,
+              "seed": 2713036373,
+              "dtype": "bfloat16",
+              "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+              "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+              "prompt_sha256": "9fec6795dd267a31666849a3d65090dc4cd2bb17342e631a487c661a352a741f"
+            }
+          }
+        }
+      ],
+      "warnings": []
+    },
+    "deep_dive": {
+      "id": "e24c17a340f9405e870a0313e50a098a",
+      "selected_id": "8157dd3e58f5477c99c5a72eb46a4842",
+      "recommended_id": "8157dd3e58f5477c99c5a72eb46a4842",
+      "review": {
+        "selected_index": 0,
+        "notes_ja": "候補1は、MayaとAidenが驚いた表情で左右に配置され、中央の「破綻する連鎖」のビジュアルが、論文のトークン独立の欠陥という主題を正確かつ直感的に表現しています。大きな日本語テキストはスマホサイズでも鮮明に読めるため、最も魅力的で伝わりやすいサムネイルです。",
+        "issues": []
+      },
+      "character_assets": {
+        "guide": {
+          "path": "thumbnails/characters/697c2fe415cb621f/guide.png",
+          "sha256": "641b3e3635e371f444d76c81e7c33b1c643552357b5dc669e51ce9f21d852295"
+        },
+        "host": {
+          "path": "thumbnails/characters/697c2fe415cb621f/host.png",
+          "sha256": "19260e56395e643505884b5c5802405eca9f59bfc5b3464d4bf84e2a3f8cce40"
+        }
+      },
+      "candidates": [
+        {
+          "id": "8157dd3e58f5477c99c5a72eb46a4842",
+          "lines": [
+            "並列生成の呪い",
+            "独立は破綻する"
+          ],
+          "palette": "teal",
+          "concept": "A cluster of glowing, disconnected geometric blocks floating in a dark void, surrounded by faint, broken chains that snap apart, symbolizing the lack of statistical dependency between parallel tokens.",
+          "png": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-0.png",
+          "jpg": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-0.jpg",
+          "sha256": "8f87d809bda019ae8cbc9ab1cb17bbf8c0315705eef8c6aa4088998547fbea24",
+          "generation": {
+            "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/e24c17a340f9405e870a0313e50a098a/idea-0.png",
+            "sha256": "ec8829f62d49d5cfa05f785f14ee9e9564b6023d58957e7d14db52b13506a5bd",
+            "seconds": 33.57,
+            "peak_allocated_mib": 7997.9,
+            "peak_reserved_mib": 8596.0,
+            "settings": {
+              "width": 1280,
+              "height": 720,
+              "num_inference_steps": 50,
+              "guidance_scale": 4.0,
+              "seed": 846826667,
+              "dtype": "bfloat16",
+              "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+              "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+              "prompt_sha256": "51d96fa4faafe4f2c4499aa4be98bd8ce67ab54cec07301a324b81ffa9c847ef"
+            }
+          }
+        },
+        {
+          "id": "827052e5ba5043e48e9e5b2284f2b2fb",
+          "lines": [
+            "連続潜変数",
+            "トークンに還る"
+          ],
+          "palette": "violet",
+          "concept": "A smooth, flowing liquid stream of light intertwining with rigid, crystalline structures, creating a bidirectional bridge that connects the fluid global shape to the discrete local details.",
+          "png": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-1.png",
+          "jpg": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-1.jpg",
+          "sha256": "c4bfe6fc41868e1f9a47d66ca6d42bb69d26b190d0aae81b0731e2bec5b11243",
+          "generation": {
+            "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/e24c17a340f9405e870a0313e50a098a/idea-1.png",
+            "sha256": "ffd6faeaee0dab4352560614f3168f6d811295250fd6f641c132785c0c9d3b98",
+            "seconds": 25.93,
+            "peak_allocated_mib": 7997.9,
+            "peak_reserved_mib": 8596.0,
+            "settings": {
+              "width": 1280,
+              "height": 720,
+              "num_inference_steps": 50,
+              "guidance_scale": 4.0,
+              "seed": 846826668,
+              "dtype": "bfloat16",
+              "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+              "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+              "prompt_sha256": "7c55d40e2cfd2a9a1c7e19e787dc95cb6af2ba80dcf26a830766d1ee60f73f01"
+            }
+          }
+        },
+        {
+          "id": "5ac89d0746e0446c8c52d0de34cd60bc",
+          "lines": [
+            "階層結合",
+            "二重構造の力"
+          ],
+          "palette": "orange",
+          "concept": "A layered architectural diagram showing a wide, soft cloud-like base supporting a precise, grid-like upper structure, with arrows indicating feedback flowing from the top layer back down to the base.",
+          "png": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-2.png",
+          "jpg": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-2.jpg",
+          "sha256": "4cf1ba674c66afe4fb6d144b7884a20cefbf9a5b601a70eb5d857ebdcb5155ea",
+          "generation": {
+            "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/e24c17a340f9405e870a0313e50a098a/idea-2.png",
+            "sha256": "898e8d9e4dd616cff448f2ef9f94c963e1fb184af2ee510f1ec9ca55373895c1",
+            "seconds": 25.59,
+            "peak_allocated_mib": 7997.9,
+            "peak_reserved_mib": 8596.0,
+            "settings": {
+              "width": 1280,
+              "height": 720,
+              "num_inference_steps": 50,
+              "guidance_scale": 4.0,
+              "seed": 846826669,
+              "dtype": "bfloat16",
+              "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+              "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+              "prompt_sha256": "ba22553ad1be805333b22480e35c5188384110aa4a13e44a580bf79bce47e462"
+            }
+          }
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "thumbnail_checks": {
+    "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+    "sets": {
+      "overview": {
+        "id": "43c3d70b29af4fc7a94e744bd7d2afa8",
+        "recommended_id": "67f6bff450d346b2979ede9fa87335d8",
+        "selected_id": "67f6bff450d346b2979ede9fa87335d8",
+        "review": {
+          "selected_index": 0,
+          "notes_ja": "提示された映画（タイトル「全体像」を先に固めるAIの発想）と完全に一致しており、中央の「ぼやけた写真」のメタファーを表現する中央の図も説得力があります。テキストも大きく、スマホサイズで読みやすく、マヤとエイドンの驚いた表情もはっきりと認識できます。",
+          "issues": []
+        },
+        "warnings": [],
+        "candidates": [
+          {
+            "id": "67f6bff450d346b2979ede9fa87335d8",
+            "lines": [
+              "全体像を先に固める",
+              "AIの発想"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-0.png",
+                "bytes": 484080,
+                "sha256": "03fdcb7b704b530d93dd33d3091968bb546bda1483a17e4aad33f60336198c46"
+              },
+              "jpg": {
+                "path": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-0.jpg",
+                "bytes": 315450,
+                "sha256": "dad8c5673ffa7c617b0ec11cc3e3ff931be5c0f5dcf89b55ce8a4edcfbbcab2c"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/idea-0.png",
+              "sha256": "bc81142b16971d137d1112f10ea3a54ecf6e07b8366af3e6e49c78db23c07eb0",
+              "seconds": 35.48,
+              "peak_allocated_mib": 7997.9,
+              "peak_reserved_mib": 8596.0,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2713036371,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "03bd868139a851157f33da043f602f2d5cb9c57e4bd7150dc719151be7992e0f"
+              }
+            }
+          },
+          {
+            "id": "bb1cef21d4444189ac2769427f887c9e",
+            "lines": [
+              "単語を「独立」から",
+              "解き放つ"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-1.png",
+                "bytes": 452158,
+                "sha256": "86245926edf6c555bfc7c8da2becf13cebf8e25801a216cd4e3f49ff555b243c"
+              },
+              "jpg": {
+                "path": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-1.jpg",
+                "bytes": 318656,
+                "sha256": "8394abf1cc978c07e5b845c2552ffbe5eef38483ee05cccc358b4e6c761b4f00"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/idea-1.png",
+              "sha256": "406b304a851dcdb97e5f259cb330d37124231dcd88a025af435035ac75d53c0c",
+              "seconds": 25.92,
+              "peak_allocated_mib": 7997.9,
+              "peak_reserved_mib": 8596.0,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2713036372,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "3d33c1b81b9b7ada6125ac5f750e036d8cdafe218ef8ad5721d8f335d04521c4"
+              }
+            }
+          },
+          {
+            "id": "cab7ed05b1264f94be50d83822d6e206",
+            "lines": [
+              "曖昧さがもたらす",
+              "正確さ"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-2.png",
+                "bytes": 548654,
+                "sha256": "2fef0cb9b33afc0424b9b498ae826609bf76215f6436a8c400949b6e714cc60d"
+              },
+              "jpg": {
+                "path": "thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/thumbnail-2.jpg",
+                "bytes": 292965,
+                "sha256": "12bcd37367133cee48804003766c19585d927501598b09f9e3688d12efdea832"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/43c3d70b29af4fc7a94e744bd7d2afa8/idea-2.png",
+              "sha256": "30fea2e9f9919d63d87082f8a6713bf46771661ed38829f8d2ade15df1717424",
+              "seconds": 25.68,
+              "peak_allocated_mib": 7997.9,
+              "peak_reserved_mib": 8596.0,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2713036373,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "9fec6795dd267a31666849a3d65090dc4cd2bb17342e631a487c661a352a741f"
+              }
+            }
+          }
+        ],
+        "portraits": {
+          "guide": {
+            "sha256": "641b3e3635e371f444d76c81e7c33b1c643552357b5dc669e51ce9f21d852295",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 115968
+          },
+          "host": {
+            "sha256": "19260e56395e643505884b5c5802405eca9f59bfc5b3464d4bf84e2a3f8cce40",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 101312
+          }
+        }
+      },
+      "deep_dive": {
+        "id": "e24c17a340f9405e870a0313e50a098a",
+        "recommended_id": "8157dd3e58f5477c99c5a72eb46a4842",
+        "selected_id": "8157dd3e58f5477c99c5a72eb46a4842",
+        "review": {
+          "selected_index": 0,
+          "notes_ja": "候補1は、MayaとAidenが驚いた表情で左右に配置され、中央の「破綻する連鎖」のビジュアルが、論文のトークン独立の欠陥という主題を正確かつ直感的に表現しています。大きな日本語テキストはスマホサイズでも鮮明に読めるため、最も魅力的で伝わりやすいサムネイルです。",
+          "issues": []
+        },
+        "warnings": [],
+        "candidates": [
+          {
+            "id": "8157dd3e58f5477c99c5a72eb46a4842",
+            "lines": [
+              "並列生成の呪い",
+              "独立は破綻する"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-0.png",
+                "bytes": 408588,
+                "sha256": "8f87d809bda019ae8cbc9ab1cb17bbf8c0315705eef8c6aa4088998547fbea24"
+              },
+              "jpg": {
+                "path": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-0.jpg",
+                "bytes": 278924,
+                "sha256": "60cf3a0bd623aab06eaf6d1000ac9f743c5ef6b9631567ddc65745683e81c00e"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/e24c17a340f9405e870a0313e50a098a/idea-0.png",
+              "sha256": "ec8829f62d49d5cfa05f785f14ee9e9564b6023d58957e7d14db52b13506a5bd",
+              "seconds": 33.57,
+              "peak_allocated_mib": 7997.9,
+              "peak_reserved_mib": 8596.0,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 846826667,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "51d96fa4faafe4f2c4499aa4be98bd8ce67ab54cec07301a324b81ffa9c847ef"
+              }
+            }
+          },
+          {
+            "id": "827052e5ba5043e48e9e5b2284f2b2fb",
+            "lines": [
+              "連続潜変数",
+              "トークンに還る"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-1.png",
+                "bytes": 438992,
+                "sha256": "c4bfe6fc41868e1f9a47d66ca6d42bb69d26b190d0aae81b0731e2bec5b11243"
+              },
+              "jpg": {
+                "path": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-1.jpg",
+                "bytes": 290496,
+                "sha256": "672d94c65465df7ac50c2a700d8f7f350f28754fcac49b6b3d444f3e22853f53"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/e24c17a340f9405e870a0313e50a098a/idea-1.png",
+              "sha256": "ffd6faeaee0dab4352560614f3168f6d811295250fd6f641c132785c0c9d3b98",
+              "seconds": 25.93,
+              "peak_allocated_mib": 7997.9,
+              "peak_reserved_mib": 8596.0,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 846826668,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "7c55d40e2cfd2a9a1c7e19e787dc95cb6af2ba80dcf26a830766d1ee60f73f01"
+              }
+            }
+          },
+          {
+            "id": "5ac89d0746e0446c8c52d0de34cd60bc",
+            "lines": [
+              "階層結合",
+              "二重構造の力"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-2.png",
+                "bytes": 431563,
+                "sha256": "4cf1ba674c66afe4fb6d144b7884a20cefbf9a5b601a70eb5d857ebdcb5155ea"
+              },
+              "jpg": {
+                "path": "thumbnails/e24c17a340f9405e870a0313e50a098a/thumbnail-2.jpg",
+                "bytes": 322705,
+                "sha256": "c08d50dc6ae8baf559cde82d4a8895031c3b54c4152cc29dfd923273f524cf0c"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/e24c17a340f9405e870a0313e50a098a/idea-2.png",
+              "sha256": "898e8d9e4dd616cff448f2ef9f94c963e1fb184af2ee510f1ec9ca55373895c1",
+              "seconds": 25.59,
+              "peak_allocated_mib": 7997.9,
+              "peak_reserved_mib": 8596.0,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 846826669,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "ba22553ad1be805333b22480e35c5188384110aa4a13e44a580bf79bce47e462"
+              }
+            }
+          }
+        ],
+        "portraits": {
+          "guide": {
+            "sha256": "641b3e3635e371f444d76c81e7c33b1c643552357b5dc669e51ce9f21d852295",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 115968
+          },
+          "host": {
+            "sha256": "19260e56395e643505884b5c5802405eca9f59bfc5b3464d4bf84e2a3f8cce40",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 101312
+          }
+        }
+      }
+    },
+    "checks": {
+      "two_sets_three_candidates_each": true,
+      "png_jpeg_1280_720_under_2mb": true,
+      "recorded_png_hashes_match": true,
+      "hair_clothes_body_preserved": true
+    },
+    "status": "passed"
+  },
+  "browser": {
+    "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+    "started": "2026-10-03T04:25:08.043Z",
+    "scope": "Linux Chromium over LAN HTTPS; real movies and practice audio. Optional file-fed microphone tests capture/upload/local evaluation, not human pronunciation accuracy or physical Mac hardware.",
+    "checks": {
+      "two_film_cards": true,
+      "overview_movie_plays": true,
+      "deep_dive_movie_plays": true,
+      "finished_movie_plays": true,
+      "lan_mp4_range_download": true,
+      "packaging_and_timestamps": true,
+      "same_script_and_initial_japanese": true,
+      "sentence_audio_and_navigation": true,
+      "actual_expression_practice": true,
+      "deep_worked_example_practice_and_figure": true,
+      "no_browser_exceptions": true
+    },
+    "status": "passed",
+    "progress_restored": true,
+    "deep_progress_restored": true,
+    "finished": "2026-10-03T04:25:10.361Z"
+  },
+  "thumbnail_browser": {
+    "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+    "checks": {
+      "nightly_panel": true,
+      "six_png_and_six_jpeg_downloads": true,
+      "thumbnail_dimensions_1280_720": true,
+      "manual_selection_survives_reload": true,
+      "phone_320px_preview": true,
+      "no_browser_exceptions": true
+    },
+    "downloads": [
+      {
+        "mode": "overview",
+        "id": "67f6bff450d346b2979ede9fa87335d8",
+        "format": "png",
+        "bytes": 484080
+      },
+      {
+        "mode": "overview",
+        "id": "67f6bff450d346b2979ede9fa87335d8",
+        "format": "jpg",
+        "bytes": 315450
+      },
+      {
+        "mode": "overview",
+        "id": "bb1cef21d4444189ac2769427f887c9e",
+        "format": "png",
+        "bytes": 452158
+      },
+      {
+        "mode": "overview",
+        "id": "bb1cef21d4444189ac2769427f887c9e",
+        "format": "jpg",
+        "bytes": 318656
+      },
+      {
+        "mode": "overview",
+        "id": "cab7ed05b1264f94be50d83822d6e206",
+        "format": "png",
+        "bytes": 548654
+      },
+      {
+        "mode": "overview",
+        "id": "cab7ed05b1264f94be50d83822d6e206",
+        "format": "jpg",
+        "bytes": 292965
+      },
+      {
+        "mode": "deep_dive",
+        "id": "8157dd3e58f5477c99c5a72eb46a4842",
+        "format": "png",
+        "bytes": 408588
+      },
+      {
+        "mode": "deep_dive",
+        "id": "8157dd3e58f5477c99c5a72eb46a4842",
+        "format": "jpg",
+        "bytes": 278924
+      },
+      {
+        "mode": "deep_dive",
+        "id": "827052e5ba5043e48e9e5b2284f2b2fb",
+        "format": "png",
+        "bytes": 438992
+      },
+      {
+        "mode": "deep_dive",
+        "id": "827052e5ba5043e48e9e5b2284f2b2fb",
+        "format": "jpg",
+        "bytes": 290496
+      },
+      {
+        "mode": "deep_dive",
+        "id": "5ac89d0746e0446c8c52d0de34cd60bc",
+        "format": "png",
+        "bytes": 431563
+      },
+      {
+        "mode": "deep_dive",
+        "id": "5ac89d0746e0446c8c52d0de34cd60bc",
+        "format": "jpg",
+        "bytes": 322705
+      }
+    ],
+    "time": "2026-10-03T04:21:01.697Z",
+    "status": "passed"
+  },
+  "recording": {
+    "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+    "started": "2026-10-03T03:23:31.377Z",
+    "scope": "Linux Chromium over LAN HTTPS; real movies and practice audio. Optional file-fed microphone tests capture/upload/local evaluation, not human pronunciation accuracy or physical Mac hardware.",
+    "checks": {
+      "two_film_cards": true,
+      "finished_movie_plays": true,
+      "lan_mp4_range_download": true,
+      "packaging_and_timestamps": true,
+      "same_script_and_initial_japanese": true,
+      "sentence_audio_and_navigation": true,
+      "actual_expression_practice": true,
+      "media_recorder_upload": true,
+      "local_recording_evaluation": true,
+      "no_browser_exceptions": true
+    },
+    "recording_result": {
+      "state": "ready",
+      "stages": [
+        "audio",
+        "question_id",
+        "phase",
+        "sha256",
+        "model_manifest",
+        "language_model",
+        "wav",
+        "quality",
+        "transcript",
+        "timestamps",
+        "asr_settings",
+        "pace_wpm",
+        "pauses",
+        "word_match",
+        "wer",
+        "words",
+        "reference_text",
+        "reference_audio",
+        "reference_timestamps",
+        "pronunciation_focus",
+        "pronunciation",
+        "word_stress",
+        "syllable_energy",
+        "stress",
+        "reference_stress",
+        "feedback"
+      ],
+      "transcript": "Imagine trying to write a sentence by guessing the last word first, then the first.",
+      "quality": {
+        "duration": 5.64,
+        "rms": 0.11845354735851288,
+        "peak": 0.72808837890625,
+        "clipping": 0,
+        "status": "ok",
+        "spectral_flatness": 0.0009850448866721294
+      }
+    },
+    "status": "passed",
+    "progress_restored": true,
+    "qa_recording_removed": true,
+    "qa_review_restored": true,
+    "finished": "2026-10-03T03:23:51.421Z"
+  },
+  "recording_preemption": {
+    "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+    "observed_stage": "Making room for your recording.",
+    "practice_report": "evaluation/story-browser-new-paper-microphone.json",
+    "changed_retry_counts": [],
+    "time": 1790997856.5046377,
+    "job": {
+      "state": "running",
+      "stage": "詳解編 · Writing and editing the story",
+      "error": null
+    }
+  },
+  "restart": {
+    "project_id": "47b1fed445f54a9995643c2c088cbaa0",
+    "before": 1790995854.914508,
+    "phase": "export",
+    "job_checkpoint": {
+      "state": "queued",
+      "stage": "解説編 · Preparing English practice",
+      "checkpoint": {}
+    },
+    "after": 1790995872.0364385,
+    "unchanged": true,
+    "job_after": {
+      "state": "queued",
+      "stage": "解説編 · Preparing English practice",
+      "checkpoint": {}
+    },
+    "all_repair_counts": {
+      "plan": {
+        "attempts": 0
+      },
+      "image:0": {
+        "attempts": 0
+      }
+    }
+  },
+  "lora_media_preservation": {
+    "9029f46f14854fc2904b93de4fb027db": {
+      "mp4_sha256": "967909d39ad329afd1bca759b03c5a4fa128d370f95264aa83facec6ef27278f",
+      "unchanged": true,
+      "thumbnail": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-0.png",
+      "thumbnail_history": [
+        "thumbnails/history/59547c55d6c1cbb42c40a8287d7a5b5e30f01dd7b04c9af454df2c6199e025e4.png",
+        "thumbnails/f8c035c269434b5f83f1cac6543bf703/thumbnail-2.png",
+        "thumbnails/f8c035c269434b5f83f1cac6543bf703/thumbnail-0.png",
+        "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-0.png",
+        "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-1.png"
+      ],
+      "history_files_retained": true
+    },
+    "729e902a92474279b85a002d2e5275bb": {
+      "mp4_sha256": "8726314a635e93786b51e28ffc594aa93193067362462328e0eb04036bcea962",
+      "unchanged": true,
+      "thumbnail": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-0.png",
+      "thumbnail_history": [
+        "thumbnails/history/53150082c71157af23daf268837c75cf8a536acff8c8923ad3eade669ce19da4.png"
+      ],
+      "history_files_retained": true
+    }
+  },
+  "lora_thumbnail_browser": {
+    "project_id": "8ab4bf9ac3274635925c609fc9860165",
+    "checks": {
+      "nightly_panel": true,
+      "six_png_and_six_jpeg_downloads": true,
+      "thumbnail_dimensions_1280_720": true,
+      "manual_selection_survives_reload": true,
+      "phone_320px_preview": true,
+      "no_browser_exceptions": true
+    },
+    "downloads": [
+      {
+        "mode": "overview",
+        "id": "003ae894cfd1419eac846809ad4ccf06",
+        "format": "png",
+        "bytes": 508527
+      },
+      {
+        "mode": "overview",
+        "id": "003ae894cfd1419eac846809ad4ccf06",
+        "format": "jpg",
+        "bytes": 372633
+      },
+      {
+        "mode": "overview",
+        "id": "77aaf3f90e52467f8d6ef47114f60ae0",
+        "format": "png",
+        "bytes": 421229
+      },
+      {
+        "mode": "overview",
+        "id": "77aaf3f90e52467f8d6ef47114f60ae0",
+        "format": "jpg",
+        "bytes": 323339
+      },
+      {
+        "mode": "overview",
+        "id": "c5ed5f136dc74bd8b996506699095794",
+        "format": "png",
+        "bytes": 462446
+      },
+      {
+        "mode": "overview",
+        "id": "c5ed5f136dc74bd8b996506699095794",
+        "format": "jpg",
+        "bytes": 391942
+      },
+      {
+        "mode": "deep_dive",
+        "id": "1e0a08a5d5cb49f788767e419407bee9",
+        "format": "png",
+        "bytes": 583683
+      },
+      {
+        "mode": "deep_dive",
+        "id": "1e0a08a5d5cb49f788767e419407bee9",
+        "format": "jpg",
+        "bytes": 365799
+      },
+      {
+        "mode": "deep_dive",
+        "id": "987b442f9a74425ea59b79fc80791937",
+        "format": "png",
+        "bytes": 469350
+      },
+      {
+        "mode": "deep_dive",
+        "id": "987b442f9a74425ea59b79fc80791937",
+        "format": "jpg",
+        "bytes": 315813
+      },
+      {
+        "mode": "deep_dive",
+        "id": "d877a89a78a34f699f1c13f84d08f410",
+        "format": "png",
+        "bytes": 522596
+      },
+      {
+        "mode": "deep_dive",
+        "id": "d877a89a78a34f699f1c13f84d08f410",
+        "format": "jpg",
+        "bytes": 389875
+      }
+    ],
+    "time": "2026-10-03T02:25:03.081Z",
+    "status": "passed"
+  },
+  "lora_thumbnail_checks": {
+    "project_id": "8ab4bf9ac3274635925c609fc9860165",
+    "sets": {
+      "overview": {
+        "id": "c531def6b46144e49a0aba5a7a7fc785",
+        "recommended_id": "003ae894cfd1419eac846809ad4ccf06",
+        "selected_id": "003ae894cfd1419eac846809ad4ccf06",
+        "review": {
+          "selected_index": 0,
+          "notes_ja": "左のMayaと右のAidenが驚いた表情で明確に描かれており、タイトルやフックの「小さな更新で巨大なAIが変わる」という核心を「巨大AI、これだけで変わる!？」という大きな文字で効果的に表現しています。スマホ画面でも文字が読みやすく、図解（巨大な回路と中央の小さなチップ）も視覚的に訴求力があり、最も明快で魅力的な候補です。",
+          "issues": []
+        },
+        "warnings": [],
+        "candidates": [
+          {
+            "id": "003ae894cfd1419eac846809ad4ccf06",
+            "lines": [
+              "巨大AI、",
+              "これだけで変わる!?"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-0.png",
+                "bytes": 508527,
+                "sha256": "c2085601647353eb11a0fcfb39de55607391dc1a0a3467a3b955c0608a5d5d5f"
+              },
+              "jpg": {
+                "path": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-0.jpg",
+                "bytes": 372633,
+                "sha256": "ac26173eb3daf34b844e395ddef86229553633011f4c041f903411c76495cdc7"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/c531def6b46144e49a0aba5a7a7fc785/idea-0.png",
+              "sha256": "6dc4148a1137e2831c58fe5f7686b1e43660f3c9018ef085d1ae74a5ad12ec11",
+              "seconds": 27.32,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2004170431,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "74040359a94d40d61ea701d0647cf1fdf6a822624b2fadd2d0d02eea6dffac7e"
+              }
+            }
+          },
+          {
+            "id": "77aaf3f90e52467f8d6ef47114f60ae0",
+            "lines": [
+              "LoRAの発想",
+              "小さな追加で大変化!"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-1.png",
+                "bytes": 421229,
+                "sha256": "c03dd8fae287d1a4fdf4b44e8a56d9668a26c3a42f76c93898940906e092447a"
+              },
+              "jpg": {
+                "path": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-1.jpg",
+                "bytes": 323339,
+                "sha256": "d35fe0aa5cd83820e2341758144d44048b1c657b12ea99c1cb8a5b445f4a1dd3"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/c531def6b46144e49a0aba5a7a7fc785/idea-1.png",
+              "sha256": "e2689843c7b738d15aa93aada6326cfb3e2099cc6e97b502c5f21260a592a6e2",
+              "seconds": 26.06,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2004170432,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "74040359a94d40d61ea701d0647cf1fdf6a822624b2fadd2d0d02eea6dffac7e"
+              }
+            }
+          },
+          {
+            "id": "c5ed5f136dc74bd8b996506699095794",
+            "lines": [
+              "AIの調整",
+              "全部変えなくていい!?"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-2.png",
+                "bytes": 462446,
+                "sha256": "5ec35e217da66a5b8bc07f40250a3fb44fcceeb4879b2efad4386076afe77e61"
+              },
+              "jpg": {
+                "path": "thumbnails/c531def6b46144e49a0aba5a7a7fc785/thumbnail-2.jpg",
+                "bytes": 391942,
+                "sha256": "f6b3af3879d63da57260f179bbc071a21a838d947fb56479307cf0a2db94b929"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/c531def6b46144e49a0aba5a7a7fc785/idea-2.png",
+              "sha256": "da2acce04c71047bbb4306c1cac188f83c592be7a734aca5fc0ef5b2357a218a",
+              "seconds": 26.66,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2004170464,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "c0d67aeacf88d604e21c95fc31b925f82cd956d585003d7a886a5011e4151a3c"
+              }
+            }
+          }
+        ],
+        "portraits": {
+          "guide": {
+            "sha256": "641b3e3635e371f444d76c81e7c33b1c643552357b5dc669e51ce9f21d852295",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 115968
+          },
+          "host": {
+            "sha256": "19260e56395e643505884b5c5802405eca9f59bfc5b3464d4bf84e2a3f8cce40",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 101312
+          }
+        }
+      },
+      "deep_dive": {
+        "id": "d69790c9d3514b179c2af278efc8b726",
+        "recommended_id": "1e0a08a5d5cb49f788767e419407bee9",
+        "selected_id": "1e0a08a5d5cb49f788767e419407bee9",
+        "review": {
+          "selected_index": 0,
+          "notes_ja": "候補1は「LoRA 完全解説！」という大きな日本語テキストがスマホサイズでも非常に読みやすく、LoRAチップのビジュアルも鮮明です。MayaとAidenの驚いた表情も認識しやすく、動画の「詳解」テーマと一致します。",
+          "issues": [
+            "候補2はテキストが2行にまたがり、スマホではやや小さく見えます。",
+            "候補3は「LoRAの仕組み」が英語と日本語の混在で、純粋な日本語のキャッチコピーとしては候補1ほど強くありません。"
+          ]
+        },
+        "warnings": [],
+        "candidates": [
+          {
+            "id": "1e0a08a5d5cb49f788767e419407bee9",
+            "lines": [
+              "LoRA",
+              "完全解説！"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-0.png",
+                "bytes": 583683,
+                "sha256": "efad5333a1952ea3b59b303d1beb11fa205868e3b5d0a1669561946c53be4692"
+              },
+              "jpg": {
+                "path": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-0.jpg",
+                "bytes": 365799,
+                "sha256": "6073f720af06d8d1949bb8797dea2403e0c137a64f4158e3b1caf8f06152bef8"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/d69790c9d3514b179c2af278efc8b726/idea-0.png",
+              "sha256": "ec6ee13c31f9bb1cd541a9e7539cf670be3237562372254114a629ec1e07bb1d",
+              "seconds": 25.26,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2205933212,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "74040359a94d40d61ea701d0647cf1fdf6a822624b2fadd2d0d02eea6dffac7e"
+              }
+            }
+          },
+          {
+            "id": "987b442f9a74425ea59b79fc80791937",
+            "lines": [
+              "二つの行列で",
+              "AIが変わる!?"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-1.png",
+                "bytes": 469350,
+                "sha256": "d1db7defdeb90189ba19b151cb3f83b4ced2682eaa0ece952d0f1cb6aa2b6885"
+              },
+              "jpg": {
+                "path": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-1.jpg",
+                "bytes": 315813,
+                "sha256": "06cb091ca6ba1ca2f751f513b2d4ac4cef7aeb43bcb072a6abc4c10c069f6ccf"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/d69790c9d3514b179c2af278efc8b726/idea-1.png",
+              "sha256": "ed325ded51e08d2342dfc9ae4df0f5067497b5b19e787be51e1cd6143c0f888b",
+              "seconds": 25.24,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2205933213,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "74040359a94d40d61ea701d0647cf1fdf6a822624b2fadd2d0d02eea6dffac7e"
+              }
+            }
+          },
+          {
+            "id": "d877a89a78a34f699f1c13f84d08f410",
+            "lines": [
+              "LoRAの仕組み",
+              "図と計算で理解！"
+            ],
+            "files": {
+              "png": {
+                "path": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-2.png",
+                "bytes": 522596,
+                "sha256": "b5c485e23ba10a0fb251df643f41c392d2d76dfb19afbd0e517404840c711d58"
+              },
+              "jpg": {
+                "path": "thumbnails/d69790c9d3514b179c2af278efc8b726/thumbnail-2.jpg",
+                "bytes": 389875,
+                "sha256": "ec74c993c0352b54cb3a1436161e2c0235289efc65326973871e6daad7878b75"
+              }
+            },
+            "generation": {
+              "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/d69790c9d3514b179c2af278efc8b726/idea-2.png",
+              "sha256": "3b96c97f8f94e15a0c9d54778416317e77eb247b34499226739845d3a9350e07",
+              "seconds": 24.72,
+              "settings": {
+                "width": 1280,
+                "height": 720,
+                "num_inference_steps": 50,
+                "guidance_scale": 4.0,
+                "seed": 2205933214,
+                "dtype": "bfloat16",
+                "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+                "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+                "prompt_sha256": "74040359a94d40d61ea701d0647cf1fdf6a822624b2fadd2d0d02eea6dffac7e"
+              }
+            }
+          }
+        ],
+        "portraits": {
+          "guide": {
+            "sha256": "641b3e3635e371f444d76c81e7c33b1c643552357b5dc669e51ce9f21d852295",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 115968
+          },
+          "host": {
+            "sha256": "19260e56395e643505884b5c5802405eca9f59bfc5b3464d4bf84e2a3f8cce40",
+            "protected_region_max_rgb_error": 0,
+            "protected_pixels": 101312
+          }
+        }
+      }
+    },
+    "checks": {
+      "two_sets_three_candidates_each": true,
+      "png_jpeg_1280_720_under_2mb": true,
+      "recorded_png_hashes_match": true,
+      "hair_clothes_body_preserved": true
+    },
+    "status": "passed"
+  },
+  "warnings": [
+    {
+      "unit": "86308980ae3a49d2bf00d0177062416b",
+      "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+      "wer": 0.015625
+    },
+    {
+      "unit": "length:deep_dive:1,4",
+      "reason": "Meet the scene budgets by tightening prose, not cutting explanations",
+      "action": "bounded fallback"
+    },
+    {
+      "unit": "8601db54f4c548f6b62fd12d1b576db0",
+      "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+      "wer": 0.028985507246376812
+    },
+    {
+      "unit": "8a433ebe14b0426f8d5e53766e8a0a4f",
+      "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+      "wer": 0.03529411764705882
+    }
+  ],
+  "source_audit": {
+    "corrected_reference": "Diffusion-LM improves controllable text generation",
+    "result_source": "ba09264e35ca4c5685fc504db17fbf77:H65",
+    "finding": "Length control was a measured strength (99.9), not a demonstrated failure. The historical scene was regenerated locally. Full historical-paper batch reading and repaired-citation context are now covered by regression tests.",
+    "development_caveat": "Total elapsed includes implementation fixes, restarts, recording QA and the corrected historical scene. Bounded local reviews are not independent scientific certification."
+  },
+  "tests": {
+    "python_passed": 209,
+    "frontend_passed": 13,
+    "frontend_build": "passed",
+    "changed_file_lint": "passed"
+  },
+  "image_model": {
+    "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+    "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+    "files": [
+      {
+        "file": "LICENSE.md",
+        "bytes": 9584,
+        "sha256": "ca02bc51900ab07789d1b70283329e7137f5af98f5161c23a1c81fc38a4af1fe"
+      },
+      {
+        "file": "model_index.json",
+        "bytes": 422,
+        "sha256": "de1fef01845f0af3e1e2f2581cd5e86f2dfa4a4776f7f0b26b4c77feac4ee70f"
+      },
+      {
+        "file": "scheduler/scheduler_config.json",
+        "bytes": 486,
+        "sha256": "067afb012cef64553a763447d1efd93daeffcc0123ca7e25b09f8de20b90762e"
+      },
+      {
+        "file": "text_encoder/config.json",
+        "bytes": 1536,
+        "sha256": "214b4c29a0d975e9fddf9994a5673f22cb2c4c5750352f9227c2c3251ebeab40"
+      },
+      {
+        "file": "text_encoder/generation_config.json",
+        "bytes": 214,
+        "sha256": "4347b1aeed2b2b78bc059920a0b7f5fec71482e1344952b76d7665d638d71f13"
+      },
+      {
+        "file": "text_encoder/model-00001-of-00002.safetensors",
+        "bytes": 4967215360,
+        "sha256": "8c0506e7f4936fa7e26183a4fd8da4e2bdbc5990ba64ae441f965d51228f36ea"
+      },
+      {
+        "file": "text_encoder/model-00002-of-00002.safetensors",
+        "bytes": 3077766632,
+        "sha256": "82f2bd839378541b0557bfabaf37c7d3d637071fdcb73302dedd7cf61162ce07"
+      },
+      {
+        "file": "text_encoder/model.safetensors.index.json",
+        "bytes": 32855,
+        "sha256": "06b3d5319b6d76d1a4a2433419180016cfd54ed62d086a5e6567a809f8c82634"
+      },
+      {
+        "file": "tokenizer/added_tokens.json",
+        "bytes": 707,
+        "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+      },
+      {
+        "file": "tokenizer/chat_template.jinja",
+        "bytes": 4168,
+        "sha256": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8"
+      },
+      {
+        "file": "tokenizer/merges.txt",
+        "bytes": 1671853,
+        "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+      },
+      {
+        "file": "tokenizer/special_tokens_map.json",
+        "bytes": 613,
+        "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+      },
+      {
+        "file": "tokenizer/tokenizer.json",
+        "bytes": 11422654,
+        "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      },
+      {
+        "file": "tokenizer/tokenizer_config.json",
+        "bytes": 5404,
+        "sha256": "443bfa629eb16387a12edbf92a76f6a6f10b2af3b53d87ba1550adfcf45f7fa0"
+      },
+      {
+        "file": "tokenizer/vocab.json",
+        "bytes": 2776833,
+        "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      {
+        "file": "transformer/config.json",
+        "bytes": 531,
+        "sha256": "c8a88c1433f24e52c01f46766c9f519e76d91d1c00bfb43fe0db2e4ed3c84d70"
+      },
+      {
+        "file": "transformer/diffusion_pytorch_model.safetensors",
+        "bytes": 7751109744,
+        "sha256": "e109674697ffa1a3983126e32512f5428a9442bd8df59f9c95566ee90a473bb6"
+      },
+      {
+        "file": "vae/config.json",
+        "bytes": 821,
+        "sha256": "0d6dfb69ae95a5e2ac9836284bbb63d8b38ce67b25ba2dff380752b2a10ab948"
+      },
+      {
+        "file": "vae/diffusion_pytorch_model.safetensors",
+        "bytes": 168120878,
+        "sha256": "ca70d2202afe6415bdbcb8793ba8cd99fd159cfe6192381504d6c4d3036e0f04"
+      }
+    ]
+  },
+  "image_dependency_lock_sha256": "90b9a5cba5e7b0ce80138eed922d4250415d2f1cfffceb8d6fc1679a300b9fb2",
+  "settings": {
+    "nightly_video_enabled": true,
+    "nightly_video_hour": 2,
+    "nightly_video_minute": 0,
+    "nightly_video_categories": [
+      "cs.AI",
+      "cs.LG",
+      "cs.CL",
+      "cs.CV",
+      "cs.RO"
+    ],
+    "discovery_enabled": false,
+    "daily_limit": 0,
+    "youtube_auto_upload": false
+  },
+  "paused_old_lessons": [
+    {
+      "target": "72451d203e2948fe826f8f3f7d97b5c5",
+      "state": "paused"
+    },
+    {
+      "target": "4cb816a0b72f4b17a496c7848c349be9",
+      "state": "paused"
+    },
+    {
+      "target": "78a5f0a45b614188a9acfed52ccb1b83",
+      "state": "paused"
+    }
+  ],
+  "created": "2026-10-03T04:27:05.358326+00:00",
+  "schedule_verification": {
+    "status": "passed",
+    "settings": {
+      "nightly_video_enabled": true,
+      "nightly_video_hour": 2,
+      "nightly_video_minute": 0,
+      "nightly_video_categories": [
+        "cs.AI",
+        "cs.LG",
+        "cs.CL",
+        "cs.CV",
+        "cs.RO"
+      ],
+      "discovery_enabled": false,
+      "daily_limit": 0,
+      "youtube_auto_upload": false
+    },
+    "repeated_start_reused_run": "4e9d70420b7445edbadad0919686d0fa",
+    "verified": "2026-10-03T04:26:49.679Z",
+    "next_scheduled_jst": "2026-10-04 02:00"
+  }
+}

@@ -150,6 +150,13 @@ def test_unconfirmed_record_is_rechecked_once_when_lookup_improves(
     publication.ensure(project)
     assert project["data"]["publication"]["label"] == "ICML 2016"
     project["data"]["publication"] = {"status": "unconfirmed", "label": "学会未確認"}
+    # Remove the authoritative saved record to simulate a truly unavailable
+    # source. An unconfirmed project now reuses a confirmed paper record first.
+    row = db.one("SELECT * FROM papers WHERE id=?", (row["id"],))
+    row["data"].pop("publication", None)
+    db.execute(
+        "UPDATE papers SET data=? WHERE id=?", (db.dumps(row["data"]), row["id"])
+    )
     calls = []
 
     def unavailable(paper):

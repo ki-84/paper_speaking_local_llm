@@ -1,14 +1,26 @@
 // Fixed composition and local fonts. Never execute model-produced markup/code.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
 import {chromium} from '../frontend/node_modules/playwright-core/index.mjs';
 const [input,output]=process.argv.slice(2),spec=JSON.parse(await fs.readFile(input,'utf8'));
 const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 async function data(file){return `data:image/${file.endsWith('.svg')?'svg+xml':'png'};base64,${(await fs.readFile(file)).toString('base64')}`;}
-const browser=await chromium.launch({headless:true});
+// Keep fixed 2D rendering off the inference GPU. Screenshot capture can fail
+// transiently during a compositor frame; retry at most three captures locally.
+const browser=await chromium.launch({headless:true,args:['--disable-gpu']});
 try{
  const page=await browser.newPage({viewport:{width:spec.portrait?512:1280,height:spec.portrait?512:720},deviceScaleFactor:1});
  await page.route('**/*',r=>r.abort());
+ async function screenshot(options){
+  await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode()));});
+  for(let attempt=0;attempt<3;attempt++){
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   try{return await page.screenshot(options);}
+   catch(error){if(attempt===2||!String(error).includes('Unable to capture screenshot'))throw error;}
+  }
+ }
  if(spec.portrait){
   const original=await data(path.resolve('assets/video',spec.role==='guide'?'maya.svg':'aiden.svg'));
   await page.setContent(`<body style="margin:0;background:${spec.reference?'white':'transparent'}"><canvas width="64" height="64" style="width:512px;height:512px;image-rendering:pixelated"></canvas></body>`);
@@ -29,7 +41,7 @@ try{
     ctx.fillStyle='#f6c49b';ctx.fillRect(28,35,11,9);ctx.fillStyle='#743b43';ctx.fillRect(30,36,7,8);ctx.fillStyle='#f6c49b';ctx.fillRect(32,38,3,4);
    }
   },{original,generated,surprise:spec.surprise});
-  await page.screenshot({path:output,omitBackground:!spec.reference});
+  await screenshot({path:output,omitBackground:!spec.reference});
  }else{
   const identity=spec.identity;
   if(!identity?.paper_title||!identity?.conference||!['概要解説','詳細解説'].includes(identity?.edition))throw new Error('Missing paper/conference/edition identity');
@@ -70,6 +82,20 @@ try{
    return (award&&(award.scrollHeight>award.clientHeight||[...award.children].some(e=>e.getBoundingClientRect().top<award.getBoundingClientRect().top+4||e.getBoundingClientRect().bottom>award.getBoundingClientRect().bottom-4)))||text.offsetHeight>name.clientHeight-20||title.offsetHeight>190||row.children[0].getBoundingClientRect().right>row.children[1].getBoundingClientRect().left-16||[...document.querySelectorAll('.paper-name span,.title span,.edition,.conference,.tag,.award-label,.award-name')].some(e=>e.scrollWidth>e.clientWidth||e.getBoundingClientRect().bottom>720);
   });
   if(overflow)throw new Error('Thumbnail title overflows');
-  await page.screenshot({path:output});
+  await screenshot({path:output});
+  const rendered=await page.evaluate(()=>({
+   paper_title:document.querySelector('.paper-name span').textContent,
+   conference:document.querySelector('.conference').textContent,
+   edition:document.querySelector('.edition').textContent,
+   award_name:document.querySelector('.award-name')?.textContent||null,
+   award_label:document.querySelector('.award-label')?.textContent||null,
+  }));
+  const sha=async file=>createHash('sha256').update(await fs.readFile(file)).digest('hex');
+  await fs.writeFile(output.replace(/\.png$/,'.verification.json'),JSON.stringify({
+   version:'thumbnail-dom-check-1',rendered,resolution:[1280,720],
+   no_text_overflow:true,external_requests_blocked:true,
+   png_sha256:await sha(output),input_sha256:await sha(input),
+   renderer_sha256:await sha(fileURLToPath(import.meta.url)),
+  }));
  }
 }finally{await browser.close();}

@@ -250,6 +250,7 @@ def get(ident):
                 "duration_check",
                 "opening_policy",
                 "closing_policy",
+                "release_check",
             )
             if k in track
         }
@@ -293,6 +294,7 @@ def get(ident):
                             "duration",
                             "bytes",
                             "acceptance",
+                            "release_check",
                         )
                         if k in export["data"]
                     },
@@ -3107,6 +3109,11 @@ def step(job, runtime):
                 "SELECT * FROM video_exports WHERE id=?", (track["export_id"],)
             )
             if export["state"] == "ready":
+                from . import story_video
+
+                track["release_check"] = story_video.finalize_packaging(
+                    export["id"], project=project
+                )
                 if mode == "overview":
                     data["current_mode"] = "deep_dive"
                 else:

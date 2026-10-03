@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 import time
 from urllib.parse import urlparse
@@ -11,7 +12,7 @@ from bs4 import BeautifulSoup
 from . import awards, config, db
 
 VERSION = "paper-venue-edition-awards-2"
-LOOKUP_VERSION = "official-records-3-virtual"
+LOOKUP_VERSION = "official-records-4-refresh"
 DESCRIPTION_VERSION = "paper-awards-no-urls-1"
 EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
 ALIASES = {
@@ -234,15 +235,37 @@ def ensure(project):
     context["awards"] = list(
         {(a["venue"], a["year"], a["name"]): a for a in prizes}.values()
     )
+    saved = paper["data"].get("publication", {})
+    if saved.get("status") == "verified" and saved.get("paper_title") == paper["title"]:
+        project["data"]["publication"] = saved
+        return
+    evidence = [
+        paper["title"],
+        paper["data"].get("journal_ref"),
+        paper["data"].get("pdf_path"),
+        [a.get("paper_url") for a in prizes],
+    ]
+    path = paper["data"].get("pdf_path")
+    if path:
+        try:
+            stat = config.safe_path(path).stat()
+            evidence.append([stat.st_size, stat.st_mtime_ns])
+        except (OSError, ValueError):
+            pass
+    evidence_digest = hashlib.sha256(db.dumps(evidence).encode()).hexdigest()
     existing = project["data"].get("publication", {})
     if existing and (
         existing.get("status") == "verified"
-        or existing.get("lookup_version") == LOOKUP_VERSION
+        or (
+            existing.get("lookup_version") == LOOKUP_VERSION
+            and existing.get("lookup_evidence") == evidence_digest
+        )
     ):
         return
     result = resolve(paper)
     if result["status"] == "unconfirmed":
         result["lookup_version"] = LOOKUP_VERSION
+        result["lookup_evidence"] = evidence_digest
     project["data"]["publication"] = result
     if result["status"] == "verified":
         paper["data"]["publication"] = result
@@ -362,6 +385,36 @@ def without_urls(text):
     ).strip()
 
 
+def prepare(project):
+    """Apply the same verified identity before every film/thumbnail snapshot."""
+    ensure(project)
+    package(project)
+    for mode, track in project["data"]["modes"].items():
+        if track.get("packaging"):
+            track["packaging"]["description"] = description(project, mode)
+            track["description_version"] = DESCRIPTION_VERSION
+
+
+def description_issues(project, mode, text):
+    meta = identity(project, mode)
+    issues = []
+    for field, value in [
+        ("論文名：", meta["paper_title"]),
+        ("発表学会：", meta["conference"]),
+    ]:
+        if field + value not in text.splitlines():
+            issues.append("Missing or incorrect " + field)
+    expected = [
+        f"受賞：{a['venue']} {a['year']} — {a['name']}（{a['name_ja']}）"
+        for a in meta["awards"]
+    ]
+    if [line for line in text.splitlines() if line.startswith("受賞：")] != expected:
+        issues.append("Missing, incorrect or unverified awards")
+    if without_urls(text) != text:
+        issues.append("URL or unnormalized description")
+    return issues
+
+
 def description(project, mode, *, references=None):
     """YouTube copy without URLs; the original URLs remain in source records."""
     if references is None:
@@ -417,10 +470,79 @@ def description(project, mode, *, references=None):
     return without_urls("\n".join(lines))
 
 
-def refresh_completed(project):
-    """Repair downloadable metadata, leaving immutable film manifests untouched."""
+def refresh_export(project, mode, export):
+    """Repair a completed preview/film's copy even while its parent is building."""
     from . import story_video, video
 
+    record = export["data"]
+    old = record.get("description", "")
+    chapters = re.findall(r"^\d{1,3}:\d{2}(?::\d{2})?\s+.+$", old, re.M)
+    new = without_urls(description(project, mode) + "\n\n" + "\n".join(chapters))
+    issues = description_issues(project, mode, new)
+    if issues:
+        raise ValueError("Video description check failed: " + "; ".join(issues))
+    new_title = story_video.portable_title(
+        project["data"]["modes"][mode]["packaging"]["title"]
+    )
+    if record.get("manifest", {}).get("preview"):
+        new_title += " — Preview"
+    changed = old != new or record.get("title") != new_title
+    if changed:
+        record.setdefault("packaging_history", []).append(
+            {
+                "title": record.get("title"),
+                "description": old,
+                "description_version": record.get("description_version"),
+                "replaced_at": time.time(),
+            }
+        )
+    if record.get("description_file"):
+        path = config.safe_path(record["description_file"])
+        if path.is_file() and path.read_text() != new:
+            history = path.with_name(
+                "description-" + video.file_digest(path)[:16] + ".txt"
+            )
+            if not history.is_file():
+                history.write_bytes(path.read_bytes())
+        if not path.is_file() or path.read_text() != new:
+            pending = path.with_suffix(".pending.txt")
+            pending.write_text(new, encoding="utf-8")
+            pending.replace(path)
+    record.update(
+        description=new,
+        title=new_title,
+        description_version=DESCRIPTION_VERSION,
+        identity=identity(project, mode),
+    )
+    # Thumbnail selection can arrive while this check is preparing the copy.
+    # Merge only copy fields into the latest record; preserve the current poster.
+    with db.connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        current = db.row(
+            conn.execute(
+                "SELECT * FROM video_exports WHERE id=?", (export["id"],)
+            ).fetchone()
+        )
+        latest = current["data"]
+        for field in (
+            "description",
+            "description_file",
+            "title",
+            "description_version",
+            "identity",
+            "packaging_history",
+        ):
+            if field in record:
+                latest[field] = record[field]
+        conn.execute(
+            "UPDATE video_exports SET data=?,updated=? WHERE id=?",
+            (db.dumps(latest), time.time(), export["id"]),
+        )
+    return changed
+
+
+def refresh_completed(project):
+    """Repair downloadable metadata, leaving immutable film manifests untouched."""
     if project["state"] != "ready":
         raise ValueError("Only completed projects can be refreshed")
     ensure(project)
@@ -441,46 +563,8 @@ def refresh_completed(project):
             "SELECT * FROM video_exports WHERE lesson_id=? AND state='ready'",
             (lesson["id"],),
         ):
-            record = export["data"]
-            old = record.get("description", "")
-            chapters = re.findall(r"^\d{1,3}:\d{2}(?::\d{2})?\s+.+$", old, re.M)
-            new = without_urls(
-                track["packaging"]["description"] + "\n\n" + "\n".join(chapters)
-            )
-            new_title = story_video.portable_title(track["packaging"]["title"])
-            if record.get("manifest", {}).get("preview"):
-                new_title += " — Preview"
-            if old != new or record.get("title") != new_title:
-                record.setdefault("packaging_history", []).append(
-                    {
-                        "title": record.get("title"),
-                        "description": old,
-                        "description_version": record.get("description_version"),
-                        "replaced_at": time.time(),
-                    }
-                )
+            if refresh_export(project, mode, export):
                 changed.append(export["id"])
-            if record.get("description_file"):
-                path = config.safe_path(record["description_file"])
-                if path.is_file() and path.read_text() != new:
-                    history = path.with_name(
-                        "description-" + video.file_digest(path)[:16] + ".txt"
-                    )
-                    if not history.is_file():
-                        history.write_bytes(path.read_bytes())
-                pending = path.with_suffix(".pending.txt")
-                pending.write_text(new, encoding="utf-8")
-                pending.replace(path)
-            record.update(
-                description=new,
-                title=new_title,
-                description_version=DESCRIPTION_VERSION,
-                identity=identity(project, mode),
-            )
-            db.execute(
-                "UPDATE video_exports SET data=?,updated=? WHERE id=?",
-                (db.dumps(record), time.time(), export["id"]),
-            )
     db.execute(
         "UPDATE video_projects SET data=?,updated=? WHERE id=?",
         (db.dumps(project["data"]), time.time(), project["id"]),

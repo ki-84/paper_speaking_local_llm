@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import time
@@ -12,6 +13,7 @@ import imageio_ffmpeg
 from . import config, db, publication, video, video_overlay
 
 VERSION = "story-film-2"
+RELEASE_VERSION = "verified-video-packaging-1"
 
 
 def portable_title(title):
@@ -238,11 +240,13 @@ def _render(input_path, output_path):
 
 
 def enqueue(project, mode, *, preview=False):
+    publication.prepare(project)
     track = project["data"]["modes"][mode]
     scenes = track["scenes"][:1] if preview else track["scenes"]
     kind = mode + ("_preview" if preview else "")
     manifest = {
         "version": VERSION,
+        "release_policy": RELEASE_VERSION,
         "project_id": project["id"],
         "mode": mode,
         "preview": preview,
@@ -430,48 +434,120 @@ def _diagram_events(spec, start, duration):
 def _thumbnail(manifest, work):
     from . import thumbnails
 
-    chosen = thumbnails.selected(manifest["project_id"], manifest["mode"])
-    if chosen and config.safe_path(chosen["png"]).is_file():
-        return config.safe_path(chosen["png"])
-    target = (
-        config.DATA
-        / "videos"
-        / "story-posters"
-        / (
-            video.digest(
-                [
-                    manifest["project_id"],
-                    manifest["mode"],
-                    manifest["packaging"],
-                    VERSION,
-                ]
-            )
-            + ".png"
-        )
+    project = _export_project(manifest)
+    chosen = thumbnails.ensure_labels(project, manifest["mode"]) or thumbnails.fallback(
+        project, manifest["mode"]
     )
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if not target.is_file():
-        spec = work / "thumbnail.json"
-        spec.write_text(
-            db.dumps(
-                {
-                    "thumbnail": True,
-                    "title_en": manifest["packaging"]["title_en"],
-                    "title_ja": (
-                        "【" + manifest["packaging"]["edition"] + "】"
-                        if manifest["packaging"].get("edition")
-                        else ""
-                    )
-                    + manifest["packaging"]["thumbnail_text"],
-                    "mode": manifest["mode"],
-                    "focus": 0,
-                    "visual": {"type": "flow", "nodes": []},
-                }
-            ),
-            encoding="utf-8",
+    return config.safe_path(chosen["png"])
+
+
+def _export_project(manifest):
+    project = db.one(
+        "SELECT * FROM video_projects WHERE id=?", (manifest["project_id"],)
+    )
+    if not project:
+        raise ValueError("Video project not found")
+    project["data"]["modes"][manifest["mode"]].setdefault(
+        "packaging", manifest["packaging"]
+    )
+    publication.prepare(project)
+    return project
+
+
+def finalize_packaging(export_id, *, project=None):
+    """Check actual download artifacts and repair copy/posters without reencoding."""
+    from . import thumbnails
+
+    export = db.one("SELECT * FROM video_exports WHERE id=?", (export_id,))
+    manifest = export["data"]["manifest"]
+    mode = manifest["mode"]
+    project = project or _export_project(manifest)
+    publication.prepare(project)
+    if (
+        not export["data"].get("mp4")
+        or not config.safe_path(export["data"]["mp4"]).is_file()
+    ):
+        raise ValueError("The video file must exist before its release check")
+    repairs = publication.description_issues(
+        project, mode, export["data"].get("description", "")
+    )
+    if not export["data"].get("description_file"):
+        export["data"]["description_file"] = str(
+            config.safe_path(export["data"]["mp4"])
+            .with_name("description.txt")
+            .relative_to(config.DATA)
         )
-        _render(spec, target)
-    return target
+    publication.refresh_export(project, mode, export)
+    chosen = thumbnails.ensure_labels(project, mode)
+    # A correct fixed poster permits finished films and English practice while
+    # the image-model job is still making its three richer alternatives.
+    if not chosen:
+        chosen = thumbnails.fallback(project, mode)
+    with db.connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        current = conn.execute(
+            "SELECT data FROM video_exports WHERE id=?", (export_id,)
+        ).fetchone()
+        record = json.loads(current["data"])
+        current_candidate = {
+            "png": record.get("thumbnail", ""),
+            "jpg": record.get("thumbnail_jpg")
+            or str(
+                config.safe_path(record.get("thumbnail", "missing.png"))
+                .with_suffix(".jpg")
+                .relative_to(config.DATA)
+            ),
+        }
+        issues = thumbnails.candidate_issues(project, mode, current_candidate)
+        if issues:
+            repairs += issues
+            prior = record.get("thumbnail")
+            if prior and prior != chosen["png"]:
+                history = record.setdefault("thumbnail_history", [])
+                if prior not in history:
+                    history.append(prior)
+            record.update(thumbnail=chosen["png"], thumbnail_jpg=chosen["jpg"])
+            if "id" not in chosen:
+                record.pop("thumbnail_set_id", None)
+                record.pop("thumbnail_candidate_id", None)
+        else:
+            record["thumbnail_jpg"] = current_candidate["jpg"]
+        problems = publication.description_issues(
+            project, mode, record["description"]
+        ) + thumbnails.candidate_issues(
+            project, mode, {"png": record["thumbnail"], "jpg": record["thumbnail_jpg"]}
+        )
+        if (
+            not record.get("description_file")
+            or config.safe_path(record["description_file"]).read_text()
+            != record["description"]
+        ):
+            problems.append("Description download does not match its displayed copy")
+        if problems:
+            raise ValueError("Video release check failed: " + "; ".join(problems))
+        record["release_check"] = {
+            "version": RELEASE_VERSION,
+            "status": "passed",
+            "time": time.time(),
+            "identity": publication.identity(project, mode),
+            "description_url_free": True,
+            "thumbnail_sha256": video.file_digest(
+                config.safe_path(record["thumbnail"])
+            ),
+            "repairs": repairs,
+        }
+        conn.execute(
+            "UPDATE video_exports SET state='ready',data=?,updated=? WHERE id=?",
+            (db.dumps(record), time.time(), export_id),
+        )
+    db.execute(
+        "UPDATE video_projects SET data=?,updated=? WHERE id=?",
+        (db.dumps(project["data"]), time.time(), project["id"]),
+    )
+    db.event(
+        "video", {"id": export_id, "lesson_id": export["lesson_id"], "state": "ready"}
+    )
+    return record["release_check"]
 
 
 def step(job, runtime):
@@ -479,6 +555,7 @@ def step(job, runtime):
     if not export:
         raise ValueError("Story export not found")
     if export["state"] == "ready":
+        finalize_packaging(export["id"])
         return True
     manifest = export["data"]["manifest"]
     work = config.DATA / "jobs" / ("story-video-" + export["id"])
@@ -642,12 +719,7 @@ def step(job, runtime):
         seconds = round(seconds)
         return f"{seconds // 60}:{seconds % 60:02}"
 
-    project = db.one(
-        "SELECT * FROM video_projects WHERE id=?", (manifest["project_id"],)
-    )
-    # Previews precede the learning stage, so their manifest may not have a
-    # description yet. Use the rendered film's frozen title for both kinds.
-    project["data"]["modes"][manifest["mode"]]["packaging"] = manifest["packaging"]
+    project = _export_project(manifest)
     description = publication.without_urls(
         publication.description(project, manifest["mode"])
         + "\n\n"
@@ -673,7 +745,7 @@ def step(job, runtime):
     }
     video._set_export(
         export,
-        "ready",
+        "checking",
         **{k: str(p.relative_to(config.DATA)) for k, p in paths.items()},
         title=manifest["title"],
         thumbnail=str(thumbnail.relative_to(config.DATA)),
@@ -689,6 +761,7 @@ def step(job, runtime):
         acceptance=acceptance,
         encoder=imageio_ffmpeg.get_ffmpeg_version(),
     )
+    finalize_packaging(export["id"], project=project)
     db.patch_job(
         job["id"],
         stage=f"{manifest['mode']} {'preview' if preview else 'film'} ready",

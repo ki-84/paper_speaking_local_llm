@@ -4,7 +4,15 @@ import argparse
 import json
 import time
 
-from paperspeak import config, db, local_network, publication, thumbnails, video
+from paperspeak import (
+    config,
+    db,
+    local_network,
+    publication,
+    story_video,
+    thumbnails,
+    video,
+)
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("project_ids", nargs="+", help="Completed video project IDs")
@@ -45,6 +53,8 @@ for ident in args.project_ids:
             if args.thumbnails
             else {}
         )
+        for export_id in before:
+            story_video.finalize_packaging(export_id, project=project)
     exports = []
     for export_id, digest in before.items():
         export = db.one("SELECT * FROM video_exports WHERE id=?", (export_id,))
@@ -62,6 +72,7 @@ for ident in args.project_ids:
                 "mp4_bytes_unchanged": True,
                 "title": record["title"],
                 "description_url_free": True,
+                "release_check": record["release_check"],
             }
         )
     report["projects"].append(

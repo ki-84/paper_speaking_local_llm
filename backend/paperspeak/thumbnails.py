@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import struct
 import subprocess
 import time
 
@@ -11,6 +12,7 @@ from . import config, db, publication, video, video_overlay
 from .runtime import GPUUnavailable, PracticePreempted
 
 VERSION = "surprised-pixel-3-awards"
+CHECK_VERSION = "thumbnail-dom-check-1"
 
 
 def get(project_id, mode):
@@ -34,8 +36,7 @@ def enqueue(project, mode, *, regenerate=False):
         raise ValueError("The film needs its script and title before making thumbnails")
     if any(not s.get("utterances") for s in track["scenes"]):
         raise ValueError("Finish the film script before making thumbnails")
-    publication.ensure(project)
-    publication.package(project)
+    publication.prepare(project)
     manifest = {
         "version": VERSION,
         "image_model": config.manifest().get("models", {}).get("image"),
@@ -196,18 +197,171 @@ def render(spec, output):
     output.parent.mkdir(parents=True, exist_ok=True)
     source = output.with_suffix(".json")
     source.write_text(db.dumps(spec), encoding="utf-8")
+    try:
+        subprocess.run(
+            [
+                str(config.ROOT / ".tools/node/bin/node"),
+                str(config.ROOT / "scripts/render_thumbnail.mjs"),
+                str(source),
+                str(output),
+            ],
+            cwd=config.ROOT,
+            check=True,
+            timeout=90,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ValueError(
+            "Local thumbnail renderer failed: "
+            + (exc.stderr or b"").decode(errors="replace")[-1500:]
+        ) from exc
+
+
+def image_issues(project, mode, name):
+    """Validate the actual rendered fields and the hashes of their PNG and input."""
+    issues = []
+    try:
+        png = config.safe_path(str(name))
+        source = png.with_suffix(".json")
+        receipt = json.loads(png.with_suffix(".verification.json").read_text())
+        meta = publication.identity(project, mode)
+        award = meta["awards"][0] if meta["awards"] else None
+        expected = {key: meta[key] for key in ("paper_title", "conference", "edition")}
+        expected.update(
+            award_name=award["name"] if award else None,
+            award_label=award["label"] if award else None,
+        )
+        if receipt.get("rendered") != expected:
+            issues.append("Rendered paper, conference, edition or award does not match")
+        if receipt.get("version") != CHECK_VERSION or not receipt.get(
+            "no_text_overflow"
+        ):
+            issues.append("Thumbnail layout has not passed its current check")
+        if receipt.get("renderer_sha256") != video.file_digest(
+            config.ROOT / "scripts/render_thumbnail.mjs"
+        ):
+            issues.append("Thumbnail uses an older renderer")
+        if receipt.get("png_sha256") != video.file_digest(png) or receipt.get(
+            "input_sha256"
+        ) != video.file_digest(source):
+            issues.append("Thumbnail or render input changed after verification")
+        with png.open("rb") as handle:
+            header = handle.read(24)
+        if header[:8] != b"\x89PNG\r\n\x1a\n" or struct.unpack(
+            ">II", header[16:24]
+        ) != (1280, 720):
+            issues.append("Thumbnail is not a 1280×720 PNG")
+        if png.stat().st_size >= 2_000_000:
+            issues.append("Thumbnail exceeds 2 MB")
+    except (OSError, ValueError, TypeError, KeyError, struct.error):
+        issues.append("Thumbnail or verification receipt is unavailable")
+    return issues
+
+
+def candidate_issues(project, mode, candidate):
+    if not candidate or not candidate.get("png"):
+        return ["Thumbnail candidate is unavailable"]
+    issues = image_issues(project, mode, candidate["png"])
+    try:
+        jpg = config.safe_path(candidate["jpg"])
+        if not jpg.is_file() or not 0 < jpg.stat().st_size < 2_000_000:
+            issues.append("Thumbnail JPEG is unavailable or too large")
+        else:
+            receipt = json.loads(
+                config.safe_path(candidate["png"])
+                .with_suffix(".verification.json")
+                .read_text()
+            )
+            if receipt.get("jpg_sha256") != video.file_digest(jpg):
+                issues.append("Thumbnail JPEG changed after verification")
+    except (OSError, KeyError, ValueError):
+        issues.append("Thumbnail JPEG is unavailable")
+    return issues
+
+
+def jpeg(png):
     subprocess.run(
         [
-            str(config.ROOT / ".tools/node/bin/node"),
-            str(config.ROOT / "scripts/render_thumbnail.mjs"),
-            str(source),
-            str(output),
+            __import__("imageio_ffmpeg").get_ffmpeg_exe(),
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(png),
+            "-q:v",
+            "2",
+            str(png.with_suffix(".jpg")),
         ],
-        cwd=config.ROOT,
         check=True,
-        timeout=90,
-        capture_output=True,
+        timeout=30,
     )
+    path = png.with_suffix(".verification.json")
+    receipt = json.loads(path.read_text())
+    receipt["jpg_sha256"] = video.file_digest(png.with_suffix(".jpg"))
+    pending = path.with_suffix(".pending.json")
+    pending.write_text(db.dumps(receipt), encoding="utf-8")
+    pending.replace(path)
+
+
+def fallback(project, mode):
+    """A checked local poster is available before the image model finishes."""
+    identity = publication.identity(project, mode)
+    key = video.digest(
+        [
+            "fixed-surprise-1",
+            video_overlay.character_manifest(),
+            video.file_digest(config.ROOT / "scripts/render_thumbnail.mjs"),
+        ]
+    )[:16]
+    chars = config.DATA / "thumbnails" / "characters" / key
+    for role in ("guide", "host"):
+        path = chars / (role + ".png")
+        if not path.is_file():
+            render({"portrait": True, "role": role, "surprise": True}, path)
+    root = config.DATA / "thumbnails" / "fallbacks" / video.digest([identity, key])[:24]
+    png = root / "thumbnail.png"
+    candidate = {
+        "png": str(png.relative_to(config.DATA)),
+        "jpg": str(png.with_suffix(".jpg").relative_to(config.DATA)),
+        "identity": identity,
+    }
+    if candidate_issues(project, mode, candidate):
+        plan = plans(project, mode)[0]
+        render(
+            {
+                "identity": identity,
+                "lines": plan["lines"],
+                "palette": plan["palette"],
+                "maya": str(chars / "guide.png"),
+                "aiden": str(chars / "host.png"),
+                "topic": "AI × NEW IDEA",
+            },
+            png,
+        )
+        jpeg(png)
+    issues = candidate_issues(project, mode, candidate)
+    if issues:
+        raise ValueError("Fallback thumbnail check failed: " + "; ".join(issues))
+    candidate["sha256"] = video.file_digest(png)
+    return candidate
+
+
+def ensure_labels(project, mode):
+    row = get(project["id"], mode)
+    if not row or row["state"] != "ready":
+        return None
+    if len(row["data"]["candidates"]) != 3:
+        raise ValueError("A thumbnail set needs three completed candidates")
+    if any(candidate_issues(project, mode, c) for c in row["data"]["candidates"]):
+        recompose(project, mode)
+    candidate = selected(project["id"], mode)
+    issues = candidate_issues(project, mode, candidate)
+    if issues:
+        raise ValueError(
+            "Thumbnail check failed after local correction: " + "; ".join(issues)
+        )
+    return candidate
 
 
 def recompose(project, mode):
@@ -224,17 +378,39 @@ def recompose(project, mode):
         old["manifest"].get("version") == VERSION
         and old["manifest"].get("identity") == identity
         and old["manifest"].get("renderer") == renderer
+        and all(not candidate_issues(project, mode, c) for c in old["candidates"])
     ):
         return previous["id"]
     sources = []
     for candidate in old["candidates"]:
         source = config.safe_path(candidate["png"]).with_suffix(".json")
-        spec = json.loads(source.read_text())
+        try:
+            spec = json.loads(source.read_text())
+        except (OSError, ValueError):
+            checked = fallback(project, mode)
+            spec = json.loads(
+                config.safe_path(checked["png"]).with_suffix(".json").read_text()
+            )
+            spec["lines"] = candidate.get("lines", spec["lines"])
         for key in ("maya", "aiden", "background"):
             if spec.get(key):
-                asset = config.safe_path(spec[key])
-                if not asset.is_file():
-                    raise ValueError("Saved thumbnail art is unavailable: " + key)
+                try:
+                    asset = config.safe_path(spec[key])
+                    present = asset.is_file()
+                except ValueError:
+                    present = False
+                if not present:
+                    if key == "background":
+                        spec.pop(key)
+                        continue
+                    checked = fallback(project, mode)
+                    replacement = json.loads(
+                        config.safe_path(checked["png"])
+                        .with_suffix(".json")
+                        .read_text()
+                    )
+                    spec[key] = replacement[key]
+                    asset = config.safe_path(spec[key])
                 # Preserve provenance of the actual illustrations being reused.
                 spec[key] = str(asset)
         spec["identity"] = identity
@@ -265,26 +441,17 @@ def recompose(project, mode):
         png = root / f"thumbnail-{index}.png"
         jpg = png.with_suffix(".jpg")
         # Stable paths permit a retry to reuse successfully composed candidates.
-        if not png.is_file() or not jpg.is_file():
+        if candidate_issues(project, mode, {"png": str(png), "jpg": str(jpg)}):
             render(spec, png)
-            subprocess.run(
-                [
-                    __import__("imageio_ffmpeg").get_ffmpeg_exe(),
-                    "-hide_banner",
-                    "-loglevel",
-                    "error",
-                    "-y",
-                    "-i",
-                    str(png),
-                    "-q:v",
-                    "2",
-                    str(jpg),
-                ],
-                check=True,
-                timeout=30,
-            )
+            jpeg(png)
         candidate.update(
             identity=identity,
+            lines=spec["lines"],
+            palette=spec.get("palette", "teal"),
+            generation=original.get(
+                "generation",
+                {"fallback": "Saved inputs unavailable; checked local composition"},
+            ),
             png=str(png.relative_to(config.DATA)),
             jpg=str(jpg.relative_to(config.DATA)),
             sha256=video.file_digest(png),
@@ -385,6 +552,11 @@ def plans(project, mode):
 def step(job, runtime):
     row = db.one("SELECT * FROM thumbnail_sets WHERE id=?", (job["target"],))
     if row["state"] == "ready":
+        project = db.one(
+            "SELECT * FROM video_projects WHERE id=?", (row["project_id"],)
+        )
+        publication.prepare(project)
+        ensure_labels(project, row["mode"])
         return True
     data = row["data"]
     project = db.one("SELECT * FROM video_projects WHERE id=?", (row["project_id"],))
@@ -522,22 +694,7 @@ def step(job, runtime):
             )
             jpg = png.with_suffix(".jpg")
             # FFmpeg is already pinned and available; no network or extra image library in API env.
-            subprocess.run(
-                [
-                    __import__("imageio_ffmpeg").get_ffmpeg_exe(),
-                    "-hide_banner",
-                    "-loglevel",
-                    "error",
-                    "-y",
-                    "-i",
-                    str(png),
-                    "-q:v",
-                    "2",
-                    str(jpg),
-                ],
-                check=True,
-                timeout=30,
-            )
+            jpeg(png)
             candidate.update(
                 png=str(png.relative_to(config.DATA)),
                 jpg=str(jpg.relative_to(config.DATA)),
@@ -617,22 +774,7 @@ def step(job, runtime):
                 },
                 png,
             )
-            subprocess.run(
-                [
-                    __import__("imageio_ffmpeg").get_ffmpeg_exe(),
-                    "-hide_banner",
-                    "-loglevel",
-                    "error",
-                    "-y",
-                    "-i",
-                    str(png),
-                    "-q:v",
-                    "2",
-                    str(png.with_suffix(".jpg")),
-                ],
-                check=True,
-                timeout=30,
-            )
+            jpeg(png)
             candidate["sha256"] = video.file_digest(png)
             candidate["generation"]["fallback"] = (
                 "Simple composition after three visual corrections"
@@ -642,6 +784,8 @@ def step(job, runtime):
         row["state"] = "ready"
         save(row)
         select(row["id"], data["recommended_id"], automatic=True)
+        publication.prepare(project)
+        ensure_labels(project, mode)
         return True
     save(row)
     db.patch_job(

@@ -217,11 +217,22 @@ def test_recomposition_reuses_art_keeps_manual_choice_and_prior_sets_without_ai_
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_bytes(b"New labels only")
 
-    def jpeg(command, **kwargs):
-        config.safe_path(command[-1]).write_bytes(b"jpeg")
+    def jpeg(png):
+        png.with_suffix(".jpg").write_bytes(b"jpeg")
+
+    def checked_output(project, mode, candidate):
+        # This test mocks rendering to exercise revisions and manual selection.
+        # Real rendered receipts and bytes are covered by release-check tests.
+        return (
+            []
+            if config.safe_path(candidate["png"]).is_file()
+            and config.safe_path(candidate["jpg"]).is_file()
+            else ["Missing output"]
+        )
 
     monkeypatch.setattr(thumbnails, "render", render)
-    monkeypatch.setattr(thumbnails.subprocess, "run", jpeg)
+    monkeypatch.setattr(thumbnails, "jpeg", jpeg)
+    monkeypatch.setattr(thumbnails, "candidate_issues", checked_output)
     jobs = len(db.all("SELECT id FROM jobs"))
     new_id = thumbnails.recompose(row, "overview")
     new = thumbnails.get(row["id"], "overview")

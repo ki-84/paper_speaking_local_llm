@@ -893,6 +893,16 @@ def step(job, runtime):
                         )
                         return True
         if ready:
+            from . import story_video
+
+            # Database state alone cannot certify that the displayed/downloaded
+            # thumbnail and copy still contain the verified publication fields.
+            data["release_checks"] = {
+                mode: story_video.finalize_packaging(
+                    track["export_id"], project=project
+                )
+                for mode, track in project["data"]["modes"].items()
+            }
             run["state"] = "ready"
             data.update(phase="complete", finished=time.time())
             data["timings"]["production_seconds"] = round(

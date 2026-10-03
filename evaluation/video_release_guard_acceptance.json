@@ -1,0 +1,666 @@
+{
+  "status": "passed",
+  "time_jst": "2026-10-04T08:13:28.161740+09:00",
+  "release_policy": "verified-video-packaging-1",
+  "thumbnail_receipt": "thumbnail-dom-check-1",
+  "scope": "Verified metadata and real posters, including temporary posters, at enqueue/resume/completion. Dialogue, TTS, MP4 bytes and original thumbnail sets retained. No YouTube upload.",
+  "regressions": [
+    "Missing metadata at enqueue",
+    "Actual offline fallback before image-model completion",
+    "Stale ready export automatically repaired on resume",
+    "Changed PNG/JPEG/input or wrong rendered fields detected",
+    "New source evidence refreshes unknown venue cache",
+    "Copy refresh preserves concurrent manual thumbnail selection",
+    "Nightly completion checks both films and repairs missing saved thumbnail inputs"
+  ],
+  "checks": {
+    "python_tests": {
+      "passed": 274,
+      "duration_seconds": 49.02
+    },
+    "ruff_changed_files": "passed",
+    "deployed_lan": {
+      "actual_lan_ui_and_downloads": true,
+      "description_url_free_with_verified_awards": true,
+      "selected_thumbnail_dimensions": true,
+      "no_browser_errors": true,
+      "read_only": true
+    },
+    "png_jpeg_downloads": 36,
+    "phone_320px_layout_visually_checked": true,
+    "protected_pixel_portraits": "passed, zero RGB change outside allowed face regions",
+    "local_generation": "Saved illustrations recomposed under Python loopback inference guard; Chromium blocks external requests and renders without inference GPU. No OS network-isolation claim.",
+    "settings": {
+      "discovery_enabled": false,
+      "nightly_video_enabled": true,
+      "nightly_video_hour": 2,
+      "nightly_video_minute": 0,
+      "youtube_auto_upload": false
+    },
+    "old_paused_jobs": [
+      {
+        "id": "712b3b2d646046658fee3d6ec4f7a7d0",
+        "state": "paused"
+      },
+      {
+        "id": "af8db257f7a44ddcb7a4012719919767",
+        "state": "paused"
+      },
+      {
+        "id": "d951f20572014ca2bb43cd6ec4bc332b",
+        "state": "paused"
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "7b57bfd44d4e4aef92e22821cb8931b6",
+      "paper": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "publication": "ICML 2026",
+      "modes": {
+        "overview": {
+          "set_id": "08e126f48aebd401674d1ef5b3c5930c",
+          "selected_id": "837457a3cbb08b4f4fb634eefec15daf",
+          "selection_source": "automatic",
+          "candidates": [
+            {
+              "id": "a695fdecae876f4a333c96748425396b",
+              "png": "thumbnails/08e126f48aebd401674d1ef5b3c5930c/thumbnail-0.png",
+              "jpg": "thumbnails/08e126f48aebd401674d1ef5b3c5930c/thumbnail-0.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+                  "conference": "ICML 2026",
+                  "edition": "概要解説",
+                  "award_name": "Outstanding Paper Award",
+                  "award_label": "ICML 2026 優秀論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "c28f35dde18efbc4ea0a5a11f304bb748f604636167c364d87710423d2d5a6eb",
+                "input_sha256": "3cf487b04415ebf71fda7cd19985f1d426cc4ef8d3fc3bdbcc98be5b0c9151f5",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "17a8784ecdd47cbb3eb989c3a05d04f700a8d2a3c70cafe40d0d386a843f959d"
+              }
+            },
+            {
+              "id": "837457a3cbb08b4f4fb634eefec15daf",
+              "png": "thumbnails/08e126f48aebd401674d1ef5b3c5930c/thumbnail-1.png",
+              "jpg": "thumbnails/08e126f48aebd401674d1ef5b3c5930c/thumbnail-1.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+                  "conference": "ICML 2026",
+                  "edition": "概要解説",
+                  "award_name": "Outstanding Paper Award",
+                  "award_label": "ICML 2026 優秀論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "9b8cab951d5e903cf34c27aa685d85dc5eab1282831c8a9a87890f68448d5492",
+                "input_sha256": "bbc94d668d3dc23c4b165435b96253a49f85581f73fec8d06751c4bc47e18321",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "ff5d767f7ca4b5cca292053770b9004a5af15631ff1edefb1d8b2b4f9a19c664"
+              }
+            },
+            {
+              "id": "7023dc6ee2e30e476d7ba24dbf5e6776",
+              "png": "thumbnails/08e126f48aebd401674d1ef5b3c5930c/thumbnail-2.png",
+              "jpg": "thumbnails/08e126f48aebd401674d1ef5b3c5930c/thumbnail-2.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+                  "conference": "ICML 2026",
+                  "edition": "概要解説",
+                  "award_name": "Outstanding Paper Award",
+                  "award_label": "ICML 2026 優秀論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "f9ef0950cecf55e91b1b7a7ddcd32ab0465afd5dd2b66ee5a2c3d06fa4a6347e",
+                "input_sha256": "9661bca2df9cbe11fecd149b7371db1057006222d6e0da172b1ae7f59955b492",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "e752e6a1ca9590679689678c2c46220d328a0661ebaa0c1bedc43dd2901ad455"
+              }
+            }
+          ],
+          "exports": [
+            {
+              "id": "dc126b2df292467484d0ed909c4d358e",
+              "sha256": "18925105e179c5a7caf5f301da9f456ebbcc4f86b1baca262480ac1fb597df21",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            },
+            {
+              "id": "e3725e8da6464c10a3ad7adc27aca03c",
+              "sha256": "f6379bd88b823084210d55836bed163bb347a8eca7b7193d206e7ce445a30f30",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            }
+          ]
+        },
+        "deep_dive": {
+          "set_id": "4e2f6d67be28868f7e964355474f569a",
+          "selected_id": "501ad28d365381cf53081eb3ae4d6bc9",
+          "selection_source": "automatic",
+          "candidates": [
+            {
+              "id": "501ad28d365381cf53081eb3ae4d6bc9",
+              "png": "thumbnails/4e2f6d67be28868f7e964355474f569a/thumbnail-0.png",
+              "jpg": "thumbnails/4e2f6d67be28868f7e964355474f569a/thumbnail-0.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+                  "conference": "ICML 2026",
+                  "edition": "詳細解説",
+                  "award_name": "Outstanding Paper Award",
+                  "award_label": "ICML 2026 優秀論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "bb0d73245c4a7e436273d1fd1ac74d2c130c6749fe9a1a1b528c88b9327fbe3b",
+                "input_sha256": "1c8b0c06ad75df8fd6c2fdb3de6b4a4821dfa8042af15d2ffbc601d5dfa3a4d1",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "2ce4c44f32e3ab6d0194f77165b4930ff434d08b42855f321073184866c6ed98"
+              }
+            },
+            {
+              "id": "9412445a9bb0d25fa44631a481c730e7",
+              "png": "thumbnails/4e2f6d67be28868f7e964355474f569a/thumbnail-1.png",
+              "jpg": "thumbnails/4e2f6d67be28868f7e964355474f569a/thumbnail-1.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+                  "conference": "ICML 2026",
+                  "edition": "詳細解説",
+                  "award_name": "Outstanding Paper Award",
+                  "award_label": "ICML 2026 優秀論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "97b04d33f2f83e7741411c3b38f896214d032095d65d415ce8119de092cd50bd",
+                "input_sha256": "4527cb372dcabe4b574c68dabd36d2aa6d804c123b121cab5f1f79e45b2a463a",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "6c78fc460cfe0387cbf930d3a30fdc02acd18282ece86ad88628085951d7b46c"
+              }
+            },
+            {
+              "id": "45c31fb09bc958909f4674ab1826b201",
+              "png": "thumbnails/4e2f6d67be28868f7e964355474f569a/thumbnail-2.png",
+              "jpg": "thumbnails/4e2f6d67be28868f7e964355474f569a/thumbnail-2.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+                  "conference": "ICML 2026",
+                  "edition": "詳細解説",
+                  "award_name": "Outstanding Paper Award",
+                  "award_label": "ICML 2026 優秀論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "e36da675698f4ebefb0637e49475523d84e8489d2b56974ff4eb54d2be683f79",
+                "input_sha256": "7c87a404e27a1f911f20c8ceda7581ad01f16e487bade35a1739c4834e74914f",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "fe53585ee7feafb2200f2ff06d880529c9b8cb7d925facd2b5d8a43c0502f429"
+              }
+            }
+          ],
+          "exports": [
+            {
+              "id": "0b0a8a53b587497db62decbbec947a49",
+              "sha256": "c697d14c14be10791461e6b346b1430cea1e5f2e91968b1aa49fad927d829799",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            },
+            {
+              "id": "22e3a996bd80445981c07d6d28e22998",
+              "sha256": "42e0d953da32bcb9eadc6285ca320e5bc8217016d666288a5091ca288cefe320",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a057ab1cb5924f1aa27a8e60390cb574",
+      "paper": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+      "publication": "RSS 2026",
+      "modes": {
+        "overview": {
+          "set_id": "ad4abd05dcfbf7d3f98c8388ed0926c1",
+          "selected_id": "189654d39306dd82e8e58fa458474377",
+          "selection_source": "automatic",
+          "candidates": [
+            {
+              "id": "30d866027718b6f107f99b884392280f",
+              "png": "thumbnails/ad4abd05dcfbf7d3f98c8388ed0926c1/thumbnail-0.png",
+              "jpg": "thumbnails/ad4abd05dcfbf7d3f98c8388ed0926c1/thumbnail-0.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+                  "conference": "RSS 2026",
+                  "edition": "概要解説",
+                  "award_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+                  "award_label": "RSS 2026 優秀システム論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "143e9ff6a8bf6bca1802e63f844a2e2bc17171f8c293e2790bf4fd73984e6b37",
+                "input_sha256": "23d5959b9de88ba90e05665ffbe800447ae22953dda34c3d00f1bd1b25699d07",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "32bd6ac346403280601d13e296169c9bd8e905312f518c48a045beb85ad512c0"
+              }
+            },
+            {
+              "id": "189654d39306dd82e8e58fa458474377",
+              "png": "thumbnails/ad4abd05dcfbf7d3f98c8388ed0926c1/thumbnail-1.png",
+              "jpg": "thumbnails/ad4abd05dcfbf7d3f98c8388ed0926c1/thumbnail-1.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+                  "conference": "RSS 2026",
+                  "edition": "概要解説",
+                  "award_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+                  "award_label": "RSS 2026 優秀システム論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "93ba94678d83cfd20f2f80f47970937dc91a4101af04e7447a9698d039db9349",
+                "input_sha256": "93ce1d9f93b60ff17d81317bd87744013ff477a05e8ffb9e19291fd0e1e1eb61",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "a97d9c74eca69ab6d2a710d5b7d33947b6c0e5c0a4c285e5e83aadfe40c94bfe"
+              }
+            },
+            {
+              "id": "4b3a0022120965686bf1adc497d78484",
+              "png": "thumbnails/ad4abd05dcfbf7d3f98c8388ed0926c1/thumbnail-2.png",
+              "jpg": "thumbnails/ad4abd05dcfbf7d3f98c8388ed0926c1/thumbnail-2.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+                  "conference": "RSS 2026",
+                  "edition": "概要解説",
+                  "award_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+                  "award_label": "RSS 2026 優秀システム論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "f2147162e9860f6fc3e15acc6df64645da192108d427d746d74e2248e056e975",
+                "input_sha256": "aaa5d560d699710ad1cb3d1f4ef9526b1d3553c094cefc5a3fef81d85a0916db",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "fdc35e3af75b3136d5545009bae33e02114bb3f1a0907673ef556454ce664a28"
+              }
+            }
+          ],
+          "exports": [
+            {
+              "id": "4d886c5fb48b4df688c5d4a5b5ff5f1a",
+              "sha256": "6aaafe0a02cf0040969cb4d4176f80ba898b195f7d4b1c58e3da96067c061960",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            },
+            {
+              "id": "77cbe218fdea4a67b8f17d73acfb19c6",
+              "sha256": "54aaacc3b65c80ffa31140c0b33d7f48a40184cdddd08fc60e7f4034f9a6ae5e",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            }
+          ]
+        },
+        "deep_dive": {
+          "set_id": "977b00b942770d0264473b3af71e8f7a",
+          "selected_id": "0a520d52228f397f53589691145bbf5f",
+          "selection_source": "automatic",
+          "candidates": [
+            {
+              "id": "ad87f5d7b460d4619f26085edba4c74c",
+              "png": "thumbnails/977b00b942770d0264473b3af71e8f7a/thumbnail-0.png",
+              "jpg": "thumbnails/977b00b942770d0264473b3af71e8f7a/thumbnail-0.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+                  "conference": "RSS 2026",
+                  "edition": "詳細解説",
+                  "award_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+                  "award_label": "RSS 2026 優秀システム論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "6c75ac6e58487f19dfdbc292cd5610062fa1fafc22f9bb41fa75a1738f87624b",
+                "input_sha256": "56e86c752e82ee6d3dc2f7d487fec49ee67c25aa572292aa7479d0cc18638ed7",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "f343286449323641907c6c6a83041ee07ccea42f947e6b0bfa094d5be895d790"
+              }
+            },
+            {
+              "id": "0a520d52228f397f53589691145bbf5f",
+              "png": "thumbnails/977b00b942770d0264473b3af71e8f7a/thumbnail-1.png",
+              "jpg": "thumbnails/977b00b942770d0264473b3af71e8f7a/thumbnail-1.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+                  "conference": "RSS 2026",
+                  "edition": "詳細解説",
+                  "award_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+                  "award_label": "RSS 2026 優秀システム論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "9e2f53b3f4056099bf985bd4a1c2cc8e968555bd2f9852ee5accd1875dbfb6f1",
+                "input_sha256": "455274497c20172a604f653cb8d0dc2be7088bd1f73429b4c2d409aa61f51eb3",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "4021e985a3c2a4b236ab8a1a7938d9a9790f217227fd4d47598d1e78aa0d920c"
+              }
+            },
+            {
+              "id": "295d578627bb1cc4b19ff9d056e7124e",
+              "png": "thumbnails/977b00b942770d0264473b3af71e8f7a/thumbnail-2.png",
+              "jpg": "thumbnails/977b00b942770d0264473b3af71e8f7a/thumbnail-2.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+                  "conference": "RSS 2026",
+                  "edition": "詳細解説",
+                  "award_name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+                  "award_label": "RSS 2026 優秀システム論文賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "a96908e3bb25b17ee9e20d0ca8c4c1a9b863e36ad1832fca9246b334c03d4759",
+                "input_sha256": "97aa3d808d154513346ae79895f291a9603e0f6405764030d0a2fa9a25560288",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "6764096ecede9886e1496c3658fefb90e40db2b742b3d28576528fe48e74e26c"
+              }
+            }
+          ],
+          "exports": [
+            {
+              "id": "6630bd8c6f8743a4919dbb4a7b570df2",
+              "sha256": "b0ecfa0537657b92f92eb84e1c90960d51dc73d4fdd6835cc56e332ee7bdc999",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            },
+            {
+              "id": "a9b9fea129a34ff595ee53b2f2ede9b9",
+              "sha256": "482e76ea66353ea001d084daee5e9644756ff33b00983370115c2db34f0cac35",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bd7642d8e5e244399c5a48e30fe52ec2",
+      "paper": "Asynchronous Methods for Deep Reinforcement Learning",
+      "publication": "ICML 2016",
+      "modes": {
+        "overview": {
+          "set_id": "90eafdba997f186a9d7890b35ee505c6",
+          "selected_id": "d80c463a587fcb7259f82fe26281c0a0",
+          "selection_source": "automatic",
+          "candidates": [
+            {
+              "id": "d80c463a587fcb7259f82fe26281c0a0",
+              "png": "thumbnails/90eafdba997f186a9d7890b35ee505c6/thumbnail-0.png",
+              "jpg": "thumbnails/90eafdba997f186a9d7890b35ee505c6/thumbnail-0.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+                  "conference": "ICML 2016",
+                  "edition": "概要解説",
+                  "award_name": "Test of Time Award",
+                  "award_label": "ICML 2026 Test of Time賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "452cf2eecd1346f62d4f38680412253509f0057e7c546c9e1727224aeee16703",
+                "input_sha256": "acc99222ec315eee87e324bd86d1a761f8d17ae3684da10e981facf0bf3cd21e",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "37ead767775d795efeda80f79e265766e91c5205a657356e2b7cd9e472753e24"
+              }
+            },
+            {
+              "id": "f5024b4872f9a7a843ce7ab7a7950cdf",
+              "png": "thumbnails/90eafdba997f186a9d7890b35ee505c6/thumbnail-1.png",
+              "jpg": "thumbnails/90eafdba997f186a9d7890b35ee505c6/thumbnail-1.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+                  "conference": "ICML 2016",
+                  "edition": "概要解説",
+                  "award_name": "Test of Time Award",
+                  "award_label": "ICML 2026 Test of Time賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "c286ad6a22d10295ae1d323bf207485402249ff10616356322e414cb07722eb5",
+                "input_sha256": "ca3656eca187eed725c2898916782b27ec66ced4d4de4bc5182e227f885d2a82",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "1321a320e5f96b34bd5781c430f0958a94da836f64b4164e21aa05ebabf3effc"
+              }
+            },
+            {
+              "id": "a05a5a31b17a2579cf4f69652e3c5d87",
+              "png": "thumbnails/90eafdba997f186a9d7890b35ee505c6/thumbnail-2.png",
+              "jpg": "thumbnails/90eafdba997f186a9d7890b35ee505c6/thumbnail-2.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+                  "conference": "ICML 2016",
+                  "edition": "概要解説",
+                  "award_name": "Test of Time Award",
+                  "award_label": "ICML 2026 Test of Time賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "0577f4887d5801c8689f1344f281f05da8975396286750cbc4a5023a042beae7",
+                "input_sha256": "482f1d7dc32256769c422f0297f360627c7b03df825f7bbd163446503d021e31",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "e549829aaa247b88fe13ee08061a277e5a24d24eb36225b1bd45f7ef6422ddad"
+              }
+            }
+          ],
+          "exports": [
+            {
+              "id": "0601479643764e64bf3193c4b4555f06",
+              "sha256": "20f4f9e0d1d00be96622e04bc3ea8642e92a2355ce0e66d7c93024f5e4fa76fb",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            },
+            {
+              "id": "e090ed9f50c044bdb99d5e1fa751936a",
+              "sha256": "b6ae568b6f7892466857612b35d2f6ad56e0b53ebe972da5039b84d2b8eabeca",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            }
+          ]
+        },
+        "deep_dive": {
+          "set_id": "7163524baf2838a2c626aa8540464051",
+          "selected_id": "3b6ad6734a9752ecae8db9f4689c15c7",
+          "selection_source": "automatic",
+          "candidates": [
+            {
+              "id": "3b6ad6734a9752ecae8db9f4689c15c7",
+              "png": "thumbnails/7163524baf2838a2c626aa8540464051/thumbnail-0.png",
+              "jpg": "thumbnails/7163524baf2838a2c626aa8540464051/thumbnail-0.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+                  "conference": "ICML 2016",
+                  "edition": "詳細解説",
+                  "award_name": "Test of Time Award",
+                  "award_label": "ICML 2026 Test of Time賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "9e8582a0ebc432833cc1b66a5d7ff1807d5b5783767b85d8bcac922520452938",
+                "input_sha256": "3824b420f8ebd007ae14d1992b3063ec85ba413fd3d2ea14fd5de866f18a49fb",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "df0ef19fcd9e45821754c90007d9f7d88728d5998c12c8e5c8fec3ccb3a9006c"
+              }
+            },
+            {
+              "id": "1a22140c4aad40de11cdab4e623645cd",
+              "png": "thumbnails/7163524baf2838a2c626aa8540464051/thumbnail-1.png",
+              "jpg": "thumbnails/7163524baf2838a2c626aa8540464051/thumbnail-1.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+                  "conference": "ICML 2016",
+                  "edition": "詳細解説",
+                  "award_name": "Test of Time Award",
+                  "award_label": "ICML 2026 Test of Time賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "e940aa938a9801a4cabf6aaec1d4ad54f148148a9acd2a323303b5771a8aae40",
+                "input_sha256": "ff3f2246365ef1e992022961d4cf84b44b134acaf6c411c390193e328e053842",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "09d722be0d98814f0620c24acbf2af277173fc2f9a6e9590c889bb0088cf0386"
+              }
+            },
+            {
+              "id": "8e245d36c54aae52e23039b68bbd6a97",
+              "png": "thumbnails/7163524baf2838a2c626aa8540464051/thumbnail-2.png",
+              "jpg": "thumbnails/7163524baf2838a2c626aa8540464051/thumbnail-2.jpg",
+              "receipt": {
+                "version": "thumbnail-dom-check-1",
+                "rendered": {
+                  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+                  "conference": "ICML 2016",
+                  "edition": "詳細解説",
+                  "award_name": "Test of Time Award",
+                  "award_label": "ICML 2026 Test of Time賞"
+                },
+                "resolution": [
+                  1280,
+                  720
+                ],
+                "no_text_overflow": true,
+                "external_requests_blocked": true,
+                "png_sha256": "35078d13b44c75055291127589cbfcdde09cedd8071f210402c463c0074aa1dd",
+                "input_sha256": "6dd3c9d9cdfeaee6d977c05664572badbad0a207d001eca4758976762796711c",
+                "renderer_sha256": "45abf1a52ff11cbdde905d01f6a5e950bb6bc28f0343e4921b94aa1a83d8285e",
+                "jpg_sha256": "4bf873213b6f4390e2f0cf1ee1ac7a44737a2c5615b0c560c4cc7d3e0b4329d6"
+              }
+            }
+          ],
+          "exports": [
+            {
+              "id": "a1bd67d90ec04ed2b0ecf29506471f33",
+              "sha256": "0705a8ce801ef70d8177ad9aac19dbfac31070ff58c3b1afc515d3d8c9f23e5e",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            },
+            {
+              "id": "7448791ecc8245a29879b35e80729f11",
+              "sha256": "788b455728cbf24dd72e4b7e6e2b14382ff16b10f0ba379dfd6201dd8e353441",
+              "mp4_bytes_unchanged": true,
+              "release_version": "verified-video-packaging-1",
+              "description_url_free": true
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

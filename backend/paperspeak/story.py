@@ -15,7 +15,7 @@ from difflib import SequenceMatcher
 
 from bs4 import BeautifulSoup
 
-from . import config, db, lessons, papers, translation, video, voices
+from . import config, db, lessons, papers, publication, translation, video, voices
 from .quality import (
     critical_speech_change,
     english_only,
@@ -215,6 +215,7 @@ def get(ident):
             "version",
             "phase",
             "paper_title",
+            "publication",
             "warnings",
             "references",
             "current_mode",
@@ -1320,6 +1321,7 @@ def _sources_step(project, runtime):
         "SELECT id FROM sources WHERE paper_id=? LIMIT 1", (project["paper_id"],)
     ):
         papers.ingest(project["paper_id"])
+    publication.ensure(project)
     # Upgrade reused prose-only notes before planning: equations, comparison
     # tables and figure captions are first-class evidence, not decorative text.
     if data.get("reading_reuse") and not data.get("reading_includes_structured"):
@@ -2926,6 +2928,12 @@ def _learning_step(project, runtime, mode):
         title = track["packaging"]["title"]
         track["packaging"]["description"] = (
             title
+            + "\n\n論文名："
+            + project["data"]["paper_title"]
+            + "\n発表学会："
+            + project["data"]["publication"]["label"]
+            + "\n"
+            + project["data"]["publication"].get("source_url", "")
             + "\n\n図解とMaya・Aidenの自然な英語の会話で、AI論文の"
             + (
                 "背景・課題・発想を数式なしで学びます。"
@@ -2965,6 +2973,9 @@ def step(job, runtime):
     if project["state"] == "ready":
         return True
     phase = data["phase"]
+    if phase != "sources":
+        publication.ensure(project)
+    publication.package(project)
     if (
         phase in {"background", "plan"}
         and data.get("reading_reuse")
@@ -3060,6 +3071,7 @@ def step(job, runtime):
                         (export["id"],),
                     )
                 db.patch_job(job["id"], available=time.time() + 15)
+    publication.package(project)
     timings = data.setdefault("stage_seconds", {})
     timings[timing_key] = round(
         timings.get(timing_key, 0) + time.monotonic() - started, 3

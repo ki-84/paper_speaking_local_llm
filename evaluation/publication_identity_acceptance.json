@@ -1,0 +1,104 @@
+{
+  "recorded_at": 1791025425.4349453,
+  "project_id": "bd7642d8e5e244399c5a48e30fe52ec2",
+  "identity_version": "paper-venue-edition-1",
+  "thumbnail_version": "surprised-pixel-2-identity",
+  "scope": "Publication identity and fixed local composition. Preview layouts use existing saved portraits and a simple Parallel learners panel, not the final FLUX-generated illustration. Current full films are still building. Chromium blocks all external requests during rendering; no operating-system network isolation is claimed.",
+  "publication": {
+    "status": "verified",
+    "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+    "venue": "ICML",
+    "year": 2016,
+    "label": "ICML 2016",
+    "source_url": "https://proceedings.mlr.press/v48/mniha16.html",
+    "source_text": "International Conference on Machine Learning",
+    "checked_at": 1791025128.404082,
+    "source_sha256": "26eaaf7710baa80ca54f3ac7f603e1ed287a4007d2fb96d9092ee675cd99e6f5",
+    "source_kind": "official-proceedings"
+  },
+  "titles": {
+    "overview": "【概要解説】Asynchronous Methods for Deep Reinforcement Learning｜ICML 2016｜AIが「リプレイ」なしで安定して学ぶ方法",
+    "deep_dive": "【詳細解説】Asynchronous Methods for Deep Reinforcement Learning｜ICML 2016"
+  },
+  "checks": {
+    "lan_api": true,
+    "two_titles_visible": true,
+    "edition_and_paper_venue_present": true,
+    "no_browser_exceptions": true,
+    "external_browser_requests": [],
+    "python_tests_passed": 247,
+    "ruff": "passed",
+    "saved_overview_turns_preserved": true,
+    "saved_audio_preserved_at_deployment": true,
+    "saved_audio_count": 43,
+    "evidence_preserved": true,
+    "previous_lesson_jobs_still_paused": true
+  },
+  "preview_assets": [
+    {
+      "mode": "overview",
+      "path": "verification/publication-thumbnail-20261003/overview.png",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "bytes": 302007,
+      "sha256": "c0c71365a6e9bfd3037f39e80d898cc575e3f0306d1c27c07dbb2663a01c082c"
+    },
+    {
+      "mode": "overview",
+      "path": "verification/publication-thumbnail-20261003/overview.jpg",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "bytes": 259141,
+      "sha256": "9ccba786c8d2ff9b75c2c10425dc85a2a96b8db202e06274a4fe3a0bb8652218"
+    },
+    {
+      "mode": "overview",
+      "path": "verification/publication-thumbnail-20261003/overview-phone.png",
+      "dimensions": [
+        320,
+        180
+      ],
+      "bytes": 66512,
+      "sha256": "732d87bc33abbb602e62755410397e1eb7829b843328bed5931e1d8e8d718b50"
+    },
+    {
+      "mode": "deep_dive",
+      "path": "verification/publication-thumbnail-20261003/deep_dive.png",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "bytes": 291975,
+      "sha256": "2a6c648ae2c1ab473e532900b5026f3da0c4c4f76497c114d18655714cc25e9f"
+    },
+    {
+      "mode": "deep_dive",
+      "path": "verification/publication-thumbnail-20261003/deep_dive.jpg",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "bytes": 264892,
+      "sha256": "b62dc39c52257a0e7b833fd471e4ab29625c0da11679399a56c1d59ceab6c362"
+    },
+    {
+      "mode": "deep_dive",
+      "path": "verification/publication-thumbnail-20261003/deep_dive-phone.png",
+      "dimensions": [
+        320,
+        180
+      ],
+      "bytes": 66400,
+      "sha256": "336a218332bb0b039b7a5967079719c55e9649279677aacdf256350d85fb0b7c"
+    }
+  ],
+  "current_state": "building",
+  "current_phases": {
+    "overview": "align",
+    "deep_dive": "script"
+  }
+}

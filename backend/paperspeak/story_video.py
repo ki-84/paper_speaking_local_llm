@@ -457,7 +457,12 @@ def _thumbnail(manifest, work):
                 {
                     "thumbnail": True,
                     "title_en": manifest["packaging"]["title_en"],
-                    "title_ja": manifest["packaging"]["thumbnail_text"],
+                    "title_ja": (
+                        "【" + manifest["packaging"]["edition"] + "】"
+                        if manifest["packaging"].get("edition")
+                        else ""
+                    )
+                    + manifest["packaging"]["thumbnail_text"],
                     "mode": manifest["mode"],
                     "focus": 0,
                     "visual": {"type": "flow", "nodes": []},

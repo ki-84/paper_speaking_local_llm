@@ -1,0 +1,228 @@
+"""Verified publication identity, separate from later conference awards."""
+
+from __future__ import annotations
+
+import re
+import time
+
+from bs4 import BeautifulSoup
+
+from . import awards, config, db
+
+VERSION = "paper-venue-edition-1"
+EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
+ALIASES = {
+    "ICML": r"\bICML\b|International Conference on Machine Learning",
+    "ICLR": r"\bICLR\b|International Conference on Learning Representations",
+    "NeurIPS": r"\b(?:NeurIPS|NIPS)\b|Neural Information Processing Systems",
+    "AAAI": r"\bAAAI\b|AAAI Conference on Artificial Intelligence",
+    "RSS": r"\bRSS\b|Robotics\s*:?\s*Science and Systems",
+    "ICRA": r"\bICRA\b|International Conference on Robotics and Automation",
+    "CoRL": r"\bCoRL\b|Conference on Robot Learning",
+    "IROS": r"\bIROS\b|International Conference on Intelligent Robots and Systems",
+    "CVPR": r"\bCVPR\b|Conference on Computer Vision and Pattern Recognition",
+    "ICCV": r"\bICCV\b|International Conference on Computer Vision",
+    "ECCV": r"\bECCV\b|European Conference on Computer Vision",
+    "ACL": r"\bACL\b|Annual Meeting of the Association for Computational Linguistics",
+    "EMNLP": r"\bEMNLP\b|Empirical Methods in Natural Language Processing",
+    "NAACL": r"\bNAACL\b",
+}
+
+
+def venue(text):
+    return next(
+        (v for v, pattern in ALIASES.items() if re.search(pattern, text, re.I)), None
+    )
+
+
+def confirmed(paper, name, year, source_url, source_text, **provenance):
+    return {
+        "status": "verified",
+        "paper_title": paper["title"],
+        "venue": name,
+        "year": int(year),
+        "label": f"{name} {year}",
+        "source_url": source_url,
+        "source_text": source_text[:1200],
+        "checked_at": time.time(),
+        **provenance,
+    }
+
+
+def parse_page(saved, paper):
+    soup = BeautifulSoup(saved["html"], "html.parser")
+    meta = {
+        m.get("name", "").lower(): m.get("content", "") for m in soup.find_all("meta")
+    }
+    title = meta.get("citation_title") or (
+        soup.h1.get_text(" ", strip=True) if soup.h1 else ""
+    )
+    if awards.normalized(title) != awards.normalized(paper["title"]):
+        return None
+    book = meta.get("citation_conference_title", "")
+    year = meta.get("citation_publication_date", "") or meta.get("citation_year", "")
+    text = soup.get_text(" ", strip=True)
+    b = re.search(r"\bbooktitle\s*=\s*\{([^{}]+)\}", text, re.I)
+    y = re.search(r"\byear\s*=\s*\{((?:19|20)\d{2})\}", text, re.I)
+    if not book and b:
+        book = b[1]
+    # Conference edition and proceedings year take priority over a review's
+    # upload date, which can be in the preceding calendar year.
+    book_year = re.search(r"(?:19|20)\d{2}", book)
+    year = book_year[0] if book_year else y[1] if y else year
+    name, date = venue(book), re.search(r"(?:19|20)\d{2}", year)
+    if name and date:
+        return confirmed(
+            paper,
+            name,
+            date[0],
+            saved["url"],
+            book,
+            source_sha256=saved["sha256"],
+            source_kind="official-proceedings",
+        )
+    return None
+
+
+def resolve(paper):
+    existing = paper["data"].get("publication")
+    if (
+        existing
+        and existing.get("status") == "verified"
+        and existing.get("paper_title") == paper["title"]
+    ):
+        return existing
+    # A Test of Time year is deliberately never used as publication evidence.
+    for prize in awards.verified(paper["data"] | {"title": paper["title"]}):
+        url = prize.get("paper_url", "")
+        if not url or not awards.trusted(url):
+            continue
+        try:
+            result = parse_page(awards.fetch(url), paper)
+            if result:
+                return result
+        except Exception:
+            # Missing bibliographic data must not stop content creation.
+            continue
+    journal = paper["data"].get("journal_ref", "")
+    name, date = venue(journal), re.search(r"(?:19|20)\d{2}", journal)
+    if name and date:
+        return confirmed(
+            paper,
+            name,
+            date[0],
+            paper["data"].get("url", ""),
+            journal,
+            source_kind="arxiv-journal-reference",
+        )
+    path = paper["data"].get("pdf_path")
+    if path and config.safe_path(path).is_file():
+        import pymupdf
+
+        try:
+            with pymupdf.open(config.safe_path(path)) as pdf:
+                text = pdf[0].get_text() if len(pdf) else ""
+        except (OSError, ValueError, RuntimeError):
+            text = ""
+        # Do not search the bibliography: its proceedings describe other papers.
+        if awards.normalized(paper["title"]) in awards.normalized(text):
+            patterns = [
+                r"^\s*Published as a conference paper at ([^\n]{1,100})",
+                r"^\s*(Proceedings of [\s\S]{1,180}?\b(?:19|20)\d{2})",
+            ]
+            for pattern in patterns:
+                for match in re.finditer(pattern, text, re.I | re.M):
+                    name = venue(match[1])
+                    date = re.search(r"(?:19|20)\d{2}", match[1])
+                    if name and date:
+                        return confirmed(
+                            paper,
+                            name,
+                            date[0],
+                            paper["data"].get("url", ""),
+                            match[1],
+                            source_kind="paper-publication-header",
+                        )
+    return {
+        "status": "unconfirmed",
+        "paper_title": paper["title"],
+        "label": "学会未確認",
+        "checked_at": time.time(),
+        "reason": "No matching official publication record or explicit publication header; award dates are not publication dates.",
+    }
+
+
+def ensure(project):
+    if project["data"].get("publication"):
+        return
+    paper = db.one("SELECT * FROM papers WHERE id=?", (project["paper_id"],))
+    result = resolve(paper)
+    project["data"]["publication"] = result
+    if result["status"] == "verified":
+        paper["data"]["publication"] = result
+        db.execute(
+            "UPDATE papers SET data=? WHERE id=?",
+            (db.dumps(paper["data"]), paper["id"]),
+        )
+
+
+def identity(project, mode):
+    return {
+        "version": VERSION,
+        "paper_title": project["data"]["paper_title"],
+        "conference": project["data"].get("publication", {}).get("label", "学会未確認"),
+        "edition": EDITIONS[mode],
+        "publication": project["data"].get("publication", {}),
+    }
+
+
+def title(name, conference, edition, hook=""):
+    # YouTube accepts 100 characters; keep edition and venue intact even for an
+    # unusually long name, while recording the full name separately.
+    prefix, suffix = f"【{edition}】", f"｜{conference}"
+    room = 95 - len(prefix) - len(suffix)
+    shown = name if len(name) <= room else name[: room - 1].rstrip() + "…"
+    base = prefix + shown + suffix
+    hook_room = 95 - len(base) - 1
+    return base + ("｜" + hook if hook and len(hook) <= hook_room else "")
+
+
+def package(project):
+    for mode, track in project["data"]["modes"].items():
+        p = track.get("packaging")
+        if not p:
+            continue
+        meta = identity(project, mode)
+        p.setdefault("hook_title_ja", p["title"])
+        p.setdefault("hook_title_en", p.get("title_en", ""))
+        p.update(
+            identity=meta,
+            paper_title=meta["paper_title"],
+            conference=meta["conference"],
+            edition=meta["edition"],
+        )
+        p["title"] = title(
+            meta["paper_title"], meta["conference"], meta["edition"], p["hook_title_ja"]
+        )
+        p["title_en"] = (
+            f"{'Overview' if mode == 'overview' else 'Detailed explanation'}: {meta['paper_title']} ({meta['conference']})"
+        )
+        candidates = []
+        for original in p.get("candidates", []):
+            # Planning keeps its original hook titles. Do not mutate an outline
+            # through the shared candidates list or repeatedly wrap its titles.
+            candidate = dict(original)
+            candidate.setdefault("hook_title_ja", candidate["title_ja"])
+            candidate["title_ja"] = title(
+                meta["paper_title"],
+                meta["conference"],
+                meta["edition"],
+                candidate["hook_title_ja"],
+            )
+            candidate.update(
+                paper_title=meta["paper_title"],
+                conference=meta["conference"],
+                edition=meta["edition"],
+            )
+            candidates.append(candidate)
+        p["candidates"] = candidates

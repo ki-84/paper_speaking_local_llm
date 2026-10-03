@@ -7,10 +7,10 @@ import shutil
 import subprocess
 import time
 
-from . import config, db, video, video_overlay
+from . import config, db, publication, video, video_overlay
 from .runtime import GPUUnavailable, PracticePreempted
 
-VERSION = "surprised-pixel-1"
+VERSION = "surprised-pixel-2-identity"
 
 
 def get(project_id, mode):
@@ -34,6 +34,8 @@ def enqueue(project, mode, *, regenerate=False):
         raise ValueError("The film needs its script and title before making thumbnails")
     if any(not s.get("utterances") for s in track["scenes"]):
         raise ValueError("Finish the film script before making thumbnails")
+    publication.ensure(project)
+    publication.package(project)
     manifest = {
         "version": VERSION,
         "image_model": config.manifest().get("models", {}).get("image"),
@@ -41,6 +43,7 @@ def enqueue(project, mode, *, regenerate=False):
         "renderer": video.file_digest(config.ROOT / "scripts/render_thumbnail.mjs"),
         "project_id": project["id"],
         "mode": mode,
+        "identity": publication.identity(project, mode),
         "packaging": track["packaging"],
         "script_hash": video.digest(
             [u["text"] for s in track["scenes"] for u in s["utterances"]]
@@ -254,6 +257,7 @@ def plans(project, mode):
     return [
         {
             "id": db.uid(),
+            "identity": publication.identity(project, mode),
             "lines": lines,
             "palette": ["teal", "violet", "orange"][i],
             "concept": "A giant AI blueprint and a tiny glowing modular adjustment, with a clear visual comparison, no text or experimental charts"
@@ -271,6 +275,7 @@ def step(job, runtime):
     data = row["data"]
     project = db.one("SELECT * FROM video_projects WHERE id=?", (row["project_id"],))
     mode = row["mode"]
+    identity = data["manifest"].get("identity") or publication.identity(project, mode)
     root = config.DATA / "thumbnails" / row["id"]
     root.mkdir(parents=True, exist_ok=True)
     character_key = video.digest(
@@ -392,6 +397,7 @@ def step(job, runtime):
             render(
                 {
                     "lines": candidate["lines"],
+                    "identity": identity,
                     "palette": candidate["palette"],
                     "background": str(bg) if bg.is_file() else None,
                     "maya": str(chars / "guide.png"),
@@ -431,7 +437,9 @@ def step(job, runtime):
 
         def review():
             result = runtime.ask(
-                'Compare three YouTube thumbnails for the supplied film. Check recognizable surprised Maya on left and Aiden on right, catchy readable large Japanese text at phone size, and truthful correspondence to the film. Pick the clearest, most compelling candidate. issues must describe problems in the SELECTED candidate only; ignore imperfections in alternatives. Return {"selected_index":0,"notes_ja":"reason","issues":[]}. No popularity/view-count guarantees.\n'
+                'Compare three YouTube thumbnails for the supplied film. Check recognizable surprised Maya on left and Aiden on right, catchy readable large Japanese text at phone size, and truthful correspondence to the film. Also check the fixed paper name, publication conference/year, and Japanese edition badge match IDENTITY exactly and remain readable. The publication year is not the later award year. Pick the clearest, most compelling candidate. issues must describe problems in the SELECTED candidate only; ignore imperfections in alternatives. Return {"selected_index":0,"notes_ja":"reason","issues":[]}. No popularity/view-count guarantees.\nIDENTITY: '
+                + db.dumps(identity)
+                + "\nFILM: "
                 + db.dumps(project["data"]["modes"][mode]["packaging"]),
                 images=[config.safe_path(c["png"]) for c in data["candidates"]],
                 profile=project["data"]["model"],
@@ -487,6 +495,7 @@ def step(job, runtime):
             render(
                 {
                     "lines": candidate["lines"],
+                    "identity": identity,
                     "palette": candidate["palette"],
                     "maya": str(chars / "guide.png"),
                     "aiden": str(chars / "host.png"),

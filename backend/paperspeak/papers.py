@@ -129,6 +129,8 @@ def entries(content):
                 "categories": [a.get("term") for a in e.findall("a:category", ns)],
                 "published": e.findtext("a:published", "", ns),
                 "updated": e.findtext("a:updated", "", ns),
+                "journal_ref": clean(e.findtext("x:journal_ref", "", ns)),
+                "comments": clean(e.findtext("x:comment", "", ns)),
                 "url": f"https://arxiv.org/abs/{base}{version}",
             }
         )

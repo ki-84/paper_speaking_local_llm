@@ -30,6 +30,14 @@ log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
 VERSION = "youtube-dual-1"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
+OPENING_VERSION = "topic-before-hook-1"
+OPENING_BRIEF = (
+    "Begin with a brief, natural 15–25-second topic introduction. Maya first says what paper or research idea we are exploring today "
+    "and what useful question the viewer will understand, in one or two sentences; a phrase like 'Today, we're looking at...' is welcome. "
+    "Use an approachable topic or method name; do not merely read a long formal title. Aiden then asks a relevant, curious or lightly witty question. "
+    "Bridge smoothly into the central hook rather than dropping the viewer into an unexplained analogy. "
+    "Reach the substantive question within the first 30 seconds. Keep the introduction specific to this paper, with no long greetings, channel promotion or subscribe requests. "
+)
 MODES = {
     "overview": {
         "label": "解説編",
@@ -48,7 +56,8 @@ MODES = {
 }
 BEATS = {
     "overview": [
-        "Open with a concrete human problem and an intriguing question. Establish the stakes, not a textbook definition or a list of statistics.",
+        OPENING_BRIEF
+        + "Establish a concrete human problem and its stakes, not a textbook definition or a list of statistics.",
         "Tell the relevant history as attempts to solve that problem: two earlier approaches, what they improved, and what remained awkward. Use retrieved primary sources.",
         "Reveal the new idea intuitively through the recurring analogy. Explain what changes and what stays fixed, with no equations, algebra or proof claims.",
         "Walk through a relatable hypothetical use case from beginning to end. Let Aiden make a plausible mistake, then correct it. Do not replace this example with a parameter-count calculation.",
@@ -56,7 +65,8 @@ BEATS = {
         "Resolve the opening question and the recurring joke. Explain what remains difficult and why this idea matters, then invite the curious viewer to the separate mathematical film.",
     ],
     "deep_dive": [
-        "Recap the intuition in at most 100 words, then introduce the necessary mathematical building blocks. Do not retell history.",
+        OPENING_BRIEF
+        + "Name the paper and the principle this deep dive will explain. Recap the intuition in at most 100 words, then introduce the necessary mathematical building blocks. Do not retell history.",
         "Explain matrix shapes, independent directions and rank with a small visual example. Define every symbol before using it.",
         "Explain the main factorization equation term by term. Show a genuinely worked hypothetical small-matrix example, not a performance promise.",
         "Explain the forward computation: follow one input through the frozen path and learned correction, showing how the outputs combine.",
@@ -104,7 +114,8 @@ def story_beats(project, mode):
     if mode == "overview" or is_lora(project):
         return BEATS[mode]
     return [
-        "Recap the intuition in at most 100 words, then introduce the necessary prerequisites without retelling history.",
+        OPENING_BRIEF
+        + "Name the paper and the principle this deep dive will explain. Recap the intuition in at most 100 words, then introduce the necessary prerequisites without retelling history.",
         "Explain the notation and mathematical objects this paper actually uses. Define their shapes or domains with a small visual example.",
         "Explain the central equation or formal principle term by term, defining every symbol before it is used.",
         "Work through one small, explicitly hypothetical calculation from input to result. Check arithmetic and dimensions.",
@@ -222,6 +233,7 @@ def get(ident):
                 "packaging",
                 "expressions",
                 "duration_check",
+                "opening_policy",
             )
             if k in track
         }
@@ -973,10 +985,15 @@ def _script_prompt(project, mode, scene, index):
         )
         + "Use ONE simple recurring analogy chosen for this paper's actual mechanism. Explain where the analogy stops being accurate. Follow the outline; never borrow another paper's mechanism or examples. "
         "In the overview use NO equations, symbols or spoken algebra. In the deep dive explain necessary notation and each mathematical operation using words and examples. "
-        "No 'welcome back', recap of every earlier scene, episode announcements, language lesson or chapter title narration. "
+        "No 'welcome back', recap of every earlier scene, language lesson or chapter title narration. A short topic introduction belongs only at the start of the film. "
         "Obey this scene's beat_goal first. Do not explain later scenes' mechanisms or evidence early: build curiosity, then deliver the planned reveal. "
         "Avoid stock lines like 'That's a perfect analogy', 'Great question', 'Exactly' and 'It feels counterintuitive'. Make the actual exchange do the work. "
-        "The first scene starts immediately with the chosen hook; the last resolves the opening question and recurring analogy. "
+        + (
+            OPENING_BRIEF
+            if index == 0
+            else "Continue naturally from the previous scene; do not repeat the film's topic introduction. "
+        )
+        + "After the first scene's introduction, ease into the chosen hook. The last scene resolves the opening question and recurring analogy. "
         'Return {"summary":"what this scene adds", "utterances":[{"speaker":"host|guide","text":"natural spoken paragraph",'
         '"kind":"paper|background|example|question|humor","source_ids":["ID"],"visual_focus":0}],'
         '"visual":{"type":"flow|timeline|comparison|matrix|equation|example|original","original_asset_id":"optional supplied original asset ID, deep dive only","nodes":[{"en":"short label","ja":"日本語"}],'
@@ -1154,6 +1171,12 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             "Check attribution carefully: a named historical method's alleged failure needs evidence about that method. A later paper's ablation of its own baseline must not be presented as the historical paper's result. Qualify comparisons by source paper and tested task. "
             if kind == "content"
             else "Check the scene works as part of an entertaining documentary: new insight, a concrete example, clear transitions, natural C1 English, substantive questions and gentle witty humor. Flag repeated explanations; do not request simpler A2 English. "
+        )
+        + (
+            "For this FIRST scene, check that the viewer is told what paper or topic is being introduced and why it is worth understanding BEFORE an unexplained example, joke or analogy. "
+            "Preserve or improve that short orientation; do not remove it as filler. If missing, correct the opening paragraph locally to introduce the topic and flow into the hook. "
+            if kind == "editorial" and index == 0
+            else ""
         )
         + "Propose only necessary LOCAL corrections. Preserve the overall length and all accurate passages. "
         "Flag actual contradictions or unsupported specifics, not a missing date, a stylistic preference, or a valid paraphrase. Do not add a date or a numerical claim unless explicitly needed by the scene. "
@@ -1696,10 +1719,11 @@ def _plan_step(project, runtime):
             f"Design ONE {preset['minutes']}-minute {mode} documentary conversation, around {preset['words']} spoken words in {preset['scenes']} connected scenes. "
             "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
             + (
-                "NO equations. Structure: surprising practical hook, historical problem, prior attempts and their tradeoffs, the new idea, concrete example, evidence and limits, payoff. "
+                "NO equations. Structure: short topic introduction leading into a surprising practical hook, historical problem, prior attempts and their tradeoffs, the new idea, concrete example, evidence and limits, payoff. "
                 if mode == "overview"
                 else "Do not retell the historical overview. Brief intuition, prerequisites explained visually, the central equations term by term, a hypothetical worked example, implications, controlled experiments, limitations and payoff. Include at least three mathematical teaching scenes. "
             )
+            + OPENING_BRIEF
             + "The overview must devote one scene to historical prior attempts and their remaining problem. The deep dive must explain actual formulas, not merely list topics. "
             "Preserve scientific distinctions: fewer trainable parameters is NOT fewer training examples; training-memory savings do NOT remove the base-model memory; comparable scores on tested tasks are NOT a universal quality guarantee. "
             "Create THREE different hook/title/thumbnail approaches. Avoid numeric promises in titles and hooks; explain qualified numbers only in the relevant evidence scene. Select the best by how accurately it promises a specific interesting insight. "
@@ -1812,7 +1836,8 @@ def _plan_step(project, runtime):
             runtime,
             f"hooks:{mode}",
             "Write THREE distinctive opening approaches for an entertaining scientific YouTube conversation, aimed at a general audience. "
-            "Promise a concrete insight, not a lecture or a chapter course. Titles and hooks must have NO numerical performance promises and NO magic, universal guarantees or exaggerated superiority. "
+            + OPENING_BRIEF
+            + "Promise a concrete insight, not a lecture or a chapter course. Titles and hooks must have NO numerical performance promises and NO magic, universal guarantees or exaggerated superiority. "
             "Use an everyday dilemma, witty question or surprising contrast. The hook describes an actual exchange that Maya and Aiden can speak, not a stage direction needing a real actor to hold props. "
             "Tie the opening question and everyday analogy to this paper's actual problem and mechanism. Avoid scientific guarantees beyond the supplied experiments. "
             "Keep Japanese titles under 65 characters; mention English learning or bilingual captions naturally. Deep dive titles should invite viewers to understand the mathematics. "
@@ -2070,7 +2095,8 @@ def fallback_hooks(project, mode):
             + MODES[mode]["label"]
             + "・英語学習",
             "title_en": en if is_lora(project) else title + ": " + en,
-            "hook": hook,
+            "hook": "Maya briefly introduces today's research topic and what viewers will understand; Aiden asks why it matters. Then: "
+            + hook,
             "thumbnail_ja": thumb,
         }
         for ja, en, hook, thumb in angles
@@ -2081,6 +2107,13 @@ def _script_step(project, runtime, mode):
     track = project["data"]["modes"][mode]
     for index, scene in enumerate(track["scenes"]):
         if "utterances" not in scene:
+            if index == 0:
+                track["opening_policy"] = {
+                    "version": OPENING_VERSION,
+                    "seconds": [15, 25],
+                    "topic_before_hook": True,
+                }
+                scene["beat_goal"] = story_beats(project, mode)[0]
             known = set(source_lookup(project))
 
             def valid(r):

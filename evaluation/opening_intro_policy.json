@@ -1,0 +1,30 @@
+{
+  "scope": "Opening policy deployment before first scripts; completed-film intro inspection is pending generation.",
+  "checked_at_jst": "2026-10-03T19:33:32.607533+09:00",
+  "opening_version": "topic-before-hook-1",
+  "opening_brief": "Begin with a brief, natural 15–25-second topic introduction. Maya first says what paper or research idea we are exploring today and what useful question the viewer will understand, in one or two sentences; a phrase like 'Today, we're looking at...' is welcome. Use an approachable topic or method name; do not merely read a long formal title. Aiden then asks a relevant, curious or lightly witty question. Bridge smoothly into the central hook rather than dropping the viewer into an unexplained analogy. Reach the substantive question within the first 30 seconds. Keep the introduction specific to this paper, with no long greetings, channel promotion or subscribe requests. ",
+  "run_id": "9fa6aa630e044f07912000aebff7ca15",
+  "project_id": "bd7642d8e5e244399c5a48e30fe52ec2",
+  "paper_title": "Asynchronous Methods for Deep Reinforcement Learning",
+  "project_phase": "plan",
+  "job": {
+    "id": "2440a0b65d5046c1b50e3f2ee242a0f3",
+    "state": "running",
+    "stage": "Saving the checkpoint for service restart.",
+    "progress": 0.05,
+    "error": null,
+    "checkpoint": {}
+  },
+  "checks": {
+    "prior_reading_notes_preserved": true,
+    "project_not_started_scripts_before_update": true,
+    "project_kept": true,
+    "old_lessons_paused": true,
+    "generation_resumed": true
+  },
+  "tests": {
+    "story_and_nightly_passed": 50,
+    "ruff": "passed"
+  },
+  "status": "passed"
+}

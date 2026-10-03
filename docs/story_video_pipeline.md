@@ -81,6 +81,18 @@ title, thumbnail and the first 30 seconds promise the same insight. Formula
 rendering follows the [KaTeX Node API](https://katex.org/docs/node), with its CSS
 and font bytes embedded rather than fetched from a CDN.
 
+Both films begin with a short 15–25-second conversation introducing today's
+paper or research topic and what viewers will understand. Maya gives one or two
+specific sentences, then Aiden's question leads naturally into the hook. The
+overview introduces the practical idea; the deep dive introduces the principle
+it will unpack. They reach the substantive question within the first 30 seconds.
+Only the first scene has this orientation, so later scenes continue the
+conversation. Planning, hook selection, scripts and editorial review all share
+this policy; reviews preserve the introduction rather than treating it as filler.
+The track records `opening_policy.version = topic-before-hook-1`. The spoken
+introduction uses the same local speech, Japanese translation, captions and
+sentence-practice pipeline as the rest of the conversation.
+
 Run `PYTHONPATH=backend .venv/bin/pytest -q` and the frontend build before
 deployment. `tests/test_story.py` covers project idempotency, job controls,
 bounded repairs, C1 text/citation policies, alignment, caption splitting,

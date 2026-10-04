@@ -14,9 +14,11 @@ try {
   expect(response.ok()).toBeTruthy();
   const catalogue=await response.json();
   await page.goto(base);
-  const panel=page.getByRole('group',{name:'学会別の受賞論文'});
-  await panel.locator(':scope > summary').click();
-  await expect(panel.locator(':scope > summary')).toContainText(`${catalogue.winner_count}件の受賞情報 / ${catalogue.paper_count}本`);
+  const panel=page.getByRole('region',{name:'学会別の受賞論文'});
+  await expect(panel.getByRole('table')).toBeVisible();
+  await expect(panel.locator('.award-total')).toContainText(`${catalogue.winner_count}件の受賞情報 / ${catalogue.paper_count}本`);
+  await panel.screenshot({path:'data/evaluation/conference-awards-overview.png'});
+  await panel.getByText('受賞論文の一覧と取得状況',{exact:true}).click();
   await expect(panel.getByRole('article')).toHaveCount(catalogue.sources.length);
   for(const receipt of catalogue.sources){
     const {venue,year}=receipt.source;
@@ -35,6 +37,7 @@ try {
   // Keep one expanded list on the screenshot and collapse the rest.
   while(await panel.locator('article details[open]').count())await panel.locator('article details[open]').first().locator(':scope > summary').click();
   const selected=catalogue.sources.find(r=>r.source.venue==='ICRA'&&r.papers.length);
+  await panel.getByRole('button',{name:'ICRAの受賞情報を見る'}).click();
   const icra=panel.getByRole('article',{name:`ICRA ${selected.source.year}の受賞情報`});
   await icra.getByText(`受賞論文を表示（${selected.paper_count}本）`,{exact:true}).click();
   await icra.screenshot({path:'data/evaluation/conference-awards-icra.png'});
@@ -45,7 +48,7 @@ try {
   expect(errors).toEqual([]);
   report.winner_count=catalogue.winner_count;
   report.paper_count=catalogue.paper_count;
-  report.checks={all_enabled_editions_visible:true,counts_match_saved_receipts:true,all_winner_titles_and_official_links_visible:true,small_screen_has_no_horizontal_overflow:true,no_browser_errors:true,read_only:true};
+  report.checks={coverage_table_visible_without_expanding:true,all_enabled_editions_visible:true,counts_match_saved_receipts:true,all_winner_titles_and_official_links_visible:true,small_screen_has_no_horizontal_overflow:true,no_browser_errors:true,read_only:true};
   report.status='passed';
 } catch(error) {
   report.status='failed';

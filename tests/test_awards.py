@@ -274,7 +274,7 @@ def test_collect_archive_fallback_and_more_than_three_prizes(database, monkeypat
     )
     catalogue = awards.catalogue(dt.datetime(2026, 10, 4))
     assert catalogue["winner_count"] == 5
-    assert len(catalogue["sources"]) == 16
+    assert len(catalogue["sources"]) == len(awards.VENUES) * 2
 
 
 def test_upcoming_official_edition_distinguished_from_network_failure(
@@ -318,7 +318,7 @@ def test_award_catalogue_api_reads_only_stored_receipts(client, monkeypatch):
     before = db.all("SELECT id FROM jobs")
     response = client.get("/api/conference-awards")
     assert response.status_code == 200
-    assert len(response.json()["sources"]) == 16
+    assert len(response.json()["sources"]) == len(awards.VENUES) * 2
     assert all(r["status"] == "not checked" for r in response.json()["sources"])
     assert db.all("SELECT id FROM jobs") == before
 
@@ -512,6 +512,212 @@ def test_aaai_archive_is_partitioned_by_edition():
     assert [r["title"] for r in awards.parse(document(html), "AAAI", 2026)] == [
         "Learning A New Useful Idea"
     ]
+
+
+def test_acl_bold_unlinked_papers_and_headingless_best_papers_exclude_other_tracks():
+    html = """<title>Best Paper Awards - ACL 2026</title><article>
+    <nav><h2>Best Resource Papers</h2><li>A navigation label, not a paper</li></nav>
+    <ul><li><strong>A Useful Main Conference Paper</strong><br><em>Alice and Bob</em></li></ul>
+    <h2>Best Resource Papers</h2><li><p><strong>A Useful Resource Benchmark</strong><br><em>Charlie</em></p></li>
+    <h2>Outstanding Papers</h2><li><strong>A Useful Language Learning Paper</strong><br><em>Diana</em></li>
+    <h2>Best Demonstration Paper</h2><li><strong>An Interesting Demo Paper</strong></li>
+    <h2>Student Research Workshop Best Papers</h2><li><strong>A Useful Workshop Paper</strong></li>
+    <h2>SAC Highlights</h2><li><strong>A Highlighted Language Paper</strong></li>
+    <h2>TACL Best Paper</h2><li><strong>A Journal Award Paper</strong></li></article>"""
+    saved = document(html, "https://2026.aclweb.org/program/best_papers/")
+    rows = awards.parse(saved, "ACL", 2026)
+    assert [p["title"] for p in rows] == [
+        "A Useful Main Conference Paper",
+        "A Useful Resource Benchmark",
+        "A Useful Language Learning Paper",
+    ]
+    assert rows[0]["name"] == "Best Paper Award"
+    assert len({(p["title"], p["name"]) for p in rows}) == 3
+    assert not awards.parse(saved, "ACL", 2025)
+    assert all(
+        awards.verified({"title": r["title"], "awards": [r]}, year=2026) for r in rows
+    )
+
+
+def test_cvpr_plain_paper_names_and_society_archive_ignore_mentions_and_other_venues():
+    html = """<title>CVPR 2025 Awards</title><main><h2>Best Papers</h2>
+    <p><strong>Best Paper:</strong></p><p>Paper Name: A Useful Visual Geometry Paper</p><p>Authors: Alice</p>
+    <p><strong>Best Student Paper:</strong></p><p>Paper Name: A Useful Inverse Rendering Paper</p>
+    <p><strong>Best Paper Honorable Mention: ID: 123</strong></p><p>Paper Name: A Useful Mentioned Paper</p>
+    <h1>Best Demos</h1><li><strong>A Useful Demo Project</strong></li></main>"""
+    saved = document(html, "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos")
+    rows = awards.parse(saved, "CVPR", 2025)
+    assert [r["title"] for r in rows] == [
+        "A Useful Visual Geometry Paper",
+        "A Useful Inverse Rendering Paper",
+    ]
+    archive = document(
+        """<main><h1>CVPR Best Paper Award</h1><table><tr><td>2026</td><td>“A Useful New Vision Paper”</td></tr><tr><td>2025</td><td>“A Useful Visual Geometry Paper”</td></tr></table><h1>CVPR Best Paper Honorable Mention Award</h1><table><tr><td>2025</td><td>“A Useful Mentioned Paper”</td></tr></table><h1>ICCV Best Paper Award</h1><table><tr><td>2025</td><td>“A Different Conference Paper”</td></tr></table></main>""",
+        awards.CVF_AWARDS,
+    )
+    assert [r["title"] for r in awards.parse(archive, "CVPR", 2025)] == [
+        "A Useful Visual Geometry Paper"
+    ]
+
+
+def test_cvpr_news_article_has_separate_student_prize_and_ignores_tracking_links():
+    html = """<title>CVPR 2026 Awards</title><main><p><strong>CVPR 2026 Best Paper</strong></p><li><a href="https://openaccess.thecvf.com/content/CVPR2026/paper.html"><strong>A Useful Scene Reconstruction Paper</strong></a>, Authors: Alice</li><p><strong>CVPR 2026 Best Student Paper</strong></p><li><strong><em> </em></strong><a href="https://tracking.example/redirect"><strong>A Useful Three Dimensional Paper</strong></a>, Authors: Bob</li><p><strong>CVPR 2026 Best Paper Honorable Mentions</strong></p><li><strong>A Useful Mentioned Paper</strong></li></main>"""
+    rows = awards.parse(
+        document(html, "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers"),
+        "CVPR",
+        2026,
+    )
+    assert len(rows) == 2
+    assert rows[0]["paper_url"].startswith("https://openaccess.thecvf.com/")
+    assert not rows[1]["paper_url"]
+
+
+def test_award_refresh_api_is_separate_deduplicated_and_supports_pause_resume(
+    client, monkeypatch
+):
+    monkeypatch.setattr(
+        awards, "fetch", lambda *a, **k: pytest.fail("API must only queue")
+    )
+    first = client.post("/api/conference-awards/refresh").json()
+    again = client.post("/api/conference-awards/refresh").json()
+    assert first == again
+    job = db.one("SELECT * FROM jobs WHERE id=?", (first["job_id"],))
+    assert (
+        job["kind"] == "award_refresh"
+        and len(job["payload"]["sources"]) == len(awards.VENUES) * 2
+    )
+    assert {r["kind"] for r in db.all("SELECT kind FROM jobs")} == {"award_refresh"}
+    assert not db.all("SELECT id FROM nightly_video_runs") and not db.all(
+        "SELECT id FROM video_projects"
+    )
+    assert client.post(f"/api/jobs/{job['id']}/pause").status_code == 200
+    assert awards.catalogue()["refresh_job"]["state"] == "paused"
+    assert client.post(f"/api/jobs/{job['id']}/resume").status_code == 200
+    client.headers.pop("Authorization")
+    assert client.post("/api/conference-awards/refresh").status_code == 401
+
+
+def test_award_refresh_checkpoints_and_moves_on_after_three_failures(
+    database, monkeypatch
+):
+    ident = awards.start_refresh()
+    job = db.one("SELECT * FROM jobs WHERE id=?", (ident,))
+    job["payload"]["sources"] = awards.sources(2026, ["cs.AI"])[:2]
+    db.execute(
+        "UPDATE jobs SET payload=? WHERE id=?", (db.dumps(job["payload"]), ident)
+    )
+    calls = []
+
+    def collect(spec, **kwargs):
+        calls.append((spec["venue"], kwargs))
+        if spec["venue"] == "ICLR":
+            raise ValueError("Host unavailable")
+        return {"papers": []}
+
+    monkeypatch.setattr(awards, "collect", collect)
+    for _ in range(3):
+        assert not awards.refresh_step(
+            db.one("SELECT * FROM jobs WHERE id=?", (ident,))
+        )
+    saved = db.one("SELECT * FROM jobs WHERE id=?", (ident,))
+    assert (
+        saved["checkpoint"]["source_index"] == 1
+        and len(saved["checkpoint"]["skipped"]) == 1
+    )
+    assert not awards.refresh_step(saved)
+    assert awards.refresh_step(db.one("SELECT * FROM jobs WHERE id=?", (ident,)))
+    assert [v for v, k in calls] == ["ICLR"] * 3 + ["ICML"]
+    assert all(
+        k["refresh"] and callable(k["check"]) and k["refreshed_after"] == job["created"]
+        for v, k in calls
+    )
+    assert not db.all("SELECT id FROM video_projects")
+
+
+def test_network_outage_keeps_previous_verified_awards_visible(database, monkeypatch):
+    spec = {
+        "venue": "ICLR",
+        "year": 2026,
+        "url": "https://blog.iclr.cc/category/iclr-2026/",
+    }
+    saved = document(
+        '<main><h2>Outstanding Paper Award</h2><p><a href="https://openreview.net/forum?id=one">A Useful Verified Learning Paper</a></p></main>',
+        spec["url"],
+    )
+    monkeypatch.setattr(awards, "fetch", lambda *a, **k: saved)
+    first = awards.collect(spec)
+
+    def outage(*args, **kwargs):
+        raise ValueError("Offline")
+
+    monkeypatch.setattr(awards, "fetch", outage)
+    with pytest.raises(ValueError):
+        awards.collect(spec, refresh=True)
+    result = next(
+        r
+        for r in awards.catalogue(dt.datetime(2026, 10, 4))["sources"]
+        if r["source"]["venue"] == "ICLR" and r["source"]["year"] == 2026
+    )
+    assert result["status"] == "unavailable" and result["stale"]
+    assert result["papers"] == first["papers"] and result["winner_count"] == 1
+    assert result["last_successful_check"] == first["checked_at"]
+
+
+def test_refresh_recording_interrupt_does_not_spend_a_failure_attempt(
+    database, monkeypatch
+):
+    from paperspeak.runtime import PracticePreempted
+
+    ident = awards.start_refresh()
+    db.enqueue("practice", "recording-to-evaluate", priority=0)
+    monkeypatch.setattr(
+        awards,
+        "fetch",
+        lambda *a, **k: pytest.fail("Recording must be served before network requests"),
+    )
+    with pytest.raises(PracticePreempted, match="録音"):
+        awards.refresh_step(db.one("SELECT * FROM jobs WHERE id=?", (ident,)))
+    saved = db.one("SELECT * FROM jobs WHERE id=?", (ident,))
+    assert not saved["checkpoint"].get("source_failures")
+    assert not saved["checkpoint"].get("source_index")
+    assert db.claim("recording-test-worker")["kind"] == "practice"
+
+
+def test_interrupted_refresh_reuses_pages_fetched_since_the_job_started(
+    database, monkeypatch
+):
+    import time
+
+    import httpx
+
+    url = "https://2026.aclweb.org/program/best_papers/"
+    calls = []
+
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def get(self, target):
+            calls.append(target)
+            return httpx.Response(
+                200,
+                text="<main>Official paper awards</main>",
+                request=httpx.Request("GET", target),
+            )
+
+    monkeypatch.setattr(awards.httpx, "Client", Client)
+    started = time.time()
+    first = awards.fetch(url, refresh=True, refreshed_after=started)
+    assert awards.fetch(url, refresh=True, refreshed_after=started) == first
+    assert len(calls) == 1
+    awards.fetch(url, refresh=True, refreshed_after=first["retrieved_at"] + 1)
+    assert len(calls) == 2
 
 
 def test_only_recent_verified_prizes_with_matching_titles():

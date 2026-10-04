@@ -8,6 +8,7 @@ import threading
 import time
 
 from . import (
+    awards,
     benchmark,
     calibration,
     config,
@@ -123,6 +124,8 @@ def run():
                         done = thumbnails.step(job, runtime)
                 elif job["kind"] == "nightly_video":
                     done = nightly.step(job, runtime)
+                elif job["kind"] == "award_refresh":
+                    done = awards.refresh_step(job)
                 elif job["kind"] == "discover":
                     done = discovery.discovery_step(job, runtime)
                 elif job["kind"] == "practice":

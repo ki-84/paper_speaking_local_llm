@@ -280,17 +280,37 @@ test("conference awards show counts, official winners and acquisition gaps", asy
     {source:{venue:'IROS',year:2025,url:'https://iros25.org/'},status:'unavailable',winner_count:0,paper_count:0,papers:[],failures:[{url:'https://iros25.org/',reason:'Certificate validation failed'}]},
   ]}}));
   await page.getByRole('button',{name:'My library',exact:true}).click();
-  const panel=page.getByRole('group',{name:'学会別の受賞論文'});
-  await panel.locator(':scope > summary').click();
-  await expect(panel.locator(':scope > summary')).toContainText('2件の受賞情報 / 1本');
+  const panel=page.getByRole('region',{name:'学会別の受賞論文'});
+  await expect(panel.getByRole('table')).toBeVisible();
+  await expect(panel.locator('.award-total')).toContainText('2件の受賞情報 / 1本');
+  await panel.getByRole('button',{name:'ICRAの受賞情報を見る'}).click();
   const winner=panel.getByRole('article',{name:'ICRA 2025の受賞情報'});
   await expect(winner.getByText('受賞確認済み · 受賞情報 2件 / 論文 1本')).toBeVisible();
   await winner.getByText('受賞論文を表示（1本）').click();
   await expect(winner.getByRole('link',{name:'Best Conference Paper Award',exact:true})).toHaveAttribute('href',icra);
   await expect(winner.getByText('A Useful Robot Paper',{exact:true})).toHaveCount(2);
-  await expect(panel.getByText('開催前・受賞未発表 · 受賞情報 0件 / 論文 0本')).toBeVisible();
+  await expect(panel.getByRole('table').getByText('開催前・受賞未発表')).toBeVisible();
+  await panel.getByRole('button',{name:'IROSの受賞情報を見る'}).click();
   await panel.getByText('取得先の問題（1件）').click();
   await expect(panel.getByText('Certificate validation failed')).toBeVisible();
+});
+
+test("award information can be refreshed without starting another film", async ({page}) => {
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const before=await (await page.request.get('/api/nightly-video-runs')).json();
+  const panel=page.getByRole('region',{name:'学会別の受賞論文'});
+  await panel.getByRole('button',{name:'受賞情報を更新',exact:true}).click();
+  await expect(panel.getByRole('button',{name:'受賞情報を更新中…',exact:true})).toBeDisabled();
+  await expect.poll(async()=>{
+    const jobs=await (await page.request.get('/api/jobs')).json();
+    return jobs.filter((j:any)=>j.kind==='award_refresh').length;
+  }).toBe(1);
+  const after=await (await page.request.get('/api/nightly-video-runs')).json();
+  expect(after.map((r:any)=>r.id)).toEqual(before.map((r:any)=>r.id));
+  await panel.getByRole('button',{name:'受賞情報の更新を一時停止'}).click();
+  await expect(panel.getByRole('button',{name:'受賞情報の更新を再開'})).toBeVisible();
+  await panel.getByRole('button',{name:'受賞情報の更新を再開'}).click();
+  await expect(panel.getByRole('button',{name:'受賞情報を更新中…',exact:true})).toBeDisabled();
 });
 
 test("Test of Time shows the publication year separately from the award year", async ({page}) => {

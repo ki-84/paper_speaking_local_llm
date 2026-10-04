@@ -305,6 +305,11 @@ def conference_awards():
     return awards.catalogue()
 
 
+@app.post("/api/conference-awards/refresh", dependencies=[Depends(auth)])
+def refresh_conference_awards():
+    return {"job_id": awards.start_refresh()}
+
+
 @app.get("/api/nightly-video-runs", dependencies=[Depends(auth)])
 def nightly_video_runs():
     return [

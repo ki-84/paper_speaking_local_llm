@@ -16,7 +16,18 @@ from bs4 import BeautifulSoup
 
 from . import config, db, papers
 
-VENUES = ("ICLR", "ICML", "NeurIPS", "AAAI", "RSS", "ICRA", "CoRL", "IROS")
+VENUES = (
+    "ICLR",
+    "ICML",
+    "NeurIPS",
+    "AAAI",
+    "ACL",
+    "CVPR",
+    "RSS",
+    "ICRA",
+    "CoRL",
+    "IROS",
+)
 ROBOTICS = {"RSS", "ICRA", "CoRL", "IROS"}
 EXCLUDED = re.compile(
     r"honou?rable|runner.?up|finalist|nomina|classic|reviewer|editor|"
@@ -24,7 +35,7 @@ EXCLUDED = re.compile(
     re.I,
 )
 TEST_OF_TIME = re.compile(r"\btest\W+of\W+time\b(?:\W+paper)?\W+awards?\b", re.I)
-COLLECTION_VERSION = "official-awards-2"
+COLLECTION_VERSION = "official-awards-3"
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml",
@@ -33,6 +44,7 @@ RAS_INDEX = "https://www.ieee-ras.org/awards-recognition/conference-awards/"
 RAS_FEATURES = "https://www.ieee-ras.org/category/ras-feature/"
 RAS_RETROSPECTIVE = "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/"
 IROS_RESCUE = "https://www.rescuesystem.org/en/award/"
+CVF_AWARDS = "https://www.thecvf.com/?page_id=413"
 
 
 def normalized(title):
@@ -84,6 +96,8 @@ def trusted(url):
         "roboticsproceedings.org",
         "proceedings.mlr.press",
         "ieee-ras.org",
+        "aclweb.org",
+        "thecvf.com",
     )
     return any(host == root or host.endswith("." + root) for root in roots) or (
         host in {"rescuesystem.org", "www.rescuesystem.org"}
@@ -92,7 +106,7 @@ def trusted(url):
     )
 
 
-def fetch(url):
+def fetch(url, *, refresh=False, refreshed_after=None):
     """Cache official pages for a day; validate every redirect before following."""
     if not trusted(url):
         raise ValueError("Not an approved conference/paper host")
@@ -100,7 +114,11 @@ def fetch(url):
     path = config.DATA / "cache" / ("award-page-" + key + ".json")
     if path.is_file():
         saved = json.loads(path.read_text())
-        if time.time() - saved["retrieved_at"] < 86400:
+        if (not refresh and time.time() - saved["retrieved_at"] < 86400) or (
+            refresh
+            and refreshed_after is not None
+            and saved["retrieved_at"] >= refreshed_after
+        ):
             return saved
     with httpx.Client(
         timeout=25, follow_redirects=False, headers=BROWSER_HEADERS
@@ -148,6 +166,12 @@ def sources(year, categories):
                 url = "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
             elif venue == "RSS":
                 url = f"https://roboticsconference.org/{edition}/program/awards/"
+            elif venue == "ACL":
+                path = "awards" if edition == 2025 else "best_papers"
+                url = f"https://{edition}.aclweb.org/program/{path}/"
+            elif venue == "CVPR":
+                path = "BestPapersDemos" if edition == 2025 else "News/Best_Papers"
+                url = f"https://cvpr.thecvf.com/Conferences/{edition}/{path}"
             elif venue == "ICRA":
                 url = f"https://{edition}.ieee-icra.org/"
             elif venue == "CoRL":
@@ -176,6 +200,11 @@ def sources(year, categories):
                 alternate_urls = [RAS_INDEX, RAS_RETROSPECTIVE, RAS_FEATURES]
             elif venue == "IROS":
                 alternate_urls = [IROS_RESCUE]
+            elif venue == "ACL":
+                path = "best_papers" if edition == 2025 else "awards"
+                alternate_urls = [f"https://{edition}.aclweb.org/program/{path}/"]
+            elif venue == "CVPR":
+                alternate_urls = [CVF_AWARDS]
             rows.append(
                 {
                     "venue": venue,
@@ -223,6 +252,95 @@ def parse(saved, venue, year):
             "source_sha256": saved["sha256"],
             "area": "robotics" if venue in ROBOTICS else "ai",
         }
+
+    if venue == "ACL":
+        # Main-conference recipients have bold titles, sometimes without
+        # paper links. The 2026 first best-paper list has no section heading.
+        section = (
+            "Best Paper Award"
+            if re.search(
+                r"Best Paper Awards", soup.title.get_text() if soup.title else ""
+            )
+            else ""
+        )
+        industry = False
+        for node in root.find_all(["h2", "h3", "li", "p"]):
+            text = node.get_text(" ", strip=True)
+            if node.name in {"h2", "h3"}:
+                if node.name == "h2":
+                    industry = "industry track" in text.lower()
+                section = (
+                    ""
+                    if re.search(r"demo|workshop|highlight|\bTACL\b", text, re.I)
+                    else text
+                    if winner_name(text)
+                    else ""
+                )
+                if section and industry:
+                    section = "Industry Track " + section
+                continue
+            if not section:
+                continue
+            title = node.find(["strong", "b"])
+            if title:
+                add(title.get_text(" ", strip=True), section)
+            elif industry and node.name == "p" and node.find("br"):
+                add(node.get_text("\n", strip=True).split("\n")[0], section)
+        return list(found.values())
+
+    if venue == "CVPR":
+        if saved["url"] == CVF_AWARDS:
+            # This society archive also lists individual and other-conference
+            # awards. Only explicitly named CVPR paper-prize tables qualify.
+            for heading in root.find_all(["h1", "h2"]):
+                name = heading.get_text(" ", strip=True)
+                if not name.startswith("CVPR ") or not winner_name(name):
+                    continue
+                for sibling in heading.find_next_siblings():
+                    if sibling.name in {"h1", "h2"}:
+                        break
+                    for row in sibling.select("tr"):
+                        cells = row.find_all("td", recursive=False)
+                        if len(cells) >= 2 and cells[0].get_text(strip=True) == str(
+                            year
+                        ):
+                            add(cells[1].get_text(" ", strip=True).strip('“”"'), name)
+            return list(found.values())
+        section = ""
+        for node in root.find_all(["h1", "h2", "h3", "h4", "p", "li"]):
+            text = node.get_text(" ", strip=True)
+            label = re.fullmatch(
+                r"(?:CVPR\s+\d{4}\s+)?Best(?: Student)? Papers?(?: Awards?)?(?: Honorable Mentions?)?(?:\s*:\s*(?:ID:\s*\d+)?)?",
+                text,
+            )
+            if label:
+                section = text.rstrip(" :") if winner_name(text) else ""
+                continue
+            if node.name.startswith("h"):
+                section = ""
+                continue
+            if not section:
+                continue
+            if node.name == "p" and text.startswith("Paper Name:"):
+                add(text.removeprefix("Paper Name:").strip(), section)
+            elif node.name == "li":
+                title = next(
+                    (
+                        n
+                        for n in node.find_all(["strong", "b"])
+                        if len(n.get_text(strip=True)) >= 12
+                    ),
+                    None,
+                )
+                if title:
+                    anchor = title.find_parent("a", href=True)
+                    link = urljoin(saved["url"], anchor["href"]) if anchor else ""
+                    add(
+                        title.get_text(" ", strip=True),
+                        section,
+                        link if link and trusted(link) else "",
+                    )
+        return list(found.values())
 
     # RAS award archives have a single prize and explicit year-separated
     # recipients. Only the matching award/year block is evidence, not names
@@ -566,15 +684,31 @@ def upcoming_date(document, year, now=None):
     return None
 
 
-def collect(spec):
+def collect(spec, *, refresh=False, refreshed_after=None, check=None):
     """Check official primary and archive pages; save a readable coverage receipt."""
     documents, failures = [], []
+
+    def retrieve(url):
+        if check:
+            check()
+        return (
+            fetch(url, refresh=True, refreshed_after=refreshed_after)
+            if refresh
+            else fetch(url)
+        )
+
     seeds = [spec["url"], *spec.get("alternate_urls", [])]
     if spec["venue"] == "ICML":
         seeds.append(f"https://icml.cc/virtual/{spec['year']}/awards_detail")
     for url in dict.fromkeys(seeds):
+        if (
+            spec["venue"] == "ACL"
+            and documents
+            and parse(documents[0], "ACL", spec["year"])
+        ):
+            break
         try:
-            documents.append(fetch(url))
+            documents.append(retrieve(url))
         except (httpx.HTTPError, ValueError) as exc:
             failures.append({"url": url, "reason": str(exc)[:240]})
     urls = []
@@ -629,11 +763,13 @@ def collect(spec):
     # Twelve current ICRA paper prizes can live on separate archive pages.
     for url in urls[: 30 if spec["venue"] == "ICRA" else 8]:
         try:
-            documents.append(fetch(url))
+            documents.append(retrieve(url))
         except (httpx.HTTPError, ValueError) as exc:
             failures.append({"url": url, "reason": str(exc)[:240]})
     winners = {}
     for document in documents:
+        if check:
+            check()
         rows = parse(document, spec["venue"], spec["year"])
         try:
             rows.extend(announcement_winners(document, spec["venue"], spec["year"]))
@@ -682,6 +818,21 @@ def collect(spec):
         ],
     }
     path = _collection_path(spec)
+    if not documents and path.is_file():
+        try:
+            previous = json.loads(path.read_text())
+        except (OSError, ValueError):
+            previous = {}
+        if previous.get("papers"):
+            result.update(
+                papers=previous["papers"],
+                winner_count=previous["winner_count"],
+                paper_count=previous["paper_count"],
+                documents=previous.get("documents", []),
+                stale=True,
+                last_successful_check=previous.get("last_successful_check")
+                or previous.get("checked_at"),
+            )
     pending = path.with_suffix(".tmp")
     pending.write_text(db.dumps(result), encoding="utf-8")
     pending.replace(path)
@@ -717,7 +868,75 @@ def catalogue(now=None):
         "sources": rows,
         "winner_count": sum(r["winner_count"] for r in rows),
         "paper_count": len({normalized(w["title"]) for r in rows for w in r["papers"]}),
+        "refresh_job": db.one(
+            "SELECT id,state,stage,progress,error FROM jobs WHERE kind='award_refresh' ORDER BY created DESC LIMIT 1"
+        ),
     }
+
+
+def start_refresh():
+    """A separate acquisition job never starts videos or changes paused lessons."""
+    now = dt.datetime.now(ZoneInfo("Asia/Tokyo"))
+    return db.enqueue(
+        "award_refresh",
+        "conference-awards",
+        {
+            "sources": sources(now.year, db.settings()["nightly_video_categories"]),
+        },
+        priority=8,
+    )
+
+
+def refresh_step(job):
+    """Checkpoint one conference edition; exhaust three retries then continue."""
+    specs = job["payload"]["sources"]
+    cp = job["checkpoint"]
+    index = cp.get("source_index", 0)
+    if index >= len(specs):
+        db.patch_job(job["id"], stage="受賞情報の更新が完了", progress=1)
+        return True
+    spec = specs[index]
+    db.patch_job(
+        job["id"],
+        stage=f"受賞情報を更新 · {spec['venue']} {spec['year']} · {index + 1}/{len(specs)}",
+    )
+
+    def check():
+        from .runtime import PracticePreempted
+
+        current = db.one("SELECT state FROM jobs WHERE id=?", (job["id"],))
+        if not current or current["state"] not in {"running", "queued"}:
+            raise PracticePreempted("受賞情報の更新を中断しました")
+        if db.one(
+            "SELECT id FROM jobs WHERE kind='practice' AND state IN ('queued','running') AND available<=? LIMIT 1",
+            (time.time(),),
+        ):
+            raise PracticePreempted(
+                "録音の評価を優先します。受賞情報の更新は続きから再開します"
+            )
+
+    try:
+        collect(spec, refresh=True, refreshed_after=job["created"], check=check)
+    except (httpx.HTTPError, ValueError) as exc:
+        count = cp.get("source_failures", 0) + 1
+        cp["source_failures"] = count
+        cp["last_error"] = str(exc)[:240]
+        if count < 3:
+            db.patch_job(
+                job["id"],
+                checkpoint=cp,
+                available=time.time() + 5,
+                stage=f"{spec['venue']} {spec['year']} · 再試行 {count}/3",
+            )
+            return False
+        cp.setdefault("skipped", []).append(
+            {"source": spec, "reason": cp.pop("last_error")}
+        )
+    cp.pop("source_failures", None)
+    cp.pop("last_error", None)
+    cp["source_index"] = index + 1
+    db.patch_job(job["id"], checkpoint=cp, progress=(index + 1) / len(specs))
+    return False
 
 
 def verified(meta, *, year=None):

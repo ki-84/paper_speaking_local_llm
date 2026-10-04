@@ -2538,25 +2538,43 @@ function ClipButton({
   );
 }
 const awardStatusLabels:Record<string,string>={"verified winners":"受賞確認済み","not announced":"開催前・受賞未発表","finalists only":"最終候補のみ","no confirmed winners":"受賞者未確認",unavailable:"取得できず","not checked":"未確認"};
+const awardReceiptLabel=(r:any)=>r.stale?'保存済み・今回の取得失敗':awardStatusLabels[r.status]||r.status;
 
-function ConferenceAwards({version,onError}:{version:number;onError:(s:string)=>void}) {
+function ConferenceAwards({version,onError,refresh}:{version:number;onError:(s:string)=>void;refresh:()=>void}) {
   const [catalogue,setCatalogue]=useState<any>(null);
+  const [selectedVenue,setSelectedVenue]=useState(''),[busy,setBusy]=useState(false);
   useEffect(()=>{let live=true;api<any>("/conference-awards").then(r=>{if(live)setCatalogue(r);}).catch(e=>{if(live)onError(e.message);});return()=>{live=false;};},[version]);
+  const update=async()=>{setBusy(true);try{await post('/conference-awards/refresh');refresh();}catch(e){onError((e as Error).message);}finally{setBusy(false);}};
+  const control=async(action:string)=>{try{await post(`/jobs/${catalogue.refresh_job.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
   if(!catalogue)return null;
-  return <details className="conference-awards" aria-label="学会別の受賞論文"><summary>学会別の受賞論文 · {catalogue.winner_count}件の受賞情報 / {catalogue.paper_count}本</summary>
-    <p className="subtle">現在・前年の開催分を公式情報で確認します。同じ論文の複数受賞は別に数えます。本文の取得・確認は動画の選定時に行います。</p>
-    <div className="award-coverage-grid">{catalogue.sources.map((r:any)=>{
+  const venues=Array.from(new Set<string>(catalogue.sources.map((r:any)=>r.source.venue)));
+  const years=Array.from(new Set<number>(catalogue.sources.map((r:any)=>r.source.year))).sort((a,b)=>b-a);
+  const job=catalogue.refresh_job,updating=['queued','running'].includes(job?.state);
+  return <section className="conference-awards" aria-label="学会別の受賞論文">
+    <div className="actions"><h3>学会別の受賞論文</h3><button className="secondary" disabled={busy||updating} onClick={update}>{busy||updating?'受賞情報を更新中…':'受賞情報を更新'}</button>{['paused','failed','cancelled'].includes(job?.state)&&<button className="text-button" onClick={()=>control('resume')}>受賞情報の更新を再開</button>}</div>
+    <p className="award-total">{catalogue.winner_count}件の受賞情報 / {catalogue.paper_count}本 · {venues.length}学会</p>
+    {updating&&<><p>{job.stage}</p><progress max={1} value={job.progress||0}/><button className="text-button" onClick={()=>control('pause')}>受賞情報の更新を一時停止</button></>}
+    {job?.error&&<p role="alert">{job.error}</p>}
+    <p className="subtle">学会名を押すと、受賞論文と公式出典を見られます。同じ論文の複数受賞は別に数えます。本文の確認は動画の選定時に行います。</p>
+    <table className="award-coverage-table"><caption>学会ごとの取得状況</caption><thead><tr><th scope="col">学会</th>{years.map(y=><th scope="col" key={y}>{y}年</th>)}</tr></thead><tbody>{venues.map(venue=><tr key={venue}><th scope="row"><button className="text-button" aria-label={`${venue}の受賞情報を見る`} onClick={()=>setSelectedVenue(venue)}>{venue}</button></th>{years.map(year=>{
+      const r=catalogue.sources.find((s:any)=>s.source.venue===venue&&s.source.year===year);
+      return <td key={year}>{r?<><strong>{r.winner_count}件 / {r.paper_count}本</strong><small>{awardReceiptLabel(r)}</small></>:<small>対象外</small>}</td>;
+    })}</tr>)}</tbody></table>
+    <details className="award-paper-lists" open={!!selectedVenue} onToggle={e=>{if(!e.currentTarget.open)setSelectedVenue('');else if(!selectedVenue)setSelectedVenue('all');}}><summary>受賞論文の一覧と取得状況</summary>
+    <label>表示する学会 <select aria-label="受賞論文を表示する学会" value={selectedVenue||'all'} onChange={e=>setSelectedVenue(e.target.value)}><option value="all">すべての学会</option>{venues.map(v=><option key={v} value={v}>{v}</option>)}</select></label>
+    <div className="award-coverage-grid">{catalogue.sources.filter((r:any)=>!selectedVenue||selectedVenue==='all'||r.source.venue===selectedVenue).map((r:any)=>{
       const s=r.source;
       return <article key={`${s.venue}-${s.year}`} aria-label={`${s.venue} ${s.year}の受賞情報`}>
         <h3><a href={s.url} target="_blank" rel="noreferrer">{s.venue} {s.year}</a></h3>
-        <p className="award-coverage-status">{awardStatusLabels[r.status]||r.status} · 受賞情報 {r.winner_count}件 / 論文 {r.paper_count}本</p>
+        <p className="award-coverage-status">{awardReceiptLabel(r)} · 受賞情報 {r.winner_count}件 / 論文 {r.paper_count}本</p>
         {r.checked_at&&<p className="subtle">確認: {new Date(r.checked_at*1000).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}（日本時間）</p>}
+        {r.stale&&r.last_successful_check&&<p className="subtle">保存済みの受賞情報を表示しています。取得成功: {new Date(r.last_successful_check*1000).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}</p>}
         {r.conference_start&&<p className="subtle">開催開始: {r.conference_start}</p>}
         {r.papers.length>0&&<details><summary>受賞論文を表示（{r.paper_count}本）</summary><ul>{r.papers.map((p:any,i:number)=><li key={`${p.title}-${p.name}-${i}`}><strong>{p.title}</strong><br/><a href={p.official_url} target="_blank" rel="noreferrer">{p.name}</a>{p.kind==='test-of-time'&&<span> · 長年の影響を評価する賞</span>}</li>)}</ul></details>}
         {r.failures?.length>0&&<details className="award-fetch-failures"><summary>{r.papers.length?'一部の取得先に問題':'取得先の問題'}（{r.failures.length}件）</summary><ul>{r.failures.map((f:any,i:number)=><li key={i}><a href={f.url} target="_blank" rel="noreferrer">{f.url}</a><p>{f.reason}</p></li>)}</ul></details>}
       </article>;
-    })}</div>
-  </details>;
+    })}</div></details>
+  </section>;
 }
 
 function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void}) {
@@ -2567,7 +2585,7 @@ function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onEr
   const control=async(action:string)=>{try{await post(`/jobs/${activeJob.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
   const labels:Record<string,string>={searching:"論文を探索中",reading:"本文を確認中",building:"動画を作成中",ready:"2本が完成",skipped:"今夜は見送り",paused:"一時停止",failed:"作成時の問題",cancelled:"停止済み"};
   return <section className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
-  <ConferenceAwards version={version} onError={onError}/>
+  <ConferenceAwards version={version} onError={onError} refresh={refresh}/>
   {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間{run.data.manual&&' · 手動実行'}</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>{run.state==='ready'&&<p>完成した動画を残して、別の論文で追加作成できます。</p>}
   <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}
   {activeRun.data.selected?.awards?.map((a:any)=><p key={`${a.venue}-${a.year}-${a.name}`}><a href={a.official_url} target="_blank" rel="noreferrer">{a.venue} {a.year} · {a.name}</a> · 公式受賞情報確認済み{a.kind==='test-of-time'&&<> · 長年の影響を評価する賞{activeRun.data.selected.published&&<> · 論文発表 {activeRun.data.selected.published.slice(0,4)}年 / 受賞 {a.year}年</>}</>}</p>)}

@@ -75,6 +75,76 @@ def test_project_pause_and_resume_propagates_to_render_jobs(client):
     assert db.one("SELECT state FROM jobs WHERE id=?", (child,))["state"] == "queued"
 
 
+def test_project_progress_retains_checked_work_during_speech_retry(client):
+    result = story.create(paper())
+    project = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
+    track = project["data"]["modes"]["deep_dive"]
+    track.update(
+        phase="tts",
+        scenes=[
+            {
+                "title": "First scene",
+                "visual_ready": True,
+                "subtitles_ready": True,
+                "clips_ready": True,
+                "questions_ready": True,
+                "utterances": [
+                    {
+                        "id": "one",
+                        "speaker": "guide",
+                        "text": "Verified speech.",
+                        "audio": "audio/one.wav",
+                        "aligned": True,
+                    },
+                    {
+                        "id": "two",
+                        "speaker": "host",
+                        "text": "Speech being corrected.",
+                        "audio_retries": 1,
+                        "voice_candidates": [{"audio": "audio/rejected.wav"}],
+                    },
+                ],
+            },
+            {
+                "title": "Second scene",
+                "clips_ready": True,
+                "utterances": [
+                    {
+                        "id": "three",
+                        "speaker": "guide",
+                        "text": "Speech not yet checked.",
+                        "audio": "audio/three.wav",
+                        "audio_check": {"transcript": "not final"},
+                    }
+                ],
+            },
+        ],
+    )
+    story.save(project)
+    before = db.one("SELECT data FROM video_projects WHERE id=?", (project["id"],))
+    public = client.get(f"/api/video-projects/{project['id']}").json()["data"]["modes"][
+        "deep_dive"
+    ]
+    p = public["generation_progress"]
+    assert (
+        public["phase"] == "tts" and p["speech_ready"] == 2 and p["speech_checked"] == 1
+    )
+    assert p["utterances_total"] == 3 and p["speech_retries"] == 1
+    assert (
+        p["subtitled_scenes"] == 1
+        and p["practice_scenes"] == 1
+        and p["scenes_total"] == 2
+    )
+    assert all(
+        "audio_check" not in u and "voice_candidates" not in u
+        for s in public["scenes"]
+        for u in s["utterances"]
+    )
+    assert before == db.one(
+        "SELECT data FROM video_projects WHERE id=?", (project["id"],)
+    )
+
+
 def test_natural_c1_sentences_are_accepted_but_overview_math_and_unknown_citations_are_rejected():
     u = {
         "speaker": "guide",

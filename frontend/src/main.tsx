@@ -2608,11 +2608,21 @@ function NightlyFilmCards({project,openLesson}:{project:any;openLesson:(id:strin
     const thumbs=track.thumbnails?.data;
     const thumb=thumbs?.candidates?.find((c:any)=>c.id===thumbs.selected_id&&c.png);
     const title=film?.data.title||track.packaging?.title||track.label;
-    return <article key={mode} aria-label={track.label}><strong>{track.label}</strong><p>{film?'動画完成':track.phase}</p>
+    return <article key={mode} aria-label={track.label}><strong>{track.label}</strong>{film?<p>動画完成 · {minutes(film.data.duration)}</p>:<StoryGenerationProgress track={track}/>}
       {thumb?<><img className="nightly-thumbnail" src={fileUrl(thumb.png)} alt={`${track.label}のサムネイル`}/><div className="actions"><a href={fileUrl(thumb.png)} download={`${title}-thumbnail.png`}>サムネイル PNG</a>{thumb.jpg&&<a href={fileUrl(thumb.jpg)} download={`${title}-thumbnail.jpg`}>サムネイル JPEG</a>}</div></>:<p className="subtle">サムネイルは動画と一緒に作成します。</p>}
       {film&&<a className="primary" href={fileUrl(film.data.mp4)} download={`${film.data.title}.mp4`}>動画をダウンロード</a>}<button className="text-button" onClick={()=>openLesson(track.lesson_id)}>英語練習</button>
     </article>;
   })}</div>;
+}
+function StoryGenerationProgress({track}:{track:any}) {
+  const p=track.generation_progress;
+  const labels:Record<string,string>={script:'脚本・図を作成中',tts:p?.speech_checked?'音声の読み違いを修正中':'音声を作成中',align:'音声チェック・日本語字幕を作成中',learning:'英語練習を用意しています',export:'動画を出力中'};
+  return <div className="story-generation-progress"><p>{labels[track.phase]||'作成準備中'}</p>
+    {p&&<>{track.phase==='script'&&<p>準備できた場面 {p.visuals_ready}／{p.scenes_total}</p>}
+      {p.utterances_total>0&&<p>音声 {p.speech_ready}／{p.utterances_total} · 音声チェック {p.speech_checked}／{p.utterances_total}</p>}
+      {p.scenes_total>0&&<p>日本語字幕 {p.subtitled_scenes}／{p.scenes_total}場面{track.phase==='learning'&&<> · 英語練習 {p.practice_scenes}／{p.scenes_total}場面</>}</p>}
+      {p.updated&&<small>最終更新 {new Date(p.updated*1000).toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo'})}（日本時間）</small>}</>}
+  </div>;
 }
 function ThumbnailChoices({projectId,mode,track,onError,refresh}:{projectId:string;mode:string;track:any;onError:(s:string)=>void;refresh:()=>void}) {
   const [busy,setBusy]=useState(false);
@@ -2675,7 +2685,7 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
         const preview=track.videos?.find((v:any)=>v.kind===`${mode}_preview`&&v.state==='ready');
         const visible=complete||preview;
         return <article className="story-film" key={mode}><div className="eyebrow">{mode==='overview'?'THE IDEA · 数式なし':'UNDER THE HOOD · 数式と原理'}</div>
-          <h3>{track.packaging?.title || track.label}</h3><p>{complete ? `${minutes(complete.data.duration)} · 完成` : `内容に合わせた長さ · ${track.phase}`}</p>
+          <h3>{track.packaging?.title || track.label}</h3>{complete ? <p>{minutes(complete.data.duration)} · 完成</p> : <StoryGenerationProgress track={track}/>}
           {visible && <video controls preload="metadata" poster={fileUrl(visible.data.thumbnail)} src={fileUrl(visible.data.mp4)} />}
           {preview&&!complete&&<small>冒頭約90秒のプレビューです。全体の作成は続いています。</small>}
           <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>Download MP4 · 動画</a>}

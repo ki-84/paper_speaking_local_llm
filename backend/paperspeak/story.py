@@ -310,6 +310,23 @@ def get(ident):
             )
             if k in track
         }
+        scenes = track["scenes"]
+        utterances = [u for s in scenes for u in s.get("utterances", [])]
+        # Counts reflect saved work, including speech rechecks that can move
+        # the pipeline back to TTS without losing completed alignment work.
+        value["generation_progress"] = {
+            "scenes_total": len(scenes),
+            "visuals_ready": sum(bool(s.get("visual_ready")) for s in scenes),
+            "utterances_total": len(utterances),
+            "speech_ready": sum(bool(u.get("audio")) for u in utterances),
+            "speech_checked": sum(bool(u.get("aligned")) for u in utterances),
+            "subtitled_scenes": sum(bool(s.get("subtitles_ready")) for s in scenes),
+            "practice_scenes": sum(
+                bool(s.get("clips_ready") and s.get("questions_ready")) for s in scenes
+            ),
+            "speech_retries": sum(u.get("audio_retries", 0) for u in utterances),
+            "updated": project["updated"],
+        }
         value["scenes"] = [
             {
                 k: s[k]

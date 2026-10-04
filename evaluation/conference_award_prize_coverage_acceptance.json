@@ -1,0 +1,4413 @@
+{
+  "checked_at": "2026-10-04T12:16:02.688272+09:00",
+  "version": "official-awards-4",
+  "local_research_version": "local-research-2",
+  "status": "passed",
+  "scope": "Prize-level coverage repair and autonomous free local-AI research; this is not proof of complete conference prize coverage.",
+  "winner_count": 148,
+  "distinct_paper_count": 145,
+  "enabled_editions": 20,
+  "source_receipts": [
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Transformers are Inherently Succinct",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://openreview.net/forum?id=Yxz92UuPLQ",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        },
+        {
+          "title": "LLMs Get Lost In Multi-Turn Conversation",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://openreview.net/forum?id=VKGTGGcwl6",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        },
+        {
+          "title": "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Announcing the Test of Time Awards from ICLR 2016",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://arxiv.org/abs/1511.06434",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        },
+        {
+          "title": "Continuous control with deep reinforcement learning",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Announcing the Test of Time Awards from ICLR 2016",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://arxiv.org/pdf/1509.02971",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ICLR",
+        "year": 2026,
+        "url": "https://blog.iclr.cc/category/iclr-2026/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791083571.0598443,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 4,
+      "paper_count": 4,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Outstanding Papers",
+            "winner_count": 2,
+            "official_url": "https://blog.iclr.cc/category/iclr-2026/"
+          },
+          {
+            "name": "Announcing the Test of Time Awards from ICLR 2016",
+            "winner_count": 2,
+            "official_url": "https://blog.iclr.cc/category/iclr-2026/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 2,
+        "category_count": 2,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://blog.iclr.cc/category/iclr-2026/",
+          "cache_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "retrieved_at": 1791083569.575886,
+          "sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d"
+        },
+        {
+          "url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "cache_url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "retrieved_at": 1791083570.3019152,
+          "sha256": "128919dff0c8999ebc0a6ecc7c266693c94345ce0b6669a58909c3d5de095ce3"
+        },
+        {
+          "url": "https://blog.iclr.cc/2026/04/22/announcing-the-test-of-time-awards-from-iclr-2016/",
+          "cache_url": "https://blog.iclr.cc/2026/04/22/announcing-the-test-of-time-awards-from-iclr-2016/",
+          "retrieved_at": 1791083571.0022314,
+          "sha256": "bd37b9af0f6beefaa7f29dfef8b9d90ff0e3f3abc8d18100c875c92e17a7adac"
+        }
+      ],
+      "local_ai": {
+        "version": "local-research-2",
+        "state": "completed",
+        "model": {
+          "profile": "qwen-q8",
+          "repo": "unsloth/Qwen3.8-27B-GGUF",
+          "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502",
+          "weights": [
+            {
+              "file": "Qwen3.8-27B-Q8_0.gguf",
+              "sha256": "a680f44a06920e5d689774823782006aa3acc8db95750323373b24139b67e348"
+            },
+            {
+              "file": "mmproj-BF16.gguf",
+              "sha256": "83ee4f4f205fa514161778c41df1ea14144faa0f713510893b63c2395f5c2d53"
+            }
+          ],
+          "thinking": false,
+          "version": "local-research-2"
+        },
+        "checked_at": 1791083571.2248836,
+        "records": [
+          {
+            "url": "https://blog.iclr.cc/2026/04/22/announcing-the-test-of-time-awards-from-iclr-2016/",
+            "sha256": "bd37b9af0f6beefaa7f29dfef8b9d90ff0e3f3abc8d18100c875c92e17a7adac",
+            "page": null,
+            "rejected": [],
+            "reason_ja": "提供されたソースは2026年4月22日付のICLRブログ記事であり、2026年のTest of Time Award受賞者が2016年に発表された2つの論文であると明確に宣言しています。タイトルと受賞者名（著者）が本文中に連続して記載されているため、証拠として引用しました。他の賞（Outstanding Paper等）のリンクは提供されていませんが、本ソース内にはTest of Time Awardの受賞情報が完全に含まれているため、追加リンクは不要です。",
+            "prompt_sha256": "8b728ecdbe10b95f2434c52e3df90ea7e8992484b64cb88a24f4bfce81f490ae",
+            "model": {
+              "profile": "qwen-q8",
+              "repo": "unsloth/Qwen3.8-27B-GGUF",
+              "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502",
+              "weights": [
+                {
+                  "file": "Qwen3.8-27B-Q8_0.gguf",
+                  "sha256": "a680f44a06920e5d689774823782006aa3acc8db95750323373b24139b67e348"
+                },
+                {
+                  "file": "mmproj-BF16.gguf",
+                  "sha256": "83ee4f4f205fa514161778c41df1ea14144faa0f713510893b63c2395f5c2d53"
+                }
+              ],
+              "thinking": false,
+              "version": "local-research-2"
+            },
+            "next_urls": [],
+            "checked_at": 1791082879.9703884,
+            "applied_at": 1791083571.1622524,
+            "winner_count": 2
+          }
+        ],
+        "units": 1
+      }
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "ICML 2026 Outstanding Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/category/icml-2026/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71086",
+          "retrieved_at": 1791081082.7193244,
+          "source_sha256": "5e57bd7a05ae946d52d384b254d56c8b3324eeae67900801d8611af131e7c158",
+          "area": "ai"
+        },
+        {
+          "title": "High-Accuracy Sampling for Diffusion Models and Log-Concave Distributions",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "ICML 2026 Outstanding Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/category/icml-2026/",
+          "paper_url": "https://icml.cc/virtual/2026/oral/71132",
+          "retrieved_at": 1791081082.7193244,
+          "source_sha256": "5e57bd7a05ae946d52d384b254d56c8b3324eeae67900801d8611af131e7c158",
+          "area": "ai"
+        },
+        {
+          "title": "Asynchronous Methods for Deep Reinforcement Learning",
+          "venue": "ICML",
+          "year": 2026,
+          "name": "ICML 2026 Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.icml.cc/category/icml-2026/",
+          "paper_url": "https://proceedings.mlr.press/v48/mniha16.html",
+          "retrieved_at": 1791081082.7193244,
+          "source_sha256": "5e57bd7a05ae946d52d384b254d56c8b3324eeae67900801d8611af131e7c158",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ICML",
+        "year": 2026,
+        "url": "https://blog.icml.cc/category/icml-2026/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081085.435791,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 3,
+      "paper_count": 3,
+      "coverage": {
+        "categories": [
+          {
+            "name": "ICML 2026 Outstanding Paper Award",
+            "winner_count": 2,
+            "official_url": "https://blog.icml.cc/category/icml-2026/"
+          },
+          {
+            "name": "ICML 2026 Test of Time Award",
+            "winner_count": 1,
+            "official_url": "https://blog.icml.cc/category/icml-2026/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 2,
+        "category_count": 2,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://blog.icml.cc/category/icml-2026/",
+          "retrieved_at": 1791081082.7193244,
+          "sha256": "5e57bd7a05ae946d52d384b254d56c8b3324eeae67900801d8611af131e7c158"
+        },
+        {
+          "url": "https://icml.cc/virtual/2026/awards_detail",
+          "retrieved_at": 1791081083.5386028,
+          "sha256": "50eccb5f010b7480e680a25e87b428ca15664bc4f54961940644dc9d24622c13"
+        },
+        {
+          "url": "https://blog.icml.cc/2026/07/05/announcing-the-icml-2026-awards/",
+          "retrieved_at": 1791081084.3357553,
+          "sha256": "e01aa8ca7d9e103dc47e1cc79d50a888b11a7dbbe515e107b706a2f03648fda2"
+        },
+        {
+          "url": "https://icml.cc/virtual/2026/67269",
+          "retrieved_at": 1791081085.3171446,
+          "sha256": "b5f8f8354b4419dd090546b1c4178bffb5a14303402d30f0a5b4cd0ed62c01ab"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [],
+      "source": {
+        "venue": "NeurIPS",
+        "year": 2026,
+        "url": "https://neurips.cc/virtual/2026/awards_detail",
+        "alternate_urls": [
+          "https://neurips.cc/Conferences/2026"
+        ]
+      },
+      "checked_at": 1791081087.7491455,
+      "failures": [
+        {
+          "url": "https://neurips.cc/virtual/2026/awards_detail",
+          "reason": "Client error '403 Forbidden' for url 'https://neurips.cc/virtual/2026/awards_detail'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
+        }
+      ],
+      "status": "not announced",
+      "conference_start": "2026-12-06",
+      "winner_count": 0,
+      "paper_count": 0,
+      "coverage": {
+        "categories": [],
+        "missing_categories": [],
+        "confirmed_categories": 0,
+        "category_count": 0,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://neurips.cc/Conferences/2026",
+          "retrieved_at": 1791081087.6354578,
+          "sha256": "10cb91386f98dd5aaf5e7187426e08ed3f0d24ca3f2407bd1a1a7a5f146c5654"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Model Change for Description Logic Concepts",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "Causal Structure Learning for Dynamical Systems with Theoretical Score Analysis",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "ReconVLA: Reconstructive Vision-Language-Action Model as Effective Robot Perceiver",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "High-Pass Matters: Theoretical Insights and Sheaflet-Based Design for Hypergraph Neural Networks",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "LLM2CLIP: Powerful Language Model Unlocks Richer Cross-Modality Representation",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "On the Alignment of Large Language Models with Global Human Opinion",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Best Paper Award – AI Alignment Track",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "PlantTraitNet: An Uncertainty-Aware Multimodal Framework for Global-Scale Plant Trait Inference from Citizen Science Data",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Best Paper Award – AI for Social Impact Track",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "Generalizable Slum Detection from Satellite Imagery with Mixture-of-Experts",
+          "venue": "AAAI",
+          "year": 2026,
+          "name": "AAAI-26 Best Paper Award – AI for Social Impact Track",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "AAAI",
+        "year": 2026,
+        "url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081088.4649658,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 8,
+      "paper_count": 8,
+      "coverage": {
+        "categories": [
+          {
+            "name": "AAAI-26 Outstanding Paper Awards",
+            "winner_count": 5,
+            "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+          },
+          {
+            "name": "AAAI-26 Best Paper Award – AI Alignment Track",
+            "winner_count": 1,
+            "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+          },
+          {
+            "name": "AAAI-26 Best Paper Award – AI for Social Impact Track",
+            "winner_count": 2,
+            "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "retrieved_at": 1791081088.396355,
+          "sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "The Imperfective Paradox in Large Language Models",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Memory Efficiency and Resource-Rational Encoding in Sentence Processing",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Characterizing the Expressivity of Local Attention in Transformers",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "CoSToM: Causal-oriented Steering for Intrinsic Theory-of-Mind Alignment in Large Language Models",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Theme Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Mapping the Circumplex of Affect: Geometric Analysis of Emotion Representations via Hyperspherical Contrastive Learning",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Theme Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "HSCodeComp: A Realistic and Expert-level Agent Benchmark for Hierarchical Rule Application",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Resource Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "ImplicitMemBench: Measuring Unconscious Behavioral Adaptation in Large Language Models",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Resource Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Audio MultiChallenge: A Multi-Turn Evaluation of Spoken Dialogue Systems on Natural Human Interaction",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Resource Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "VeriTaS: The First Dynamic Benchmark for Multimodal Automated Fact-Checking",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Resource Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "DIA-HARM: Dialectal Disparities in Harmful Content Detection Across 50 English Dialects",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Social Impact Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Your Students Don’t Use LLMs Like You Wish They Did",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Social Impact Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Afri-MCQA: Multimodal Cultural Question Answering for African Languages",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Best Social Impact Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "MauBERT: Universal Phonetic Inductive Biases for Few-Shot Acoustic Units Discovery",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Evolutionary Guided Decoding: Iterative Value Refinement for LLMs",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Beyond the Final Actor: Modeling the Dual Roles of Creator and Editor for Fine-Grained LLM-Generated Text Detection",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Lying with Truths: Open-Channel Multi-Agent Collusion for Belief Manipulation via Generative Montage",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Hierarchical Acoustic-Semantic Modeling: Modality Separation and Semantic Coherence for Full-Duplex SLMs",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Mind the (DH) Gap! A Contrast in Risky Choices Between Reasoning and Conversational LLMs",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "MediEval: A Unified Medical Benchmark for Patient-Contextual and Knowledge-Grounded Reasoning in LLMs",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Maximizing Local Entropy Where It Matters: Prefix-Aware Localized LLM Unlearning",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "GeoRA: Geometry-Aware Low-Rank Adaptation for RLVR",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "CURE: Critique-Driven Unified Reinforcement Learning for Test-Time Self-Improvement",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Systematicity between Forms and Meanings across Languages Supports Efficient Communication",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Rethinking Entropy Interventions in RLVR: An Entropy Change Perspective",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "From Local to Global: Revisiting Structured Pruning Paradigms for Large Language Models",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "Massively Multilingual Joint Segmentation and Glossing",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "CAR-bench: Evaluating the Consistency and Limit-Awareness of LLM Agents under Real-World Uncertainty",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "ViLL-E: Video LLM Embeddings for Retrieval",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "CxMP: A Linguistic Minimal-Pair Benchmark for Evaluating Constructional Understanding in Language Models",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        },
+        {
+          "title": "CIG: Measuring Conversational Information Gain in Deliberative Dialogues with Semantic Memory Dynamics",
+          "venue": "ACL",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2026.aclweb.org/program/best_papers/",
+          "paper_url": "",
+          "retrieved_at": 1791081089.082191,
+          "source_sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ACL",
+        "year": 2026,
+        "url": "https://2026.aclweb.org/program/best_papers/",
+        "alternate_urls": [
+          "https://2026.aclweb.org/program/awards/"
+        ]
+      },
+      "checked_at": 1791081089.553574,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 30,
+      "paper_count": 30,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Best Paper Award",
+            "winner_count": 3,
+            "official_url": "https://2026.aclweb.org/program/best_papers/"
+          },
+          {
+            "name": "Best Theme Papers",
+            "winner_count": 2,
+            "official_url": "https://2026.aclweb.org/program/best_papers/"
+          },
+          {
+            "name": "Best Resource Papers",
+            "winner_count": 4,
+            "official_url": "https://2026.aclweb.org/program/best_papers/"
+          },
+          {
+            "name": "Best Social Impact Papers",
+            "winner_count": 3,
+            "official_url": "https://2026.aclweb.org/program/best_papers/"
+          },
+          {
+            "name": "Outstanding Papers",
+            "winner_count": 18,
+            "official_url": "https://2026.aclweb.org/program/best_papers/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 5,
+        "category_count": 5,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://2026.aclweb.org/program/best_papers/",
+          "retrieved_at": 1791081089.082191,
+          "sha256": "21e0a7031ce5455796521dc918e36e2c6d9ec3981c6c0ded67ff8a916b30e008"
+        },
+        {
+          "url": "https://2026.aclweb.org/program/outstanding_acs/",
+          "retrieved_at": 1791081089.3119488,
+          "sha256": "f99d297ff5b7674cbd060d0a2cda12e4beb9facde1a103dd3a7e6c1859240aba"
+        },
+        {
+          "url": "https://2026.aclweb.org/program/outstanding_sacs/",
+          "retrieved_at": 1791081089.523935,
+          "sha256": "120935e47fbbe4a8d7ee08e41bfd027d9ee60d504ed2bf984988ea55ec520853"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Efficiently Reconstructing Dynamic Scenes One D4RT at a Time",
+          "venue": "CVPR",
+          "year": 2026,
+          "name": "CVPR 2026 Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+          "paper_url": "https://openaccess.thecvf.com/content/CVPR2026/html/Zhang_Efficiently_Reconstructing_Dynamic_Scenes_One_D4RT_at_a_Time_CVPR_2026_paper.html",
+          "retrieved_at": 1791081090.4072375,
+          "source_sha256": "bc749374e1265a7217bd2d55bb542b13567caee3f9e85eb87fa205dee848d72f",
+          "area": "ai"
+        },
+        {
+          "title": "Native and Compact Structured Latents for 3D Generation",
+          "venue": "CVPR",
+          "year": 2026,
+          "name": "CVPR 2026 Best Student Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+          "paper_url": "",
+          "retrieved_at": 1791081090.4072375,
+          "source_sha256": "bc749374e1265a7217bd2d55bb542b13567caee3f9e85eb87fa205dee848d72f",
+          "area": "ai"
+        },
+        {
+          "title": "Deep Residual Learning for Image Recognition",
+          "venue": "CVPR",
+          "year": 2026,
+          "name": "Longuet-Higgins Prize",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.thecvf.com/?page_id=413",
+          "paper_url": "",
+          "retrieved_at": 1791081091.525941,
+          "source_sha256": "f426dfc0f650d9236d2b439eb20889928894f8ba761682e4248cdf99d05017ac",
+          "area": "ai"
+        },
+        {
+          "title": "You Only Look Once: Unified, Real-Time Object Detection",
+          "venue": "CVPR",
+          "year": 2026,
+          "name": "Longuet-Higgins Prize",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.thecvf.com/?page_id=413",
+          "paper_url": "",
+          "retrieved_at": 1791081091.525941,
+          "source_sha256": "f426dfc0f650d9236d2b439eb20889928894f8ba761682e4248cdf99d05017ac",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+        "alternate_urls": [
+          "https://www.thecvf.com/?page_id=413"
+        ]
+      },
+      "checked_at": 1791081091.67083,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 4,
+      "paper_count": 4,
+      "coverage": {
+        "categories": [
+          {
+            "name": "CVPR 2026 Best Paper",
+            "winner_count": 1,
+            "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers"
+          },
+          {
+            "name": "CVPR 2026 Best Student Paper",
+            "winner_count": 1,
+            "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers"
+          },
+          {
+            "name": "Longuet-Higgins Prize",
+            "winner_count": 2,
+            "official_url": "https://www.thecvf.com/?page_id=413"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+          "retrieved_at": 1791081090.4072375,
+          "sha256": "bc749374e1265a7217bd2d55bb542b13567caee3f9e85eb87fa205dee848d72f"
+        },
+        {
+          "url": "https://www.thecvf.com/?page_id=413",
+          "retrieved_at": 1791081091.525941,
+          "sha256": "f426dfc0f650d9236d2b439eb20889928894f8ba761682e4248cdf99d05017ac"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+          "venue": "RSS",
+          "year": 2026,
+          "name": "Outstanding Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2026/program/awards/",
+          "paper_url": "https://roboticsconference.org/2026/program/papers/99/",
+          "retrieved_at": 1791081092.071916,
+          "source_sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321",
+          "area": "robotics"
+        },
+        {
+          "title": "Muninn: Your Trajectory Diffusion Model But Faster",
+          "venue": "RSS",
+          "year": 2026,
+          "name": "Outstanding Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2026/program/awards/",
+          "paper_url": "https://roboticsconference.org/2026/program/papers/160/",
+          "retrieved_at": 1791081092.071916,
+          "source_sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321",
+          "area": "robotics"
+        },
+        {
+          "title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+          "venue": "RSS",
+          "year": 2026,
+          "name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2026/program/awards/",
+          "paper_url": "https://roboticsconference.org/2026/program/papers/159/",
+          "retrieved_at": 1791081092.071916,
+          "source_sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321",
+          "area": "robotics"
+        }
+      ],
+      "source": {
+        "venue": "RSS",
+        "year": 2026,
+        "url": "https://roboticsconference.org/2026/program/awards/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081092.0956068,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 3,
+      "paper_count": 3,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Outstanding Paper Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2026/program/awards/"
+          },
+          {
+            "name": "Outstanding Student Paper Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2026/program/awards/"
+          },
+          {
+            "name": "Outstanding Systems Paper in Memory of Seth Teller Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2026/program/awards/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://roboticsconference.org/2026/program/awards/",
+          "retrieved_at": 1791081092.071916,
+          "sha256": "fc114539b2e611b7103867613dbd0120ea9a0bef0a7887b34e258d67f4572321"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Reciprocal Velocity Obstacles for real-time multi-agent navigation",
+          "venue": "ICRA",
+          "year": 2026,
+          "name": "IEEE International Conference on Robotics and Automation Most Influential Paper Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/",
+          "paper_url": "",
+          "retrieved_at": 1791081101.5217283,
+          "source_sha256": "4afd665a998513783e07ba5e04c70d486988d0d3ecfe4175edafdaa3b2a28035",
+          "area": "robotics"
+        },
+        {
+          "title": "OmniRetarget: Interaction-Preserving Data Generation for Humanoid Whole-Body Loco-Manipulation and Scene Interaction",
+          "venue": "ICRA",
+          "year": 2026,
+          "name": "IEEE ICRA Best Conference Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.ieee-ras.org/lujie-yang-on-teaching-humanoid-robots-by-preserving-interactions/",
+          "paper_url": "https://arxiv.org/abs/2509.26633",
+          "retrieved_at": 1791081152.5584714,
+          "source_sha256": "633625bff162af6e8b11c3348084783d43fe408d77f6709ac831e82960f57e20",
+          "area": "robotics"
+        },
+        {
+          "title": "OmniRetarget: Interaction-Preserving Data Generation for Humanoid Whole-Body Loco-Manipulation and Scene Interaction",
+          "venue": "ICRA",
+          "year": 2026,
+          "name": "IEEE ICRA Best Paper Award on Robot Manipulation and Locomotion",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.ieee-ras.org/lujie-yang-on-teaching-humanoid-robots-by-preserving-interactions/",
+          "paper_url": "https://arxiv.org/abs/2509.26633",
+          "retrieved_at": 1791081152.5584714,
+          "source_sha256": "633625bff162af6e8b11c3348084783d43fe408d77f6709ac831e82960f57e20",
+          "area": "robotics"
+        },
+        {
+          "title": "Symskill: Symbol and Skill Co-Invention for Data-Efficient and Reactive Long-Horizon Manipulation",
+          "venue": "ICRA",
+          "year": 2026,
+          "name": "IEEE ICRA Best Conference Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.ieee-ras.org/yifei-simon-shao-on-symskill-and-long-horizon-robot-manipulation/",
+          "paper_url": "https://arxiv.org/abs/2510.01661",
+          "retrieved_at": 1791081156.908126,
+          "source_sha256": "27031beb148c402153fde709f94693f4e838d75f6c195cf81207a16ae51ec8ac",
+          "area": "robotics"
+        }
+      ],
+      "source": {
+        "venue": "ICRA",
+        "year": 2026,
+        "url": "https://2026.ieee-icra.org/awards/",
+        "alternate_urls": [
+          "https://www.ieee-ras.org/awards-recognition/conference-awards/",
+          "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/",
+          "https://www.ieee-ras.org/category/ras-feature/",
+          "https://www.ieee-ras.org/2026-ieee-ras-awards-brochure/"
+        ]
+      },
+      "checked_at": 1791081163.5752678,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 4,
+      "paper_count": 3,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Best Paper Award on Robot Learning",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award in Medical Robotics",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Robot Perception (Part 1)",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Human-Robot Interaction",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award in Automation",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Robot Manipulation and Locomotion",
+            "winner_count": 1,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Mechanisms and Design",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Multi-Robot Systems",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award in Field and Service",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Planning and Control",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "IEEE International Conference on Robotics and Automation Most Influential Paper Award",
+            "winner_count": 1,
+            "official_url": "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/"
+          },
+          {
+            "name": "IEEE ICRA Best Conference Paper Award",
+            "winner_count": 2,
+            "official_url": "https://www.ieee-ras.org/lujie-yang-on-teaching-humanoid-robots-by-preserving-interactions/"
+          }
+        ],
+        "missing_categories": [
+          {
+            "name": "Best Paper Award on Robot Learning",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award in Medical Robotics",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Robot Perception (Part 1)",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Human-Robot Interaction",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award in Automation",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Mechanisms and Design",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Multi-Robot Systems",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award in Field and Service",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          },
+          {
+            "name": "Best Paper Award on Planning and Control",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-icra.org/awards/"
+          }
+        ],
+        "confirmed_categories": 3,
+        "category_count": 12,
+        "partial": true
+      },
+      "documents": [
+        {
+          "url": "https://2026.ieee-icra.org/awards/",
+          "retrieved_at": 1791081093.533161,
+          "sha256": "da5d98612c6a9b22b9f8108385cc6479441908f9297da0ec6bbffc0377fc6d58"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/",
+          "retrieved_at": 1791081098.1635602,
+          "sha256": "2d193ad44bed4b63730d3b8ede4f778c27bf036628924a937b0615448ed5f1d5"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/",
+          "retrieved_at": 1791081101.5217283,
+          "sha256": "4afd665a998513783e07ba5e04c70d486988d0d3ecfe4175edafdaa3b2a28035"
+        },
+        {
+          "url": "https://www.ieee-ras.org/category/ras-feature/",
+          "retrieved_at": 1791081103.8803384,
+          "sha256": "298930943ec44252056159b68005ad15bed9bdcf8846e4eb5341883c8f3997dd"
+        },
+        {
+          "url": "https://www.ieee-ras.org/2026-ieee-ras-awards-brochure/",
+          "retrieved_at": 1791081106.4015906,
+          "sha256": "fec710c2946f0ff3b121d0eac4091c9fd895532a55356eee0c751f28e9c65500"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-field-and-service-robotics/",
+          "retrieved_at": 1791081108.7948205,
+          "sha256": "d3cd386d2af8e5fa11c6d9e183ac0efe72c0390bcb0e030bf3b8b99d05711223"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-unmanned-aerial-vehicles/",
+          "retrieved_at": 1791081111.3112516,
+          "sha256": "929472f1f2710987722c49f783a6b826f48c2e020fe0e27008562cb917f1812d"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-robot-vision/",
+          "retrieved_at": 1791081113.0642045,
+          "sha256": "f9054ad8a62a3ec2695378777511ab890165c0031301a9533e4675d2589dd662"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-cognitive-robotics/",
+          "retrieved_at": 1791081114.674339,
+          "sha256": "7b7a91fa7c30301e0b3d21fb5503e7b74b6a86077d7640c67a1b208f21d2e070"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-conference-paper-award/",
+          "retrieved_at": 1791081118.0115936,
+          "sha256": "96fe0d1080a667e032b654168ef4c26fd7665de50c4dd3489802f8b1fefa736b"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-robot-perception/",
+          "retrieved_at": 1791081120.0284011,
+          "sha256": "7f2d1bba5fdc890906b8edb70c3935ace9973d76a463088aa5b72af5d82f5c1a"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-robot-manipulation-and-locomotion/",
+          "retrieved_at": 1791081122.404326,
+          "sha256": "39953500304b5906aacb76bf5f3323bcf8c346345b5bc21ad8bb65778f297406"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-robot-learning/",
+          "retrieved_at": 1791081124.9559581,
+          "sha256": "33ac5cca7772ce78eb0725b8206a36606a6bd4a661c4b984f580ef843e9c4fc6"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-planning-and-control/",
+          "retrieved_at": 1791081127.4364529,
+          "sha256": "eec9ae6d52e17bd759ca1984bbea71fb0b4d5416244403a86fdef33d27295a46"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-multi-robot-systems/",
+          "retrieved_at": 1791081129.807449,
+          "sha256": "3a4e093edd00e2c9c3ef77f3231128f0810441051026b3925fac2913b7c1e2a8"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-medical-robotics/",
+          "retrieved_at": 1791081132.694478,
+          "sha256": "024b6880a165c0c37ebd0a55384f5f4d96c8bf2d858499ca87f7de95ced81110"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-mechanisms-and-design/",
+          "retrieved_at": 1791081134.40312,
+          "sha256": "deebece436e82a6921cab9cd757ce04c6a03e7ea733eaee5aadff2fafa900fa4"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-human-robot-interaction/",
+          "retrieved_at": 1791081137.4711545,
+          "sha256": "38ffb8bf790239b667db7fdca1311c86279c779743c50f93bf7dccaa5252fadc"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-automation/",
+          "retrieved_at": 1791081139.9015086,
+          "sha256": "4e20978a4f5cd96a879fb2d18f4e6cc9fe2c4e60fd9520b18dabdde8b4c22444"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-student-paper-award/",
+          "retrieved_at": 1791081141.6184084,
+          "sha256": "f24c4ea6caf6ea1bc6d8d8c84083931cff6aecd96202c3832aba8bec5aa6c83d"
+        },
+        {
+          "url": "https://www.ieee-ras.org/robots-in-society-business-and-culture-september-2026/",
+          "retrieved_at": 1791081143.557024,
+          "sha256": "798d47c048fbc054166a0ed75bdcd98f181e8f3ed425e08c90609ff24da55356"
+        },
+        {
+          "url": "https://www.ieee-ras.org/robotics-and-automation-informal-reflections-on-familiar-terms/",
+          "retrieved_at": 1791081145.2154248,
+          "sha256": "a82185e7b0c73218c0860e040365df7b13d6a7ddedd492c506dffda7a7684bd3"
+        },
+        {
+          "url": "https://www.ieee-ras.org/robots-in-society-business-and-culture-august-2026/",
+          "retrieved_at": 1791081146.8708224,
+          "sha256": "967fa0d552a498b40641832222ec379f9d109f83889bc99afb5e9574b95b36bb"
+        },
+        {
+          "url": "https://www.ieee-ras.org/robotics-roadmaps-from-around-the-world-spotlight-of-the-month-china/",
+          "retrieved_at": 1791081148.5492895,
+          "sha256": "f7ea1894b599d98260ddcd1fc0c8c6d0c4cb2428590c15efd9939c376688b4d0"
+        },
+        {
+          "url": "https://www.ieee-ras.org/researcher-spotlight-chia-yen-lee-ph-d/",
+          "retrieved_at": 1791081150.5431573,
+          "sha256": "9475de51c8c7806f3f32ab58ed714219be31e496608b1141413918521a5f09f5"
+        },
+        {
+          "url": "https://www.ieee-ras.org/lujie-yang-on-teaching-humanoid-robots-by-preserving-interactions/",
+          "retrieved_at": 1791081152.5584714,
+          "sha256": "633625bff162af6e8b11c3348084783d43fe408d77f6709ac831e82960f57e20"
+        },
+        {
+          "url": "https://www.ieee-ras.org/robots-in-society-business-and-culture-july-2026/",
+          "retrieved_at": 1791081154.258785,
+          "sha256": "0328fba0bd067515a96c78ae699bba59a45b632129d871ab1951c7cda9b9f7b9"
+        },
+        {
+          "url": "https://www.ieee-ras.org/yifei-simon-shao-on-symskill-and-long-horizon-robot-manipulation/",
+          "retrieved_at": 1791081156.908126,
+          "sha256": "27031beb148c402153fde709f94693f4e838d75f6c195cf81207a16ae51ec8ac"
+        },
+        {
+          "url": "https://www.ieee-ras.org/commercializing-robotics-markus-waibel-verity/",
+          "retrieved_at": 1791081158.5413182,
+          "sha256": "504b9c53c49a291a17176ea2c7d0e4a6b26d1f1c882917cf0c9421da2764e382"
+        },
+        {
+          "url": "https://www.ieee-ras.org/robotics-roadmaps-from-around-the-world-spotlight-of-the-month-united-states-of-america/",
+          "retrieved_at": 1791081160.3218575,
+          "sha256": "ba613fcb34e6e9754988c7c04a585aa1bb819bb6c8adaeeca0b3c1bf2a6317d0"
+        },
+        {
+          "url": "https://www.ieee-ras.org/wp-content/uploads/2026/06/RAS-2026-ICRA-Brochure.pdf",
+          "retrieved_at": 1791081161.2105582,
+          "sha256": "0a81d402743e0569da4a63fdd1c94288c9dbc308ad3841c84a426146f3a062bf",
+          "format": "pdf",
+          "pdf_path": "cache/award-page-0b875252e8358c0e58a9cd1c18a4d34d7c7a7319f1c8e7ea9adb18e36c2226c3.pdf"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [],
+      "source": {
+        "venue": "CoRL",
+        "year": 2026,
+        "url": "https://www.corl.org/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081165.7181053,
+      "failures": [],
+      "status": "not announced",
+      "conference_start": "2026-11-09",
+      "winner_count": 0,
+      "paper_count": 0,
+      "coverage": {
+        "categories": [],
+        "missing_categories": [],
+        "confirmed_categories": 0,
+        "category_count": 0,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://www.corl.org/",
+          "retrieved_at": 1791081165.632314,
+          "sha256": "7b84716dfbea97a4d2d3edc0c4f94cd6425bccfbf5a49696823023156fc315a2"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [],
+      "source": {
+        "venue": "IROS",
+        "year": 2026,
+        "url": "https://2026.ieee-iros.org/program/awards/",
+        "alternate_urls": [
+          "https://www.rescuesystem.org/en/award/",
+          "https://www.cs.cmu.edu/~dpathak/",
+          "http://english.sia.cas.cn/news/Events/",
+          "http://english.sia.cas.cn/news/Events/index_1.html"
+        ]
+      },
+      "checked_at": 1791081169.1801572,
+      "failures": [],
+      "status": "finalists only",
+      "conference_start": null,
+      "winner_count": 0,
+      "paper_count": 0,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Best Paper / Best Student Paper Award",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Application (ICROS) and Mobile Manipulation (OMRON Sinic X) Paper Awards",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Safety, Security, and Rescue Robotics, in memory of Motohiro Kisoi",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Entertainment and Amusement Paper Award",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Cognitive Robotics, Sponsored by KROS",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Robot Mechanisms and Design, Sponsored by Cornerstone Robotics",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award for Industrial Robotics Research for Applications",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Agri-Robotics, Sponsored by YANMAR",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          }
+        ],
+        "missing_categories": [
+          {
+            "name": "Best Paper / Best Student Paper Award",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Application (ICROS) and Mobile Manipulation (OMRON Sinic X) Paper Awards",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Safety, Security, and Rescue Robotics, in memory of Motohiro Kisoi",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Entertainment and Amusement Paper Award",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Cognitive Robotics, Sponsored by KROS",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Robot Mechanisms and Design, Sponsored by Cornerstone Robotics",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award for Industrial Robotics Research for Applications",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          },
+          {
+            "name": "IROS Best Paper Award on Agri-Robotics, Sponsored by YANMAR",
+            "winner_count": 0,
+            "official_url": "https://2026.ieee-iros.org/program/awards/"
+          }
+        ],
+        "confirmed_categories": 0,
+        "category_count": 8,
+        "partial": true
+      },
+      "documents": [
+        {
+          "url": "https://2026.ieee-iros.org/program/awards/",
+          "retrieved_at": 1791081166.3774288,
+          "sha256": "a66b1fae03aee4ae3524e5d8132a51891e6bed36887b64cacb09c68dd8937b32"
+        },
+        {
+          "url": "https://www.rescuesystem.org/en/award/",
+          "retrieved_at": 1791081166.5107129,
+          "sha256": "5999e36c798678421d1f56a2228cfa5c9dd17bc1c45890c7a06dba848acf771a"
+        },
+        {
+          "url": "https://www.cs.cmu.edu/~dpathak/",
+          "retrieved_at": 1791081167.9893456,
+          "sha256": "b1aa0fef92134f5fb356eae55e8dd2da217678a7c6fc6ca5b9bd46a85e3b09b0"
+        },
+        {
+          "url": "http://english.sia.cas.cn/news/Events/",
+          "retrieved_at": 1791081168.4920425,
+          "sha256": "501c9087ca82f155e9f79e9839c58081597b27acd4a6a589ef68c8842298b8bd"
+        },
+        {
+          "url": "http://english.sia.cas.cn/news/Events/index_1.html",
+          "retrieved_at": 1791081168.9976892,
+          "sha256": "9b9b77ce6dd0525b37227d7197547818a9e6e48c9c49cee61d507c1353b20f12"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Safety Alignment Should be Made More Than Just a Few Tokens Deep.",
+          "venue": "ICLR",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2025/",
+          "paper_url": "https://openreview.net/forum?id=6Mxhg9PtDE",
+          "retrieved_at": 1791081169.9980745,
+          "source_sha256": "941be9b40e508912e2e2567f9d6fe5f1fc700a62c037e20e96ce8db94da27a02",
+          "area": "ai"
+        },
+        {
+          "title": "Learning Dynamics of LLM Finetuning.",
+          "venue": "ICLR",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2025/",
+          "paper_url": "https://openreview.net/forum?id=tPNHOoZFl9",
+          "retrieved_at": 1791081169.9980745,
+          "source_sha256": "941be9b40e508912e2e2567f9d6fe5f1fc700a62c037e20e96ce8db94da27a02",
+          "area": "ai"
+        },
+        {
+          "title": "AlphaEdit: Null-Space Constrained Model Editing for Language Models.",
+          "venue": "ICLR",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2025/",
+          "paper_url": "https://openreview.net/forum?id=HvSytvg3Jh",
+          "retrieved_at": 1791081169.9980745,
+          "source_sha256": "941be9b40e508912e2e2567f9d6fe5f1fc700a62c037e20e96ce8db94da27a02",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ICLR",
+        "year": 2025,
+        "url": "https://blog.iclr.cc/category/iclr-2025/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081171.4879735,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 3,
+      "paper_count": 3,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Outstanding Papers",
+            "winner_count": 3,
+            "official_url": "https://blog.iclr.cc/category/iclr-2025/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 1,
+        "category_count": 1,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://blog.iclr.cc/category/iclr-2025/",
+          "retrieved_at": 1791081169.9980745,
+          "sha256": "941be9b40e508912e2e2567f9d6fe5f1fc700a62c037e20e96ce8db94da27a02"
+        },
+        {
+          "url": "https://blog.iclr.cc/2025/04/22/announcing-the-outstanding-paper-awards-at-iclr-2025/",
+          "retrieved_at": 1791081170.7484634,
+          "sha256": "7447cbbd44147484b5a10b58b8f82365671df6aa5df9cd3e9e51c39aeac7d789"
+        },
+        {
+          "url": "https://blog.iclr.cc/2025/04/14/announcing-the-test-of-time-award-winners-from-iclr-2015/",
+          "retrieved_at": 1791081171.4253652,
+          "sha256": "cef9fe5ed8f0e0399cde95a51e5920de933fc3c90b3b63e7b6fcdedc85713f3f"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/test-of-time/39855",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        },
+        {
+          "title": "Roll the dice & look before you leap: Going beyond the creative limits of next-token prediction",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Outstanding Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/oral/47241",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        },
+        {
+          "title": "Score Matching with Missing Data",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Outstanding Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/poster/44169",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        },
+        {
+          "title": "Train for the Worst, Plan for the Best: Understanding Token Ordering in Masked Diffusions",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Outstanding Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/poster/45990",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        },
+        {
+          "title": "CollabLLM: From Passive Responders to Active Collaborators",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Outstanding Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/oral/47250",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        },
+        {
+          "title": "The Value of Prediction in Identifying the Worst-Off",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Outstanding Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/oral/47269",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        },
+        {
+          "title": "Conformal Prediction as Bayesian Quadrature",
+          "venue": "ICML",
+          "year": 2025,
+          "name": "Outstanding Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://icml.cc/virtual/2025/awards_detail",
+          "paper_url": "https://icml.cc/virtual/2025/poster/45390",
+          "retrieved_at": 1791081173.0788174,
+          "source_sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ICML",
+        "year": 2025,
+        "url": "https://blog.icml.cc/category/icml-2025/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081174.03797,
+      "failures": [
+        {
+          "url": "https://blog.icml.cc/category/icml-2025/",
+          "reason": "Client error '404 Not Found' for url 'https://blog.icml.cc/category/icml-2025/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404"
+        }
+      ],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 7,
+      "paper_count": 7,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Test of Time Award",
+            "winner_count": 1,
+            "official_url": "https://icml.cc/virtual/2025/awards_detail"
+          },
+          {
+            "name": "Outstanding Paper",
+            "winner_count": 6,
+            "official_url": "https://icml.cc/virtual/2025/awards_detail"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 2,
+        "category_count": 2,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://icml.cc/virtual/2025/awards_detail",
+          "retrieved_at": 1791081173.0788174,
+          "sha256": "17e417a2ffbf20d848d90fcb6a6e1801e5fc07cf992b5acf745c5077903614a2"
+        },
+        {
+          "url": "https://icml.cc/virtual/2025/39855",
+          "retrieved_at": 1791081173.9923632,
+          "sha256": "c461af12703af2fa3d30f0bc4d6207925b90a7a9c6ad27159fb3e2dfaf639634"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/awards_detail",
+          "paper_url": "https://papers.neurips.cc/paper_files/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html",
+          "retrieved_at": 1791081175.445408,
+          "source_sha256": "7d9384ad2db744209de740bbdb589f3e33081258e2ab248c5193a2e4af1a3efe",
+          "area": "ai"
+        },
+        {
+          "title": "1000 Layer Networks for Self-Supervised RL: Scaling Depth Can Enable New Goal-Reaching Capabilities",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/awards_detail",
+          "paper_url": "https://neurips.cc/virtual/2025/poster/115731",
+          "retrieved_at": 1791081175.445408,
+          "source_sha256": "7d9384ad2db744209de740bbdb589f3e33081258e2ab248c5193a2e4af1a3efe",
+          "area": "ai"
+        },
+        {
+          "title": "Why Diffusion Models Don’t Memorize: The Role of Implicit Dynamical Regularization in Training",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/awards_detail",
+          "paper_url": "https://neurips.cc/virtual/2025/poster/119372",
+          "retrieved_at": 1791081175.445408,
+          "source_sha256": "7d9384ad2db744209de740bbdb589f3e33081258e2ab248c5193a2e4af1a3efe",
+          "area": "ai"
+        },
+        {
+          "title": "Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/awards_detail",
+          "paper_url": "https://neurips.cc/virtual/2025/poster/120216",
+          "retrieved_at": 1791081175.445408,
+          "source_sha256": "7d9384ad2db744209de740bbdb589f3e33081258e2ab248c5193a2e4af1a3efe",
+          "area": "ai"
+        },
+        {
+          "title": "Artificial Hivemind: The Open-Ended Homogeneity of Language Models (and Beyond)",
+          "venue": "NeurIPS",
+          "year": 2025,
+          "name": "Best Paper (DB track)",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://neurips.cc/virtual/2025/awards_detail",
+          "paper_url": "https://neurips.cc/virtual/2025/poster/121421",
+          "retrieved_at": 1791081175.445408,
+          "source_sha256": "7d9384ad2db744209de740bbdb589f3e33081258e2ab248c5193a2e4af1a3efe",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "NeurIPS",
+        "year": 2025,
+        "url": "https://neurips.cc/virtual/2025/awards_detail",
+        "alternate_urls": [
+          "https://neurips.cc/Conferences/2025"
+        ]
+      },
+      "checked_at": 1791081179.2196608,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 5,
+      "paper_count": 5,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Test of Time Award",
+            "winner_count": 1,
+            "official_url": "https://neurips.cc/virtual/2025/awards_detail"
+          },
+          {
+            "name": "Best Paper",
+            "winner_count": 3,
+            "official_url": "https://neurips.cc/virtual/2025/awards_detail"
+          },
+          {
+            "name": "Best Paper (DB track)",
+            "winner_count": 1,
+            "official_url": "https://neurips.cc/virtual/2025/awards_detail"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://neurips.cc/virtual/2025/awards_detail",
+          "retrieved_at": 1791081175.445408,
+          "sha256": "7d9384ad2db744209de740bbdb589f3e33081258e2ab248c5193a2e4af1a3efe"
+        },
+        {
+          "url": "https://neurips.cc/Conferences/2025",
+          "retrieved_at": 1791081176.16809,
+          "sha256": "dc8f46e0d71af4b2bae0b15b116a50066d25dbf53346cd580959857991c9fe13"
+        },
+        {
+          "url": "https://neurips.cc/virtual/2025/loc/san-diego/awards_detail",
+          "retrieved_at": 1791081177.6404076,
+          "sha256": "00dc65a1c0f24fd91790a94e8e5d3c22b5f4912214626b5a338ac689981ec3ee"
+        },
+        {
+          "url": "https://neurips.cc/virtual/2025/loc/san-diego/test-of-time/128328",
+          "retrieved_at": 1791081179.0800989,
+          "sha256": "6f887d8c5a0ebb98ef0fc439215f747a0a407718bb93b98e8bab041562d9118e"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Every Bit Helps: Achieving the Optimal Distortion with a Few Queries",
+          "venue": "AAAI",
+          "year": 2025,
+          "name": "AAAI-25 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "Efficient Rectification of Neuro-Symbolic Reasoning Inconsistencies by Abductive Reflection",
+          "venue": "AAAI",
+          "year": 2025,
+          "name": "AAAI-25 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "Revelations: A Decidable Class of POMDPs with Omega-Regular Objectives",
+          "venue": "AAAI",
+          "year": 2025,
+          "name": "AAAI-25 Outstanding Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "DivShift: Exploring Domain-Specific Distribution Shifts in Large-Scale, Volunteer-Collected Biodiversity Datasets",
+          "venue": "AAAI",
+          "year": 2025,
+          "name": "AAAI-25 Outstanding Paper Award – AI for Social Alignment Track",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "Multi-Modal Hand-to-Mouth Gesture Recognition in Activity-Oriented RGB-Thermal Footage",
+          "venue": "AAAI",
+          "year": 2025,
+          "name": "AAAI-25 Outstanding Student Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        },
+        {
+          "title": "Understanding Unique Behavioral Patterns through Multimodal Analysis of Eye-Hand Coordination in Autistic Children",
+          "venue": "AAAI",
+          "year": 2025,
+          "name": "AAAI-25 Outstanding Student Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "paper_url": "",
+          "retrieved_at": 1791081088.396355,
+          "source_sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "AAAI",
+        "year": 2025,
+        "url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081179.3664675,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 6,
+      "paper_count": 6,
+      "coverage": {
+        "categories": [
+          {
+            "name": "AAAI-25 Outstanding Paper Awards",
+            "winner_count": 3,
+            "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+          },
+          {
+            "name": "AAAI-25 Outstanding Paper Award – AI for Social Alignment Track",
+            "winner_count": 1,
+            "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+          },
+          {
+            "name": "AAAI-25 Outstanding Student Papers",
+            "winner_count": 2,
+            "official_url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://aaai.org/about-aaai/aaai-awards/aaai-conference-paper-awards-and-recognition/",
+          "retrieved_at": 1791081088.396355,
+          "sha256": "e80ca2694d1f0cd03c302739c96b70639d4105be881bf00e7e08282791863eab"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "A Theory of Response Sampling in LLMs: Part Descriptive and Part Prescriptive",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Fairness through Difference Awareness: Measuring Desired Group Discrimination in LLMs",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Language Models Resist Alignment: Evidence From Data Compression",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "AfriMed-QA: A Pan-African, Multi-Specialty, Medical Question-Answering Benchmark Dataset",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Social Impact Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "The AI Gap: How Socioeconomic Status Affects Language Technology Interactions",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Social Impact Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Are Rules Meant to be Broken? Understanding Multilingual Moral Reasoning as a Computational Pipeline with UniMoral",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Resource Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "BRIGHTER: BRIdging the Gap in Human-Annotated Textual Emotion Recognition Datasets for 28 Languages",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Resource Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Palm: A Culturally Inclusive and Linguistically Diverse Dataset for Arabic LLMs",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Resource Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "MaCP: Minimal yet Mighty Adaptation via Hierarchical Cosine Projection",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Theme Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Theme Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "SubLIME: Subset Selection via Rank Correlation Prediction for Data-Efficient LLM Evaluation",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Best Theme Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "A New Formulation of Zipf’s Meaning-Frequency Law through Contextual Diversity",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "All That Glitters is Not Novel: Plagiarism in AI Generated Research",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Between Circuits and Chomsky: Pre-pretraining on Formal Languages Imparts Linguistic Biases",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Beyond N-Grams: Rethinking Evaluation Metrics and Strategies for Multilingual Abstractive Summarization",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Bridging the Language Gaps in Large Language Models with Inference-Time Cross-Lingual Intervention",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Byte Latent Transformer: Patches Scale Better Than Tokens",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Capability Salience Vector: Fine-grained Alignment of Loss and Capabilities for Downstream Task Scaling Law",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "From Real to Synthetic: Synthesizing Millions of Diversified and Complicated User Instructions with Attributed Grounding",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "HALOGEN: Fantastic LLM Hallucinations and Where to Find Them",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "HateDay: Insights from a Global Hate Speech Dataset Representative of a Day on Twitter",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "IOT: Embedding Standardization Method Towards Zero Modality Gap",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "IndicSynth: A Large-Scale Multilingual Synthetic Speech Dataset for Low-Resource Indian Languages",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "LaTIM: Measuring Latent Token-to-Token Interactions in Mamba Models",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Llama See, Llama Do: A Mechanistic Perspective on Contextual Entrainment and Distraction in LLMs",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "LLMs know their vulnerabilities: Uncover Safety Gaps through Natural Distribution Shifts",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Mapping 1,000+ Language Models via the Log-Likelihood Vector",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "MiniLongBench: The Low-cost Long Context Understanding Benchmark for Large Language Models",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "PARME: Parallel Corpora for Low-Resourced Middle Eastern Languages",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Past Meets Present: Creating Historical Analogy with Large Language Models",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Pre³: Enabling Deterministic Pushdown Automata for Faster Structured LLM Generation",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Rethinking the Role of Prompting Strategies in LLM Test-Time Scaling: A Perspective of Probability Theory",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Revisiting Compositional Generalization Capability of Large Language Models Considering Instruction Following Ability",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Toward Automatic Discovery of a Canine Phonetic Alphabet",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Towards the Law of Capacity Gap in Distilling Language Models",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Turning Trash into Treasure: Accelerating Inference of Large Language Models with Token Recycling",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Typology-Guided Adaptation for African NLP",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        },
+        {
+          "title": "Speed Without Sacrifice: Fine-Tuning Language Models with Medusa and Knowledge Distillation in Travel Applications",
+          "venue": "ACL",
+          "year": 2025,
+          "name": "Industry Track Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.aclweb.org/program/awards/",
+          "paper_url": "",
+          "retrieved_at": 1791081179.4403298,
+          "source_sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ACL",
+        "year": 2025,
+        "url": "https://2025.aclweb.org/program/awards/",
+        "alternate_urls": [
+          "https://2025.aclweb.org/program/best_papers/"
+        ]
+      },
+      "checked_at": 1791081179.5292814,
+      "failures": [
+        {
+          "url": "https://2025.aclweb.org/program/awards/_pages/home.md",
+          "reason": "Client error '404 Not Found' for url 'https://2025.aclweb.org/program/awards/_pages/home.md'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404"
+        }
+      ],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 39,
+      "paper_count": 39,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Best Paper",
+            "winner_count": 4,
+            "official_url": "https://2025.aclweb.org/program/awards/"
+          },
+          {
+            "name": "Best Social Impact Paper",
+            "winner_count": 2,
+            "official_url": "https://2025.aclweb.org/program/awards/"
+          },
+          {
+            "name": "Best Resource Paper",
+            "winner_count": 3,
+            "official_url": "https://2025.aclweb.org/program/awards/"
+          },
+          {
+            "name": "Best Theme Paper",
+            "winner_count": 3,
+            "official_url": "https://2025.aclweb.org/program/awards/"
+          },
+          {
+            "name": "Outstanding Papers",
+            "winner_count": 26,
+            "official_url": "https://2025.aclweb.org/program/awards/"
+          },
+          {
+            "name": "Industry Track Best Paper",
+            "winner_count": 1,
+            "official_url": "https://2025.aclweb.org/program/awards/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 6,
+        "category_count": 6,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://2025.aclweb.org/program/awards/",
+          "retrieved_at": 1791081179.4403298,
+          "sha256": "eb5140e92c8663235843284b2af06a2401df7da8b96b2fcb7174fb9a72c58cf9"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "VGGT: Visual Geometry Grounded Transformer",
+          "venue": "CVPR",
+          "year": 2025,
+          "name": "Best Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos",
+          "paper_url": "",
+          "retrieved_at": 1791081180.2187626,
+          "source_sha256": "7c1399c55645e80a0dce03a2c79fc794bd15b8fd111c419ae0cb1994fed7efe9",
+          "area": "ai"
+        },
+        {
+          "title": "Neural Inverse Rendering from Propagating Light",
+          "venue": "CVPR",
+          "year": 2025,
+          "name": "Best Student Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos",
+          "paper_url": "",
+          "retrieved_at": 1791081180.2187626,
+          "source_sha256": "7c1399c55645e80a0dce03a2c79fc794bd15b8fd111c419ae0cb1994fed7efe9",
+          "area": "ai"
+        },
+        {
+          "title": "Fully Convolutional Networks for Semantic Segmentation",
+          "venue": "CVPR",
+          "year": 2025,
+          "name": "Longuet-Higgins Prize",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.thecvf.com/?page_id=413",
+          "paper_url": "",
+          "retrieved_at": 1791081091.525941,
+          "source_sha256": "f426dfc0f650d9236d2b439eb20889928894f8ba761682e4248cdf99d05017ac",
+          "area": "ai"
+        },
+        {
+          "title": "Going Deeper with Convolutions",
+          "venue": "CVPR",
+          "year": 2025,
+          "name": "Longuet-Higgins Prize",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.thecvf.com/?page_id=413",
+          "paper_url": "",
+          "retrieved_at": 1791081091.525941,
+          "source_sha256": "f426dfc0f650d9236d2b439eb20889928894f8ba761682e4248cdf99d05017ac",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "CVPR",
+        "year": 2025,
+        "url": "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos",
+        "alternate_urls": [
+          "https://www.thecvf.com/?page_id=413"
+        ]
+      },
+      "checked_at": 1791081180.3424482,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 4,
+      "paper_count": 4,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Best Paper",
+            "winner_count": 1,
+            "official_url": "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos"
+          },
+          {
+            "name": "Best Student Paper",
+            "winner_count": 1,
+            "official_url": "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos"
+          },
+          {
+            "name": "Longuet-Higgins Prize",
+            "winner_count": 2,
+            "official_url": "https://www.thecvf.com/?page_id=413"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://cvpr.thecvf.com/Conferences/2025/BestPapersDemos",
+          "retrieved_at": 1791081180.2187626,
+          "sha256": "7c1399c55645e80a0dce03a2c79fc794bd15b8fd111c419ae0cb1994fed7efe9"
+        },
+        {
+          "url": "https://www.thecvf.com/?page_id=413",
+          "retrieved_at": 1791081091.525941,
+          "sha256": "f426dfc0f650d9236d2b439eb20889928894f8ba761682e4248cdf99d05017ac"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Demonstrating MuJoCo Playground",
+          "venue": "RSS",
+          "year": 2025,
+          "name": "Outstanding Demo Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2025/program/awards/",
+          "paper_url": "https://roboticsconference.org/program/papers/20/",
+          "retrieved_at": 1791081180.757589,
+          "source_sha256": "d2e7f78096dcbaef968b092963398f731886561879fcd58930013bd1dadb0a3d",
+          "area": "robotics"
+        },
+        {
+          "title": "Building Rome with Convex Optimization",
+          "venue": "RSS",
+          "year": 2025,
+          "name": "Outstanding Systems Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2025/program/awards/",
+          "paper_url": "https://roboticsconference.org/program/papers/32/",
+          "retrieved_at": 1791081180.757589,
+          "source_sha256": "d2e7f78096dcbaef968b092963398f731886561879fcd58930013bd1dadb0a3d",
+          "area": "robotics"
+        },
+        {
+          "title": "Solving Multi-Agent Safe Optimal Control with Distributed Epigraph Form MARL",
+          "venue": "RSS",
+          "year": 2025,
+          "name": "Outstanding Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2025/program/awards/",
+          "paper_url": "https://roboticsconference.org/program/papers/27/",
+          "retrieved_at": 1791081180.757589,
+          "source_sha256": "d2e7f78096dcbaef968b092963398f731886561879fcd58930013bd1dadb0a3d",
+          "area": "robotics"
+        },
+        {
+          "title": "FEAST: A Flexible Mealtime-Assistance System Tackling In-the-Wild Personalization",
+          "venue": "RSS",
+          "year": 2025,
+          "name": "Outstanding Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2025/program/awards/",
+          "paper_url": "https://roboticsconference.org/program/papers/83/",
+          "retrieved_at": 1791081180.757589,
+          "source_sha256": "d2e7f78096dcbaef968b092963398f731886561879fcd58930013bd1dadb0a3d",
+          "area": "robotics"
+        },
+        {
+          "title": "Cooperative Manipulation and Transportation with Aerial Robots",
+          "venue": "RSS",
+          "year": 2025,
+          "name": "Test of Time Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://roboticsconference.org/2025/program/testoftimeaward/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.1055882,
+          "source_sha256": "e7441b52ea6e7ad27542328b2ce67e9a1be851c3c01e78c23e8965a268c49033",
+          "area": "robotics"
+        }
+      ],
+      "source": {
+        "venue": "RSS",
+        "year": 2025,
+        "url": "https://roboticsconference.org/2025/program/awards/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081181.1224468,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 5,
+      "paper_count": 5,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Outstanding Demo Paper Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2025/program/awards/"
+          },
+          {
+            "name": "Outstanding Systems Paper Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2025/program/awards/"
+          },
+          {
+            "name": "Outstanding Student Paper Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2025/program/awards/"
+          },
+          {
+            "name": "Outstanding Paper Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2025/program/awards/"
+          },
+          {
+            "name": "Test of Time Award",
+            "winner_count": 1,
+            "official_url": "https://roboticsconference.org/2025/program/testoftimeaward/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 5,
+        "category_count": 5,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://roboticsconference.org/2025/program/awards/",
+          "retrieved_at": 1791081180.757589,
+          "sha256": "d2e7f78096dcbaef968b092963398f731886561879fcd58930013bd1dadb0a3d"
+        },
+        {
+          "url": "https://roboticsconference.org/2025/program/testoftimeaward/",
+          "retrieved_at": 1791081181.1055882,
+          "sha256": "e7441b52ea6e7ad27542328b2ce67e9a1be851c3c01e78c23e8965a268c49033"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Robo-DM: Data Management for Large Robot Datasets",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Robot Learning",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "PolyTouch: A Robust Multi-Modal Tactile Sensor for Contact-Rich Manipulation Using Tactile-Diffusion Policies",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award in Field and Service Robotics",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Human-Agent Joint Learning for Efficient Robot Manipulation Skill Acquisition",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Human-Robot Interaction",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Individual and Collective Behaviors in Soft Robot Worms Inspired by Living Worm Blobs",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Mechanisms and Design",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "No Plan but Everything under Control: Robustly Solving Sequential Tasks with Dynamically Composed Gradient Descent",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Planning and Control",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "MAC-VO: Metrics-Aware Covariance for Learning-Based Stereo Visual Odometry",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Robot Perception",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "D(R, O) Grasp: A Unified Representation of Robot and Object Interaction for Cross-Embodiment Dexterous Grasping",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Robot Manipulation and Locomotion",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Physics-Aware Robotic Palletization with Online Masking Inference",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award in Automation",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "In-Vivo Tendon-Driven Rodent Ankle Exoskeleton System for Sensorimotor Rehabilitation",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award in Medical Robotics",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Deploying Ten Thousand Robots: Scalable Imitation Learning for Lifelong Multi-Agent Path Finding",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Paper Award on Multi-Robot Systems",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Deploying Ten Thousand Robots: Scalable Imitation Learning for Lifelong Multi-Agent Path Finding",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "ShadowTac: Dense Measurement of Shear and Normal Deformation of a Tactile Membrane from Colored Shadows",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Point and Go: Intuitive Reference Frame Reallocation in Mode Switching for Assistive Robotics",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "TinySense: A Lighter Weight and More Power-Efficient Avionics System for Flying Insect-Scale Robots",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "Marginalizing and Conditioning Gaussians Onto Linear Approximations of Smooth Manifolds with Applications in Robotics",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Conference Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "MAC-VO: Metrics-Aware Covariance for Learning-Based Stereo Visual Odometry",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE ICRA Best Conference Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "paper_url": "",
+          "retrieved_at": 1791081181.3993986,
+          "source_sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72",
+          "area": "robotics"
+        },
+        {
+          "title": "A Multi-State Constraint Kalman Filter for Vision-aided Inertial Navigation",
+          "venue": "ICRA",
+          "year": 2025,
+          "name": "IEEE International Conference on Robotics and Automation Most Influential Paper Award",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/",
+          "paper_url": "",
+          "retrieved_at": 1791081101.5217283,
+          "source_sha256": "4afd665a998513783e07ba5e04c70d486988d0d3ecfe4175edafdaa3b2a28035",
+          "area": "robotics"
+        }
+      ],
+      "source": {
+        "venue": "ICRA",
+        "year": 2025,
+        "url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+        "alternate_urls": [
+          "https://www.ieee-ras.org/awards-recognition/conference-awards/",
+          "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/",
+          "https://www.ieee-ras.org/category/ras-feature/",
+          "https://www.ieee-ras.org/2025-ieee-ras-awards-brochure/"
+        ]
+      },
+      "checked_at": 1791081184.956902,
+      "failures": [
+        {
+          "url": "https://www.ieee-ras.org/2025-ieee-ras-awards-brochure/",
+          "reason": "Client error '404 Not Found' for url 'https://www.ieee-ras.org/2025-ieee-ras-awards-brochure/'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404"
+        }
+      ],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 17,
+      "paper_count": 15,
+      "coverage": {
+        "categories": [
+          {
+            "name": "IEEE ICRA Best Paper Award on Robot Learning",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award in Field and Service Robotics",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award on Human-Robot Interaction",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award on Mechanisms and Design",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award on Planning and Control",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award on Robot Perception",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award on Robot Manipulation and Locomotion",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award in Automation",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award in Medical Robotics",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Paper Award on Multi-Robot Systems",
+            "winner_count": 1,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Student Paper Award",
+            "winner_count": 4,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE ICRA Best Conference Paper Award",
+            "winner_count": 2,
+            "official_url": "https://2025.ieee-icra.org/program/awards-and-finalists/"
+          },
+          {
+            "name": "IEEE International Conference on Robotics and Automation Most Influential Paper Award",
+            "winner_count": 1,
+            "official_url": "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 13,
+        "category_count": 13,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://2025.ieee-icra.org/program/awards-and-finalists/",
+          "retrieved_at": 1791081181.3993986,
+          "sha256": "e3aa4d7753c088e82fb16e94fa53537180b0775e6383d61e85abbdd6d06d3d72"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/",
+          "retrieved_at": 1791081098.1635602,
+          "sha256": "2d193ad44bed4b63730d3b8ede4f778c27bf036628924a937b0615448ed5f1d5"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/society-awards/ieee-international-conference-on-robotics-and-automation-most-influential-paper-award/",
+          "retrieved_at": 1791081101.5217283,
+          "sha256": "4afd665a998513783e07ba5e04c70d486988d0d3ecfe4175edafdaa3b2a28035"
+        },
+        {
+          "url": "https://www.ieee-ras.org/category/ras-feature/",
+          "retrieved_at": 1791081103.8803384,
+          "sha256": "298930943ec44252056159b68005ad15bed9bdcf8846e4eb5341883c8f3997dd"
+        },
+        {
+          "url": "https://2025.ieee-icra.org/wp-content/uploads/2025/05/2025-ICRA-Awards-Ceremony-Brochure-conference-awards-only.pdf",
+          "retrieved_at": 1791081183.4926736,
+          "sha256": "c0546f4e012675929ab6716f9e391bb6499dfcde2495255231045d6c5b0710f2",
+          "format": "pdf",
+          "pdf_path": "cache/award-page-22d8466e9ea5ddad13553eef9aeb4b8ca8bcc1fc2b2605b279e3b376e502a52a.pdf"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-field-and-service-robotics/",
+          "retrieved_at": 1791081108.7948205,
+          "sha256": "d3cd386d2af8e5fa11c6d9e183ac0efe72c0390bcb0e030bf3b8b99d05711223"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-unmanned-aerial-vehicles/",
+          "retrieved_at": 1791081111.3112516,
+          "sha256": "929472f1f2710987722c49f783a6b826f48c2e020fe0e27008562cb917f1812d"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-robot-vision/",
+          "retrieved_at": 1791081113.0642045,
+          "sha256": "f9054ad8a62a3ec2695378777511ab890165c0031301a9533e4675d2589dd662"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-cognitive-robotics/",
+          "retrieved_at": 1791081114.674339,
+          "sha256": "7b7a91fa7c30301e0b3d21fb5503e7b74b6a86077d7640c67a1b208f21d2e070"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-conference-paper-award/",
+          "retrieved_at": 1791081118.0115936,
+          "sha256": "96fe0d1080a667e032b654168ef4c26fd7665de50c4dd3489802f8b1fefa736b"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-robot-perception/",
+          "retrieved_at": 1791081120.0284011,
+          "sha256": "7f2d1bba5fdc890906b8edb70c3935ace9973d76a463088aa5b72af5d82f5c1a"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-robot-manipulation-and-locomotion/",
+          "retrieved_at": 1791081122.404326,
+          "sha256": "39953500304b5906aacb76bf5f3323bcf8c346345b5bc21ad8bb65778f297406"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-robot-learning/",
+          "retrieved_at": 1791081124.9559581,
+          "sha256": "33ac5cca7772ce78eb0725b8206a36606a6bd4a661c4b984f580ef843e9c4fc6"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-planning-and-control/",
+          "retrieved_at": 1791081127.4364529,
+          "sha256": "eec9ae6d52e17bd759ca1984bbea71fb0b4d5416244403a86fdef33d27295a46"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-multi-robot-systems/",
+          "retrieved_at": 1791081129.807449,
+          "sha256": "3a4e093edd00e2c9c3ef77f3231128f0810441051026b3925fac2913b7c1e2a8"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-medical-robotics/",
+          "retrieved_at": 1791081132.694478,
+          "sha256": "024b6880a165c0c37ebd0a55384f5f4d96c8bf2d858499ca87f7de95ced81110"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-mechanisms-and-design/",
+          "retrieved_at": 1791081134.40312,
+          "sha256": "deebece436e82a6921cab9cd757ce04c6a03e7ea733eaee5aadff2fafa900fa4"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-on-human-robot-interaction/",
+          "retrieved_at": 1791081137.4711545,
+          "sha256": "38ffb8bf790239b667db7fdca1311c86279c779743c50f93bf7dccaa5252fadc"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-paper-award-in-automation/",
+          "retrieved_at": 1791081139.9015086,
+          "sha256": "4e20978a4f5cd96a879fb2d18f4e6cc9fe2c4e60fd9520b18dabdde8b4c22444"
+        },
+        {
+          "url": "https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-student-paper-award/",
+          "retrieved_at": 1791081141.6184084,
+          "sha256": "f24c4ea6caf6ea1bc6d8d8c84083931cff6aecd96202c3832aba8bec5aa6c83d"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Learning a Unified Policy for Position and Force Control in Legged Loco-Manipulation",
+          "venue": "CoRL",
+          "year": 2025,
+          "name": "Best Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.corl.org/program/awards",
+          "paper_url": "",
+          "retrieved_at": 1791081186.2402945,
+          "source_sha256": "14a2aaaba7a711c623b58a451ee0b54cea3f39f80e7342a85d94d0fa953d3fe3",
+          "area": "robotics"
+        },
+        {
+          "title": "Fabrica: Dual-Arm Assembly of General Multi-Part Objects via Integrated Planning and Learning",
+          "venue": "CoRL",
+          "year": 2025,
+          "name": "Best Paper Awards",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.corl.org/program/awards",
+          "paper_url": "",
+          "retrieved_at": 1791081186.2402945,
+          "source_sha256": "14a2aaaba7a711c623b58a451ee0b54cea3f39f80e7342a85d94d0fa953d3fe3",
+          "area": "robotics"
+        },
+        {
+          "title": "Visual Imitation Enables Contextual Humanoid Control",
+          "venue": "CoRL",
+          "year": 2025,
+          "name": "Best Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://2025.corl.org/program/awards",
+          "paper_url": "",
+          "retrieved_at": 1791081186.2402945,
+          "source_sha256": "14a2aaaba7a711c623b58a451ee0b54cea3f39f80e7342a85d94d0fa953d3fe3",
+          "area": "robotics"
+        }
+      ],
+      "source": {
+        "venue": "CoRL",
+        "year": 2025,
+        "url": "https://2025.corl.org/program/awards",
+        "alternate_urls": []
+      },
+      "checked_at": 1791081186.270434,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 3,
+      "paper_count": 3,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Best Paper Awards",
+            "winner_count": 2,
+            "official_url": "https://2025.corl.org/program/awards"
+          },
+          {
+            "name": "Best Student Paper Award",
+            "winner_count": 1,
+            "official_url": "https://2025.corl.org/program/awards"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 2,
+        "category_count": 2,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://2025.corl.org/program/awards",
+          "retrieved_at": 1791081186.2402945,
+          "sha256": "14a2aaaba7a711c623b58a451ee0b54cea3f39f80e7342a85d94d0fa953d3fe3"
+        }
+      ]
+    },
+    {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "AeroBuoy: A Drone Deployable, 3D Printed, Autonomous Robotic Buoy for Environmental Inspection in Remote and Hazardous River Systems",
+          "venue": "IROS",
+          "year": 2025,
+          "name": "IEEE IROS Best Paper Award on Safety, Security, and Rescue Robotics in memory of Motohiro Kisoi",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.rescuesystem.org/en/award/",
+          "paper_url": "",
+          "retrieved_at": 1791081166.5107129,
+          "source_sha256": "5999e36c798678421d1f56a2228cfa5c9dd17bc1c45890c7a06dba848acf771a",
+          "area": "robotics"
+        },
+        {
+          "title": "Neural MP: A Generalist Neural Motion Planner",
+          "venue": "IROS",
+          "year": 2025,
+          "name": "Best Student Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://www.cs.cmu.edu/~dpathak/",
+          "paper_url": "https://arxiv.org/abs/2409.05864",
+          "retrieved_at": 1791081167.9893456,
+          "source_sha256": "b1aa0fef92134f5fb356eae55e8dd2da217678a7c6fc6ca5b9bd46a85e3b09b0",
+          "area": "robotics",
+          "evidence_type": "institution",
+          "evidence_excerpt": "Neural MP: A Generalist Neural Motion Planner Murtaza Dalal*, Jiahui (Jim) Yang*, Russell Mendonca, Youssef Khaky, Ruslan Salakhutdinov, Deepak Pathak IROS 2025 (Oral Presentation) Best Student Paper Award"
+        },
+        {
+          "title": "Interdigitated Electrodes for Selective Stimulation of Skeletal Muscle Actuators in Bio-syncretic Robots",
+          "venue": "IROS",
+          "year": 2025,
+          "name": "Best Conference Paper Award",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "http://english.sia.cas.cn/news/Events/202512/t20251212_1136776.html",
+          "paper_url": "",
+          "retrieved_at": 1791081187.033937,
+          "source_sha256": "e5ff14c7a9c6416f399cd9f17fca69004d2233b97bd4a4c29510819301c4430c",
+          "area": "robotics",
+          "evidence_type": "institution",
+          "evidence_excerpt": "The 2025 IEEE International Conference on Intelligent Robots and Systems (IROS 2025) was recently held in Hangzhou. The conference attracted over 8,000 attendees and received more than 5,000 paper submissions from research institutions across numerous countries. honored with the conference's sole Best Conference Paper Award. A paper titled Interdigitated Electrodes for Selective Stimulation of Skeletal Muscle Actuators in Bio-syncretic Robots from Shenyang Institute of Automation (SIA), Chinese Academy of Sciences (CAS) won the only Best Conference Paper Award."
+        }
+      ],
+      "source": {
+        "venue": "IROS",
+        "year": 2025,
+        "url": "https://iros25.org/",
+        "alternate_urls": [
+          "https://www.rescuesystem.org/en/award/",
+          "https://www.cs.cmu.edu/~dpathak/",
+          "http://english.sia.cas.cn/news/Events/",
+          "http://english.sia.cas.cn/news/Events/index_1.html"
+        ]
+      },
+      "checked_at": 1791081187.1782653,
+      "failures": [
+        {
+          "url": "https://iros25.org/",
+          "reason": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)"
+        }
+      ],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 3,
+      "paper_count": 3,
+      "coverage": {
+        "categories": [
+          {
+            "name": "IEEE IROS Best Paper Award on Safety, Security, and Rescue Robotics in memory of Motohiro Kisoi",
+            "winner_count": 1,
+            "official_url": "https://www.rescuesystem.org/en/award/"
+          },
+          {
+            "name": "Best Student Paper Award",
+            "winner_count": 1,
+            "official_url": "https://www.cs.cmu.edu/~dpathak/"
+          },
+          {
+            "name": "Best Conference Paper Award",
+            "winner_count": 1,
+            "official_url": "http://english.sia.cas.cn/news/Events/202512/t20251212_1136776.html"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 3,
+        "category_count": 3,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://www.rescuesystem.org/en/award/",
+          "retrieved_at": 1791081166.5107129,
+          "sha256": "5999e36c798678421d1f56a2228cfa5c9dd17bc1c45890c7a06dba848acf771a"
+        },
+        {
+          "url": "https://www.cs.cmu.edu/~dpathak/",
+          "retrieved_at": 1791081167.9893456,
+          "sha256": "b1aa0fef92134f5fb356eae55e8dd2da217678a7c6fc6ca5b9bd46a85e3b09b0"
+        },
+        {
+          "url": "http://english.sia.cas.cn/news/Events/",
+          "retrieved_at": 1791081168.4920425,
+          "sha256": "501c9087ca82f155e9f79e9839c58081597b27acd4a6a589ef68c8842298b8bd"
+        },
+        {
+          "url": "http://english.sia.cas.cn/news/Events/index_1.html",
+          "retrieved_at": 1791081168.9976892,
+          "sha256": "9b9b77ce6dd0525b37227d7197547818a9e6e48c9c49cee61d507c1353b20f12"
+        },
+        {
+          "url": "http://english.sia.cas.cn/news/Events/202512/t20251212_1136776.html",
+          "retrieved_at": 1791081187.033937,
+          "sha256": "e5ff14c7a9c6416f399cd9f17fca69004d2233b97bd4a4c29510819301c4430c"
+        }
+      ]
+    }
+  ],
+  "changes": [
+    "IROS 2025 institutional Best Conference and Best Student Paper confirmations",
+    "CVPR 2025/2026 Longuet-Higgins recipients",
+    "Cached original PDF bytes, page evidence and bounded discovery",
+    "Known missing prize categories visible separately from stored paper counts",
+    "Local-AI reading and approved-link navigation after parser gaps",
+    "Self-directed search terms, narrower retry feedback, exact title identity",
+    "Persistent bounded repair with recording priority and source/model hash invalidation"
+  ],
+  "missing_prize_categories": [
+    {
+      "venue": "ICRA",
+      "year": 2026,
+      "prizes": [
+        {
+          "name": "Best Paper Award on Robot Learning",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award in Medical Robotics",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award on Robot Perception (Part 1)",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award on Human-Robot Interaction",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award in Automation",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award on Mechanisms and Design",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award on Multi-Robot Systems",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award in Field and Service",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        },
+        {
+          "name": "Best Paper Award on Planning and Control",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-icra.org/awards/"
+        }
+      ]
+    },
+    {
+      "venue": "IROS",
+      "year": 2026,
+      "prizes": [
+        {
+          "name": "Best Paper / Best Student Paper Award",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Application (ICROS) and Mobile Manipulation (OMRON Sinic X) Paper Awards",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Paper Award on Safety, Security, and Rescue Robotics, in memory of Motohiro Kisoi",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Entertainment and Amusement Paper Award",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Paper Award on Cognitive Robotics, Sponsored by KROS",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Paper Award on Robot Mechanisms and Design, Sponsored by Cornerstone Robotics",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Paper Award for Industrial Robotics Research for Applications",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        },
+        {
+          "name": "IROS Best Paper Award on Agri-Robotics, Sponsored by YANMAR",
+          "winner_count": 0,
+          "official_url": "https://2026.ieee-iros.org/program/awards/"
+        }
+      ]
+    }
+  ],
+  "tests": {
+    "python_full": {
+      "passed": 344,
+      "seconds": 48.12
+    },
+    "award_nightly_research_subset": {
+      "passed": 102,
+      "seconds": 3.97
+    },
+    "browser_e2e": {
+      "passed": 19,
+      "seconds": 16.2
+    },
+    "production_build": "passed",
+    "changed_file_lint": "passed"
+  },
+  "browser": {
+    "checked_at": "2026-10-04T03:14:10.171Z",
+    "base": "https://192.168.10.112:8443",
+    "checks": {
+      "coverage_table_visible_without_expanding": true,
+      "all_enabled_editions_visible": true,
+      "counts_match_saved_receipts": true,
+      "all_winner_titles_and_official_links_visible": true,
+      "small_screen_has_no_horizontal_overflow": true,
+      "known_missing_prizes_are_visible": true,
+      "institutional_evidence_is_labeled": true,
+      "local_ai_research_records_visible": true,
+      "no_browser_errors": true,
+      "read_only": true
+    },
+    "sources": [
+      {
+        "venue": "ICLR",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 4,
+        "paper_count": 4,
+        "official_links_checked": 4,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 1
+      },
+      {
+        "venue": "ICML",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 3,
+        "paper_count": 3,
+        "official_links_checked": 3,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "NeurIPS",
+        "year": 2026,
+        "status": "not announced",
+        "winner_count": 0,
+        "paper_count": 0,
+        "official_links_checked": 0,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "AAAI",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 8,
+        "paper_count": 8,
+        "official_links_checked": 8,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "ACL",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 30,
+        "paper_count": 30,
+        "official_links_checked": 30,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "CVPR",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 4,
+        "paper_count": 4,
+        "official_links_checked": 4,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "RSS",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 3,
+        "paper_count": 3,
+        "official_links_checked": 3,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "ICRA",
+        "year": 2026,
+        "status": "verified winners",
+        "winner_count": 4,
+        "paper_count": 3,
+        "official_links_checked": 4,
+        "missing_prizes_checked": 9,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "CoRL",
+        "year": 2026,
+        "status": "not announced",
+        "winner_count": 0,
+        "paper_count": 0,
+        "official_links_checked": 0,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "IROS",
+        "year": 2026,
+        "status": "finalists only",
+        "winner_count": 0,
+        "paper_count": 0,
+        "official_links_checked": 0,
+        "missing_prizes_checked": 8,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "ICLR",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 3,
+        "paper_count": 3,
+        "official_links_checked": 3,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "ICML",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 7,
+        "paper_count": 7,
+        "official_links_checked": 7,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "NeurIPS",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 5,
+        "paper_count": 5,
+        "official_links_checked": 5,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "AAAI",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 6,
+        "paper_count": 6,
+        "official_links_checked": 6,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "ACL",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 39,
+        "paper_count": 39,
+        "official_links_checked": 39,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "CVPR",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 4,
+        "paper_count": 4,
+        "official_links_checked": 4,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "RSS",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 5,
+        "paper_count": 5,
+        "official_links_checked": 5,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "ICRA",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 17,
+        "paper_count": 15,
+        "official_links_checked": 17,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "CoRL",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 3,
+        "paper_count": 3,
+        "official_links_checked": 3,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 0,
+        "local_ai_units_checked": 0
+      },
+      {
+        "venue": "IROS",
+        "year": 2025,
+        "status": "verified winners",
+        "winner_count": 3,
+        "paper_count": 3,
+        "official_links_checked": 3,
+        "missing_prizes_checked": 0,
+        "institutional_winners_checked": 2,
+        "local_ai_units_checked": 0
+      }
+    ],
+    "winner_count": 148,
+    "paper_count": 145,
+    "status": "passed"
+  },
+  "local_ai": {
+    "checked_at": "2026-10-04T12:12:33.531430+09:00",
+    "version": "local-research-2",
+    "scope": "Real local Qwen award reading through the existing GPU-owning worker; no additional paper selection or film creation.",
+    "job": {
+      "id": "c773ee542c8f46c1917e75781d29d72b",
+      "state": "completed",
+      "created": 1791083553.5329835,
+      "updated": 1791083571.2764802,
+      "stage": "受賞情報の更新が完了",
+      "checkpoint": {
+        "source_index": 1
+      },
+      "error": null
+    },
+    "source": {
+      "venue": "ICLR",
+      "year": 2026,
+      "url": "https://blog.iclr.cc/category/iclr-2026/",
+      "alternate_urls": []
+    },
+    "receipt": {
+      "version": "official-awards-4",
+      "papers": [
+        {
+          "title": "Transformers are Inherently Succinct",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://openreview.net/forum?id=Yxz92UuPLQ",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        },
+        {
+          "title": "LLMs Get Lost In Multi-Turn Conversation",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Outstanding Papers",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://openreview.net/forum?id=VKGTGGcwl6",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        },
+        {
+          "title": "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Announcing the Test of Time Awards from ICLR 2016",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://arxiv.org/abs/1511.06434",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        },
+        {
+          "title": "Continuous control with deep reinforcement learning",
+          "venue": "ICLR",
+          "year": 2026,
+          "name": "Announcing the Test of Time Awards from ICLR 2016",
+          "kind": "test-of-time",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "paper_url": "https://arxiv.org/pdf/1509.02971",
+          "retrieved_at": 1791083569.575886,
+          "source_sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d",
+          "area": "ai"
+        }
+      ],
+      "source": {
+        "venue": "ICLR",
+        "year": 2026,
+        "url": "https://blog.iclr.cc/category/iclr-2026/",
+        "alternate_urls": []
+      },
+      "checked_at": 1791083571.0598443,
+      "failures": [],
+      "status": "verified winners",
+      "conference_start": null,
+      "winner_count": 4,
+      "paper_count": 4,
+      "coverage": {
+        "categories": [
+          {
+            "name": "Outstanding Papers",
+            "winner_count": 2,
+            "official_url": "https://blog.iclr.cc/category/iclr-2026/"
+          },
+          {
+            "name": "Announcing the Test of Time Awards from ICLR 2016",
+            "winner_count": 2,
+            "official_url": "https://blog.iclr.cc/category/iclr-2026/"
+          }
+        ],
+        "missing_categories": [],
+        "confirmed_categories": 2,
+        "category_count": 2,
+        "partial": false
+      },
+      "documents": [
+        {
+          "url": "https://blog.iclr.cc/category/iclr-2026/",
+          "cache_url": "https://blog.iclr.cc/category/iclr-2026/",
+          "retrieved_at": 1791083569.575886,
+          "sha256": "f656dedbb549f03e4a85a6cc76020980e890e156ce91240b69cf0624e28a5c2d"
+        },
+        {
+          "url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "cache_url": "https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/",
+          "retrieved_at": 1791083570.3019152,
+          "sha256": "128919dff0c8999ebc0a6ecc7c266693c94345ce0b6669a58909c3d5de095ce3"
+        },
+        {
+          "url": "https://blog.iclr.cc/2026/04/22/announcing-the-test-of-time-awards-from-iclr-2016/",
+          "cache_url": "https://blog.iclr.cc/2026/04/22/announcing-the-test-of-time-awards-from-iclr-2016/",
+          "retrieved_at": 1791083571.0022314,
+          "sha256": "bd37b9af0f6beefaa7f29dfef8b9d90ff0e3f3abc8d18100c875c92e17a7adac"
+        }
+      ],
+      "local_ai": {
+        "version": "local-research-2",
+        "state": "completed",
+        "model": {
+          "profile": "qwen-q8",
+          "repo": "unsloth/Qwen3.8-27B-GGUF",
+          "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502",
+          "weights": [
+            {
+              "file": "Qwen3.8-27B-Q8_0.gguf",
+              "sha256": "a680f44a06920e5d689774823782006aa3acc8db95750323373b24139b67e348"
+            },
+            {
+              "file": "mmproj-BF16.gguf",
+              "sha256": "83ee4f4f205fa514161778c41df1ea14144faa0f713510893b63c2395f5c2d53"
+            }
+          ],
+          "thinking": false,
+          "version": "local-research-2"
+        },
+        "checked_at": 1791083571.2248836,
+        "records": [
+          {
+            "url": "https://blog.iclr.cc/2026/04/22/announcing-the-test-of-time-awards-from-iclr-2016/",
+            "sha256": "bd37b9af0f6beefaa7f29dfef8b9d90ff0e3f3abc8d18100c875c92e17a7adac",
+            "page": null,
+            "rejected": [],
+            "reason_ja": "提供されたソースは2026年4月22日付のICLRブログ記事であり、2026年のTest of Time Award受賞者が2016年に発表された2つの論文であると明確に宣言しています。タイトルと受賞者名（著者）が本文中に連続して記載されているため、証拠として引用しました。他の賞（Outstanding Paper等）のリンクは提供されていませんが、本ソース内にはTest of Time Awardの受賞情報が完全に含まれているため、追加リンクは不要です。",
+            "prompt_sha256": "8b728ecdbe10b95f2434c52e3df90ea7e8992484b64cb88a24f4bfce81f490ae",
+            "model": {
+              "profile": "qwen-q8",
+              "repo": "unsloth/Qwen3.8-27B-GGUF",
+              "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502",
+              "weights": [
+                {
+                  "file": "Qwen3.8-27B-Q8_0.gguf",
+                  "sha256": "a680f44a06920e5d689774823782006aa3acc8db95750323373b24139b67e348"
+                },
+                {
+                  "file": "mmproj-BF16.gguf",
+                  "sha256": "83ee4f4f205fa514161778c41df1ea14144faa0f713510893b63c2395f5c2d53"
+                }
+              ],
+              "thinking": false,
+              "version": "local-research-2"
+            },
+            "next_urls": [],
+            "checked_at": 1791082879.9703884,
+            "applied_at": 1791083571.1622524,
+            "winner_count": 2
+          }
+        ],
+        "units": 1
+      }
+    },
+    "identities": [
+      {
+        "title": "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks",
+        "metadata": {
+          "source_id": "1511.06434",
+          "version": "v2",
+          "title": "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks",
+          "abstract": "In recent years, supervised learning with convolutional networks (CNNs) has seen huge adoption in computer vision applications. Comparatively, unsupervised learning with CNNs has received less attention. In this work we hope to help bridge the gap between the success of CNNs for supervised learning and unsupervised learning. We introduce a class of CNNs called deep convolutional generative adversarial networks (DCGANs), that have certain architectural constraints, and demonstrate that they are a strong candidate for unsupervised learning. Training on various image datasets, we show convincing evidence that our deep convolutional adversarial pair learns a hierarchy of representations from object parts to scenes in both the generator and discriminator. Additionally, we use the learned features for novel tasks - demonstrating their applicability as general image representations.",
+          "authors": [
+            "Alec Radford",
+            "Luke Metz",
+            "Soumith Chintala"
+          ],
+          "categories": [
+            "cs.LG",
+            "cs.CV"
+          ],
+          "published": "2015-11-19T22:50:32Z",
+          "updated": "2016-01-07T23:09:39Z",
+          "url": "https://arxiv.org/abs/1511.06434v2"
+        },
+        "error": null
+      },
+      {
+        "title": "Continuous control with deep reinforcement learning",
+        "metadata": {
+          "source_id": "1509.02971",
+          "version": "v6",
+          "title": "Continuous control with deep reinforcement learning",
+          "abstract": "We adapt the ideas underlying the success of Deep Q-Learning to the continuous action domain. We present an actor-critic, model-free algorithm based on the deterministic policy gradient that can operate over continuous action spaces. Using the same learning algorithm, network architecture and hyper-parameters, our algorithm robustly solves more than 20 simulated physics tasks, including classic problems such as cartpole swing-up, dexterous manipulation, legged locomotion and car driving. Our algorithm is able to find policies whose performance is competitive with those found by a planning algorithm with full access to the dynamics of the domain and its derivatives. We further demonstrate that for many of the tasks the algorithm can learn policies end-to-end: directly from raw pixel inputs.",
+          "authors": [
+            "Timothy P. Lillicrap",
+            "Jonathan J. Hunt",
+            "Alexander Pritzel",
+            "Nicolas Heess",
+            "Tom Erez",
+            "Yuval Tassa",
+            "David Silver",
+            "Daan Wierstra"
+          ],
+          "categories": [
+            "cs.LG",
+            "stat.ML"
+          ],
+          "published": "2015-09-09T23:01:36Z",
+          "updated": "2019-07-05T10:47:27Z",
+          "url": "https://arxiv.org/abs/1509.02971v6"
+        },
+        "error": null
+      }
+    ],
+    "reused_saved_inference": true,
+    "checks": {
+      "worker_completed": true,
+      "current_research_version": true,
+      "actual_local_model_ran": true,
+      "test_of_time_recipients_read_by_local_ai": true,
+      "locally_read_recipients_resolve_to_actual_papers": true,
+      "no_duplicate_prizes": true,
+      "all_saved_awards_pass_evidence_checks": true,
+      "existing_work_and_automation_preserved": true
+    },
+    "before": {
+      "projects": [
+        "47b1fed445f54a9995643c2c088cbaa0",
+        "7b57bfd44d4e4aef92e22821cb8931b6",
+        "8ab4bf9ac3274635925c609fc9860165",
+        "a057ab1cb5924f1aa27a8e60390cb574",
+        "bd7642d8e5e244399c5a48e30fe52ec2",
+        "c0162d38dfa84e7db2b1578f71ff8200"
+      ],
+      "nightly_runs": [
+        "4e9d70420b7445edbadad0919686d0fa",
+        "57eae4fa08034ffd832c8fb911c36b4e",
+        "9fa6aa630e044f07912000aebff7ca15",
+        "b347d41f69cf49589443525064343fd0",
+        "be75063da9bd4b488c193ceb41fd3c05"
+      ],
+      "paused_lessons": [
+        "712b3b2d646046658fee3d6ec4f7a7d0",
+        "af8db257f7a44ddcb7a4012719919767",
+        "d951f20572014ca2bb43cd6ec4bc332b"
+      ],
+      "nightly_enabled": true,
+      "discovery_enabled": false
+    },
+    "after": {
+      "projects": [
+        "47b1fed445f54a9995643c2c088cbaa0",
+        "7b57bfd44d4e4aef92e22821cb8931b6",
+        "8ab4bf9ac3274635925c609fc9860165",
+        "a057ab1cb5924f1aa27a8e60390cb574",
+        "bd7642d8e5e244399c5a48e30fe52ec2",
+        "c0162d38dfa84e7db2b1578f71ff8200"
+      ],
+      "nightly_runs": [
+        "4e9d70420b7445edbadad0919686d0fa",
+        "57eae4fa08034ffd832c8fb911c36b4e",
+        "9fa6aa630e044f07912000aebff7ca15",
+        "b347d41f69cf49589443525064343fd0",
+        "be75063da9bd4b488c193ceb41fd3c05"
+      ],
+      "paused_lessons": [
+        "712b3b2d646046658fee3d6ec4f7a7d0",
+        "af8db257f7a44ddcb7a4012719919767",
+        "d951f20572014ca2bb43cd6ec4bc332b"
+      ],
+      "nightly_enabled": true,
+      "discovery_enabled": false
+    },
+    "status": "passed"
+  },
+  "first_fresh_local_ai_read": {
+    "job": {
+      "id": "d3cb8f47638e460fbff430317a82d61e",
+      "state": "completed",
+      "created": 1791082842.1926718,
+      "updated": 1791082880.0644145,
+      "stage": "受賞情報の更新が完了",
+      "error": null
+    },
+    "seconds": 37.87,
+    "recipients": 2,
+    "publication_year": 2016,
+    "award_year": 2026
+  },
+  "full_http_refresh": {
+    "job": {
+      "id": "49c37ffeb6b2454985f90bd026317aa6",
+      "state": "completed",
+      "created": 1791081076.8330357,
+      "updated": 1791081187.2642252,
+      "stage": "受賞情報の更新が完了",
+      "error": null
+    },
+    "seconds": 110.43
+  },
+  "operation": {
+    "health": {
+      "status": "ok"
+    },
+    "nightly_enabled": true,
+    "awards_first": true,
+    "start_jst": "02:00",
+    "old_discovery_enabled": false,
+    "paused_old_lessons": [
+      {
+        "id": "d951f20572014ca2bb43cd6ec4bc332b",
+        "state": "paused"
+      },
+      {
+        "id": "af8db257f7a44ddcb7a4012719919767",
+        "state": "paused"
+      },
+      {
+        "id": "712b3b2d646046658fee3d6ec4f7a7d0",
+        "state": "paused"
+      }
+    ],
+    "current_nightly_runs": [
+      {
+        "id": "57eae4fa08034ffd832c8fb911c36b4e",
+        "state": "building",
+        "project_id": "c0162d38dfa84e7db2b1578f71ff8200"
+      }
+    ]
+  },
+  "limitations": [
+    "ICRA 2026 contains known prize categories whose winners have not been confirmed from the checked sources.",
+    "IROS 2026 program confirms finalists, not winners, at this check.",
+    "Award coverage includes institutional primary announcements with explicit labels; not all stored award papers have an arXiv/full-text identity.",
+    "Navigation remains limited to actual links on approved sources; newly relocated domains can require source configuration updates.",
+    "The real local-AI award reading and identity match were verified. Additional-search planning and interrupted recovery were validated by regression tests."
+  ]
+}

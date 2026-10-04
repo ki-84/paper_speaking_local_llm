@@ -125,7 +125,7 @@ def run():
                 elif job["kind"] == "nightly_video":
                     done = nightly.step(job, runtime)
                 elif job["kind"] == "award_refresh":
-                    done = awards.refresh_step(job)
+                    done = awards.refresh_step(job, runtime)
                 elif job["kind"] == "discover":
                     done = discovery.discovery_step(job, runtime)
                 elif job["kind"] == "practice":

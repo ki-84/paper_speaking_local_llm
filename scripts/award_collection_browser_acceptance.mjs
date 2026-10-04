@@ -24,15 +24,30 @@ try {
     const {venue,year}=receipt.source;
     const card=panel.getByRole('article',{name:`${venue} ${year}の受賞情報`});
     await expect(card.locator('.award-coverage-status')).toContainText(`受賞情報 ${receipt.winner_count}件 / 論文 ${receipt.paper_count}本`);
+    if(receipt.coverage?.missing_categories?.length){
+      await card.getByText(`受賞者を未取得の賞（${receipt.coverage.missing_categories.length}件）`,{exact:true}).click();
+      for(const prize of receipt.coverage.missing_categories){
+        await expect(card.getByRole('link',{name:prize.name,exact:true})).toHaveAttribute('href',prize.official_url);
+      }
+    }
+    if(receipt.local_ai){
+      const trace=card.locator('.award-ai-research');
+      await trace.locator(':scope > summary').click();
+      await expect(trace.locator('p')).toHaveCount(receipt.local_ai.records?.length||0);
+      for(const record of receipt.local_ai.records||[]){
+        if(record.reason_ja)await expect(trace.locator('p').filter({hasText:record.reason_ja}).first()).toBeVisible();
+      }
+    }
     if(receipt.papers.length){
       await card.getByText(`受賞論文を表示（${receipt.paper_count}本）`,{exact:true}).click();
       for(const paper of receipt.papers){
         const row=card.locator('li').filter({has:page.getByText(paper.title,{exact:true})}).filter({has:page.getByRole('link',{name:paper.name,exact:true})});
         await expect(row).toHaveCount(1);
+        if(paper.evidence_type==='institution')await expect(row).toContainText('所属機関の受賞発表');
         await expect(row.getByRole('link',{name:paper.name,exact:true})).toHaveAttribute('href',paper.official_url);
       }
     }
-    report.sources.push({venue,year,status:receipt.status,winner_count:receipt.winner_count,paper_count:receipt.paper_count,official_links_checked:receipt.papers.length});
+    report.sources.push({venue,year,status:receipt.status,winner_count:receipt.winner_count,paper_count:receipt.paper_count,official_links_checked:receipt.papers.length,missing_prizes_checked:receipt.coverage?.missing_categories?.length||0,institutional_winners_checked:receipt.papers.filter(p=>p.evidence_type==='institution').length,local_ai_units_checked:receipt.local_ai?.units||0});
   }
   // Keep one expanded list on the screenshot and collapse the rest.
   while(await panel.locator('article details[open]').count())await panel.locator('article details[open]').first().locator(':scope > summary').click();
@@ -48,7 +63,7 @@ try {
   expect(errors).toEqual([]);
   report.winner_count=catalogue.winner_count;
   report.paper_count=catalogue.paper_count;
-  report.checks={coverage_table_visible_without_expanding:true,all_enabled_editions_visible:true,counts_match_saved_receipts:true,all_winner_titles_and_official_links_visible:true,small_screen_has_no_horizontal_overflow:true,no_browser_errors:true,read_only:true};
+  report.checks={coverage_table_visible_without_expanding:true,all_enabled_editions_visible:true,counts_match_saved_receipts:true,all_winner_titles_and_official_links_visible:true,small_screen_has_no_horizontal_overflow:true,known_missing_prizes_are_visible:true,institutional_evidence_is_labeled:true,local_ai_research_records_visible:true,no_browser_errors:true,read_only:true};
   report.status='passed';
 } catch(error) {
   report.status='failed';

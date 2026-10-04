@@ -861,7 +861,11 @@ def test_award_checkpoint_survives_repeated_steps_and_merges_metadata(
     monkeypatch.setattr(
         awards,
         "collect",
-        lambda s: {"source": s, "papers": [prize()], "status": "verified winners"},
+        lambda s, **kwargs: {
+            "source": s,
+            "papers": [prize()],
+            "status": "verified winners",
+        },
     )
     monkeypatch.setattr(
         awards,
@@ -869,7 +873,7 @@ def test_award_checkpoint_survives_repeated_steps_and_merges_metadata(
         lambda a: {"source_id": "2601.00001", "title": prize()["title"]},
     )
     job = db.one("SELECT * FROM jobs WHERE target=?", (run_id,))
-    for _ in range(4):
+    for _ in range(6):
         nightly.step(job, None)
     updated = db.one("SELECT * FROM nightly_video_runs WHERE id=?", (run_id,))
     assert updated["data"]["phase"] == "collect"
@@ -1004,3 +1008,192 @@ def test_moving_current_conference_site_cannot_claim_the_wrong_year():
     assert not awards.parse(
         document(html, "https://www.corl.org/program/awards"), "CoRL", 2025
     )
+
+
+def test_institutional_publication_card_scopes_prize_to_conference_and_year():
+    markup = """<main><table><tr><td><p><heading>A Useful Motion Planning Paper</heading><br>IROS 2025<br><b>Best Student Paper Award</b></p><div><a href="https://arxiv.org/abs/2409.05864">arXiv</a></div></td></tr>
+    <tr><td><p><heading>A Different Workshop Paper</heading><br>IROS 2025 Workshop<br><b>Best Paper Award</b></p></td></tr>
+    <tr><td><p><heading>A Different Finalist Paper</heading><br>IROS 2025<br><b>Best Paper Award Finalist</b></p></td></tr></table></main>"""
+    rows = awards.parse(document(markup, awards.CMU_PUBLICATIONS), "IROS", 2025)
+    assert len(rows) == 1 and rows[0]["title"] == "A Useful Motion Planning Paper"
+    assert rows[0]["evidence_type"] == "institution"
+    assert rows[0]["paper_url"] == "https://arxiv.org/abs/2409.05864"
+    assert "IROS 2025" in rows[0]["evidence_excerpt"]
+    assert awards.verified({"title": rows[0]["title"], "awards": rows}, year=2026)
+    assert not awards.parse(document(markup, awards.CMU_PUBLICATIONS), "IROS", 2026)
+    assert not awards.trusted("https://www.cs.cmu.edu/~unreviewed/")
+    assert not awards.trusted("http://www.cs.cmu.edu/~dpathak/")
+
+
+def test_institute_news_requires_actual_win_in_same_paragraph_and_records_source():
+    markup = """<h1>IROS 2025</h1><div class="trs_editor_view"><p>The IROS 2025 event was held. A paper titled <em>A Useful Muscle Actuation Paper</em> from our institute won the only Best Conference Paper Award.</p>
+    <p>A paper titled <em>A Different Finalist Paper</em> won a Best Paper Award Finalist certificate at IROS 2025.</p>
+    <p>A paper titled <em>A Different Old Award Paper</em> won the Best Paper Award at IROS 2024.</p></div>"""
+    url = awards.SIA_EVENTS + "202512/paper.html"
+    rows = awards.parse(document(markup, url), "IROS", 2025)
+    assert len(rows) == 1 and rows[0]["evidence_type"] == "institution"
+    assert rows[0]["name"] == "Best Conference Paper Award"
+    assert awards.trusted(url) and not awards.trusted(
+        "http://english.sia.cas.cn/other/"
+    )
+    assert not awards.parse(
+        document(markup.replace("won the only", "was nominated for"), url), "IROS", 2025
+    )
+    assert not awards.parse(
+        document(markup.replace("IROS 2025", "IROS 2026"), url), "IROS", 2025
+    )
+
+
+def test_cvpr_retrospective_prize_survives_malformed_nested_rows():
+    markup = """<main><h1>Longuet-Higgins Prize</h1><table><tr><td>2026</td><td>“A Useful Residual Recognition Paper”</td><td>Authors</td></tr><tr><tr><td>2026</td><td>“A Useful Object Detection Paper”</td><td>Authors</td></tr><td>2025</td><td>“A Useful Semantic Segmentation Paper”</td><td>Authors</td></tr></table><h1>Koenderink Prize</h1><table><tr><td>2025</td><td>“A Different Conference Paper”</td></tr></table></main>"""
+    saved = document(markup, awards.CVF_AWARDS)
+    assert len(awards.parse(saved, "CVPR", 2026)) == 2
+    rows = awards.parse(saved, "CVPR", 2025)
+    assert [p["title"] for p in rows] == ["A Useful Semantic Segmentation Paper"]
+    assert rows[0]["kind"] == "test-of-time"
+
+
+def test_pdf_acquisition_keeps_binary_hash_page_numbers_and_never_promotes_finalists(
+    database, monkeypatch
+):
+    import httpx
+    import pymupdf as fitz
+
+    pdf = fitz.open()
+    pdf.new_page().insert_text(
+        (40, 40),
+        'ICRA 2026\nICRA Best Conference Paper Award\nWinner: "A Useful Robot Learning Paper"',
+    )
+    pdf.new_page().insert_text(
+        (40, 40),
+        'ICRA 2026\nICRA Best Student Paper Award - Finalists\n"A Different Finalist Paper"',
+    )
+    content = pdf.tobytes() + b"\n" * 5_100_000
+    url = "https://www.ieee-ras.org/wp-content/uploads/2026/awards.pdf"
+
+    def get(client, target):
+        return httpx.Response(
+            200, content=content, request=httpx.Request("GET", target)
+        )
+
+    monkeypatch.setattr(awards.httpx.Client, "get", get)
+    saved = awards.fetch(url)
+    assert saved["format"] == "pdf" and len(saved["pages"]) == 2
+    assert saved["sha256"] == hashlib.sha256(content).hexdigest()
+    assert (database / saved["pdf_path"]).read_bytes() == content
+    rows = awards.parse(saved, "ICRA", 2026)
+    assert len(rows) == 1 and rows[0]["title"] == "A Useful Robot Learning Paper"
+    assert rows[0]["source_page"] == 1 and rows[0]["official_url"].endswith("#page=1")
+    assert not awards.parse(saved, "ICRA", 2025)
+
+
+def test_collector_follows_brochure_and_institution_news_links_with_recording_checks(
+    database, monkeypatch
+):
+    url = "https://www.ieee-ras.org/2026-ieee-ras-awards-brochure/"
+    pdf = "https://www.ieee-ras.org/wp-content/uploads/2026/awards.pdf"
+    article = awards.SIA_EVENTS + "202512/award.html"
+    seen = []
+
+    def fetch(target, **kwargs):
+        seen.append(target)
+        if target == url:
+            return document(f'<a href="{pdf}">RAS 2026 ICRA Brochure</a>', target)
+        if target == pdf:
+            return document("<main>ICRA 2026 Finalists</main>", target) | {
+                "format": "pdf",
+                "pages": [
+                    {
+                        "page": 1,
+                        "text": "ICRA 2026\nICRA Best Student Paper Award - Finalists",
+                    }
+                ],
+            }
+        if target == awards.SIA_EVENTS:
+            return document(
+                f'<a href="{article}">Paper wins IROS 2025 Best Conference Paper Award</a>',
+                target,
+            )
+        if target == article:
+            return document(
+                '<div class="trs_editor_view"><p>IROS 2025. A paper titled <em>A Useful Muscle Actuation Paper</em> won the Best Conference Paper Award.</p></div>',
+                target,
+            )
+        raise ValueError("Unavailable")
+
+    monkeypatch.setattr(awards, "fetch", fetch)
+    checks = []
+    result = awards.collect(
+        {"venue": "ICRA", "year": 2026, "url": url}, check=lambda: checks.append(True)
+    )
+    assert pdf in seen and not result["papers"] and result["coverage"]["partial"]
+    result = awards.collect(
+        {"venue": "IROS", "year": 2025, "url": awards.SIA_EVENTS},
+        check=lambda: checks.append(True),
+    )
+    assert article in seen and result["papers"][0]["evidence_type"] == "institution"
+    assert len(checks) >= 8
+
+
+def test_partial_coverage_deduplicates_split_sessions_and_ignores_news_headlines():
+    saved = document(
+        """<main><h1>ICRA 2026</h1><h2>Best Paper Award on Robot Perception (Part 1)</h2><h2>Best Paper Award on Robot Perception (Part 2)</h2><h2>Best Paper Award on Robot Learning</h2><h2>Paper from Institute Wins ICRA 2026 Best Paper Award</h2></main>"""
+    )
+    winner = prize("A Useful Perception Paper", "ICRA", 2026) | {
+        "name": "Best Paper Award on Robot Perception"
+    }
+    coverage = awards.category_coverage(
+        [saved], {"venue": "ICRA", "year": 2026}, [winner]
+    )
+    assert coverage["category_count"] == 2 and coverage["confirmed_categories"] == 1
+    assert [r["name"] for r in coverage["missing_categories"]] == [
+        "Best Paper Award on Robot Learning"
+    ]
+
+
+def test_iros_program_finalist_links_are_not_winners_even_with_arxiv_links():
+    saved = document(
+        """<main><h1>IROS 2026 Awards Lunch</h1><p>Select an award to see its finalists.</p><h2>Best Student Paper Award</h2><p><a href="https://arxiv.org/abs/2601.00001">A Useful Finalist Robot Paper</a></p></main>""",
+        "https://2026.ieee-iros.org/program/awards/",
+    )
+    assert not awards.parse(saved, "IROS", 2026)
+
+
+def test_resolver_uses_explicit_arxiv_link_but_still_checks_paper_title(
+    database, monkeypatch
+):
+    queries = []
+    monkeypatch.setattr(
+        papers, "fetch", lambda url, params, **kw: queries.append(params) or b"mock"
+    )
+    monkeypatch.setattr(
+        papers,
+        "entries",
+        lambda raw: [{"source_id": "2409.05864", "title": prize()["title"]}],
+    )
+    assert (
+        awards.resolve(prize() | {"paper_url": "https://arxiv.org/abs/2409.05864"})[
+            "source_id"
+        ]
+        == "2409.05864"
+    )
+    assert queries == [{"id_list": "2409.05864"}]
+    wrong = prize("A Different New Robot Learning Method") | {
+        "paper_url": "https://arxiv.org/abs/2409.05864"
+    }
+    assert awards.resolve(wrong) is None
+
+
+def test_unreadable_award_pdf_is_a_bounded_acquisition_failure(database, monkeypatch):
+    import httpx
+
+    url = "https://www.ieee-ras.org/wp-content/uploads/2026/invalid.pdf"
+    monkeypatch.setattr(
+        awards.httpx.Client,
+        "get",
+        lambda self, target: httpx.Response(
+            200, content=b"%PDF-invalid", request=httpx.Request("GET", target)
+        ),
+    )
+    with pytest.raises(ValueError, match="could not be read"):
+        awards.fetch(url)

@@ -265,11 +265,14 @@ test("library nightly start is idempotent and can pause and resume", async ({ pa
 
 test("nightly selection shows the verified conference award source", async ({page}) => {
   const source='https://roboticsconference.org/2026/program/awards/';
-  await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'award-run',day:'2026-10-03',state:'ready',job:null,data:{selected:{title:'A useful robot method',awards:[{venue:'RSS',year:2026,name:'Outstanding Paper Award',official_url:source}]},timings:{}}}]}));
+  await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'award-run',day:'2026-10-03',state:'ready',job:null,data:{selected:{title:'A useful robot method',awards:[{venue:'RSS',year:2026,name:'Outstanding Paper Award',official_url:source}]},search_plans:[{reason_ja:'候補の少ないロボティクスを補います。'}],search_history:[{category:'cs.RO',terms:['robot learning'],reason_ja:'新しい学習法を探します。',result_count:3}],timings:{}}}]}));
   await page.getByRole('button',{name:'My library',exact:true}).click();
   const panel=page.getByRole('region',{name:'昨夜の動画'});
   await expect(panel.getByRole('link',{name:'RSS 2026 · Outstanding Paper Award'})).toHaveAttribute('href',source);
   await expect(panel.getByText(/公式受賞情報確認済み/)).toBeVisible();
+  await panel.getByText('選定・作成の記録',{exact:true}).click();
+  await expect(panel.getByText('ローカルAIの検索方針: 候補の少ないロボティクスを補います。')).toBeVisible();
+  await expect(panel.getByText(/robot learning.*新しい学習法を探します。.*3候補/)).toBeVisible();
 });
 
 test("conference awards show counts, official winners and acquisition gaps", async ({page}) => {
@@ -346,4 +349,25 @@ test("nightly thumbnails can be downloaded beside films and from past runs", asy
   await expect(panel.getByRole('img',{name:'解説編のサムネイル'})).toBeVisible();
   await expect(panel.getByRole('link',{name:'動画をダウンロード',exact:true})).toHaveAttribute('download','Previous film.mp4');
   await expect(panel.getByRole('link',{name:'サムネイル JPEG',exact:true})).toBeVisible();
+});
+
+test('conference coverage shows missing prizes and institutional evidence', async ({page})=>{
+  const url='https://2026.ieee-icra.org/awards/';
+  await page.route('**/api/conference-awards', route=>route.fulfill({json:{winner_count:1,paper_count:1,sources:[{
+    source:{venue:'ICRA',year:2026,url},status:'verified winners',winner_count:1,paper_count:1,
+    coverage:{partial:true,confirmed_categories:1,category_count:2,missing_categories:[{name:'Best Paper Award on Robot Learning',official_url:url}]},
+    local_ai:{state:'completed',units:1,records:[{url,reason_ja:'ページの構成変更に合わせて出典を確認しました。'}]},
+    papers:[{title:'A Useful Robot Paper',name:'Best Student Paper Award',official_url:'https://www.cs.cmu.edu/~dpathak/',evidence_type:'institution'}],failures:[]
+  }]}}));
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const panel=page.getByRole('region',{name:'学会別の受賞論文'});
+  await expect(panel.getByRole('table')).toContainText('未取得の賞あり · 1賞確認 / 2掲載枠');
+  await panel.getByRole('button',{name:'ICRAの受賞情報を見る'}).click();
+  const card=panel.getByRole('article',{name:'ICRA 2026の受賞情報'});
+  await card.getByText('受賞者を未取得の賞（1件）').click();
+  await expect(card.getByRole('link',{name:'Best Paper Award on Robot Learning'})).toHaveAttribute('href',url);
+  await card.getByText('受賞論文を表示（1本）').click();
+  await expect(card.getByText('所属機関の受賞発表',{exact:false})).toBeVisible();
+  await card.getByText('ローカルAIの調査記録 · 確認済み · 1工程',{exact:true}).click();
+  await expect(card.getByText(/ページの構成変更に合わせて出典を確認しました。/)).toBeVisible();
 });

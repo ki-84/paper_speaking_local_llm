@@ -10,7 +10,17 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from . import awards, config, db, lessons, local_network, papers, story, thumbnails
+from . import (
+    awards,
+    config,
+    db,
+    lessons,
+    local_network,
+    papers,
+    research,
+    story,
+    thumbnails,
+)
 from .runtime import GPUUnavailable, PracticePreempted
 
 ZONE = ZoneInfo("Asia/Tokyo")
@@ -173,6 +183,8 @@ def get(ident):
             "manual_repeat",
             "award_sources",
             "award_fallback_reason",
+            "search_history",
+            "search_plans",
         }
     }
     return run
@@ -481,6 +493,20 @@ def step(job, runtime):
         return True
     data = run["data"]
     phase = data["phase"]
+
+    def check_research():
+        current = db.one("SELECT state FROM jobs WHERE id=?", (job["id"],))
+        if not current or current["state"] in {"paused", "cancelled"}:
+            raise PracticePreempted(
+                "論文探索を中断しました。保存済みの工程から再開します。"
+            )
+        if runtime and getattr(runtime, "shutdown_requested", False):
+            raise PracticePreempted("再起動後に論文探索を再開します。")
+        if runtime and getattr(runtime, "practice_waiting", lambda: False)():
+            raise PracticePreempted(
+                "録音の評価を優先します。論文探索は続きから再開します。"
+            )
+
     if phase == "attention":
         result = _tried(
             run, "attention", lambda: attention_feed(run["day"]), lambda: {}
@@ -504,13 +530,18 @@ def step(job, runtime):
         )
         index = data["award_source_index"]
         if index >= len(specs):
-            data["phase"] = "award_resolve"
+            data["phase"] = "award_repair"
         else:
             spec = specs[index]
             result = _tried(
                 run,
                 f"awards:{spec['venue']}:{spec['year']}",
-                lambda: awards.collect(spec),
+                lambda: awards.collect(
+                    spec,
+                    refresh=True,
+                    refreshed_after=data["started"],
+                    check=check_research,
+                ),
                 lambda: {
                     "papers": [],
                     "source": spec,
@@ -539,6 +570,49 @@ def step(job, runtime):
                 stage=f"学会の受賞情報を確認 · {spec['venue']} {spec['year']}",
                 progress=0.04,
             )
+    elif phase == "award_repair":
+        index = data.get("award_repair_index", 0)
+        if index >= len(data["award_sources"]):
+            data["phase"] = "award_resolve"
+        else:
+            spec = data["award_sources"][index]["source"]
+            state = data.setdefault("award_repair_state", {})
+            complete = research.repair_step(
+                spec, runtime, state, profile=data["model"], check=check_research
+            )
+            db.patch_job(
+                job["id"],
+                stage=f"ローカルAIが受賞ページを調査 · {spec['venue']} {spec['year']}",
+                progress=0.06,
+            )
+            if complete:
+                result = research.receipt(spec)
+                if result:
+                    data["award_sources"][index] = {
+                        k: v for k, v in result.items() if k != "papers"
+                    }
+                    existing = {
+                        (
+                            a["venue"],
+                            a["year"],
+                            awards.award_key(a["name"], a["venue"], a["year"]),
+                            awards.normalized(a["title"]),
+                        )
+                        for a in data["award_winners"]
+                    }
+                    data["award_winners"].extend(
+                        a
+                        for a in result["papers"]
+                        if (
+                            a["venue"],
+                            a["year"],
+                            awards.award_key(a["name"], a["venue"], a["year"]),
+                            awards.normalized(a["title"]),
+                        )
+                        not in existing
+                    )
+                data["award_repair_index"] = index + 1
+                data.pop("award_repair_state", None)
     elif phase == "award_resolve":
         index = data["award_resolve_index"]
         if index >= len(data["award_winners"]):
@@ -558,6 +632,33 @@ def step(job, runtime):
             if result is None:
                 return False
             meta = result["metadata"]
+            if not meta and runtime is not None:
+                result = _tried(
+                    run,
+                    f"award-broader-search:{index}",
+                    lambda: research.resolve_missing(
+                        winner,
+                        runtime,
+                        data["model"],
+                        error=data["repairs"]
+                        .get(f"award-broader-search:{index}", {})
+                        .get("error"),
+                    ),
+                    lambda: {"metadata": None},
+                )
+                if result is None:
+                    return False
+                meta = result["metadata"]
+                if result.get("query"):
+                    data.setdefault("search_history", []).append(
+                        {
+                            "title": winner["title"],
+                            "venue": winner["venue"],
+                            "year": winner["year"],
+                            "matched": bool(meta),
+                            **result["query"],
+                        }
+                    )
             if meta and meta["source_id"] not in filmed_ids():
                 old = data["award_candidates"].get(
                     meta["source_id"], meta | {"awards": []}
@@ -616,8 +717,91 @@ def step(job, runtime):
                 job["id"], stage=f"新しい論文を探しています · {cat}", progress=0.05
             )
         else:
+            data["phase"] = "search_plan"
+    elif phase == "search_plan":
+        pool = list((data["candidates"] | data.get("award_candidates", {})).values())
+        context = {
+            "categories": data["categories"],
+            "window_days": data["window_days"],
+            "interests": db.settings()["interests"],
+            "policy": data.get("selection_policy"),
+            "recent_candidates": [
+                {"title": p["title"], "abstract": p.get("abstract", "")[:400]}
+                for p in pool[:16]
+            ],
+            "verified_awards": [
+                {"title": p["title"], "venue": p["venue"], "year": p["year"]}
+                for p in data.get("award_winners", [])[:20]
+            ],
+            "already_tried": data.get("excluded_ids", []),
+            "failures": data["warnings"][-8:],
+            "previous_plan_error": data["repairs"]
+            .get(f"search-plan:{data['window_days']}", {})
+            .get("error"),
+        }
+        plan = _tried(
+            run,
+            f"search-plan:{data['window_days']}",
+            lambda: research.plan_search(runtime, data["model"], context),
+            lambda: {
+                "queries": [],
+                "reason_ja": "検索計画の修正を3回試したため、取得済み候補の本文確認へ進みます。",
+            },
+        )
+        if plan is None:
+            return False
+        data.setdefault("search_plans", []).append(plan)
+        data.update(
+            search_queries=plan["queries"], search_query_index=0, phase="search_queries"
+        )
+        db.patch_job(job["id"], stage="ローカルAIが検索方針を決定", progress=0.1)
+    elif phase == "search_queries":
+        index = data["search_query_index"]
+        if index >= len(data["search_queries"]):
             _finish_search(run, job)
             return False
+        query = data["search_queries"][index]
+        now = dt.datetime.fromtimestamp(data["started"], dt.timezone.utc)
+        since = (now - dt.timedelta(days=data["window_days"])).strftime("%Y%m%d%H%M")
+        until = now.strftime("%Y%m%d%H%M")
+        text = f"cat:{query['category']} AND submittedDate:[{since} TO {until}] AND ({research.query_text(query['terms'])})"
+        result = _tried(
+            run,
+            f"ai-search:{data['window_days']}:{index}",
+            lambda: papers.entries(
+                papers.fetch(
+                    "https://export.arxiv.org/api/query",
+                    {
+                        "search_query": text,
+                        "max_results": 30,
+                        "sortBy": "submittedDate",
+                        "sortOrder": "descending",
+                    },
+                    cache_scope=run["day"],
+                    attempts=1,
+                    timeout=45,
+                )
+            ),
+            lambda: [],
+        )
+        if result is None:
+            return False
+        data["candidates"].update({p["source_id"]: p for p in result})
+        data.setdefault("search_history", []).append(
+            {
+                **query,
+                "query": text,
+                "result_count": len(result),
+                "retrieved_at": time.time(),
+                "window_days": data["window_days"],
+            }
+        )
+        data["search_query_index"] += 1
+        db.patch_job(
+            job["id"],
+            stage=f"ローカルAIが論文を検索 · {query['category']} · {index + 1}/{len(data['search_queries'])}",
+            progress=0.12,
+        )
     elif phase == "read":
         index = data["review_index"]
         if index >= len(data["shortlist"]) or len(data["reading"]) >= 3:
@@ -927,5 +1111,7 @@ def step(job, runtime):
         )
     else:
         raise ValueError("Unknown nightly stage")
+    if phase in {"award_repair", "search_plan", "search_queries"}:
+        check_research()
     save(run)
     return False

@@ -13,7 +13,7 @@ from . import awards, config, db
 
 VERSION = "paper-venue-edition-awards-2"
 LOOKUP_VERSION = "official-records-4-refresh"
-DESCRIPTION_VERSION = "paper-awards-no-urls-1"
+DESCRIPTION_VERSION = "paper-awards-no-urls-2"
 EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
 ALIASES = {
     "ICML": r"\bICML\b|International Conference on Machine Learning",
@@ -451,8 +451,6 @@ def description(project, mode, *, references=None):
         "図解とMaya・Aidenの自然な英語の会話で、AI論文の"
         + topic
         + "英語・日本語の字幕付きです。英語表現を聞き取り、動画を止めて声に出したり、自分の言葉で説明したりしてみてください。",
-        "",
-        "音声・会話・補助図はローカルAIを使って作成した学習用教材です。仮の計算例は論文の実験結果と区別しています。",
         "",
         "参考文献",
     ]

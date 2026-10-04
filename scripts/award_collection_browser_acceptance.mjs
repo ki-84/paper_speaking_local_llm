@@ -14,6 +14,8 @@ try {
   expect(response.ok()).toBeTruthy();
   const catalogue=await response.json();
   await page.goto(base);
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByText('学会の受賞情報・取得状況',{exact:true}).click();
   const panel=page.getByRole('region',{name:'学会別の受賞論文'});
   await expect(panel.getByRole('table')).toBeVisible();
   await expect(panel.locator('.award-total')).toContainText(`${catalogue.winner_count}件の受賞情報 / ${catalogue.paper_count}本`);

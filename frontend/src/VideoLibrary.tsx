@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Film, Plus, X } from "lucide-react";
+import { ArrowRight, Film, X } from "lucide-react";
 import { api, fileUrl, minutes } from "./api";
 
 type Video = {
@@ -35,11 +35,10 @@ type Props = {
   version: number;
   onError: (message: string) => void;
   openLesson: (id: string) => void;
-  addPaper: () => void;
-  discover: () => void;
+  create: () => void;
 };
 
-export function VideoLibrary({ version, onError, openLesson, addPaper, discover }: Props) {
+export function VideoLibrary({ version, onError, openLesson, create }: Props) {
   const [videos, setVideos] = useState<Video[] | null>(null);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("films");
@@ -47,7 +46,7 @@ export function VideoLibrary({ version, onError, openLesson, addPaper, discover 
   const [selected, setSelected] = useState<Video | null>(null);
   useEffect(() => {
     let live = true;
-    api<Video[]>("/videos").then(rows => { if (live) setVideos(rows); })
+    api<Video[]>("/videos").then(rows => { if (live) setVideos(rows.filter(v => ["overview", "deep_dive"].includes(v.kind))); })
       .catch(error => { if (live) onError(error.message); });
     return () => { live = false; };
   }, [version]);
@@ -71,9 +70,7 @@ export function VideoLibrary({ version, onError, openLesson, addPaper, discover 
       <div><div className="eyebrow">YOUR VIDEO LIBRARY</div><h1>作成した動画</h1>
         <p>完成日時で並ぶ動画一覧。再生、ダウンロード、英語練習をここから。</p></div>
       <div className="actions">
-        <a className="secondary" href="#nightly-videos">動画の作成・進捗 <ArrowRight size={16} /></a>
-        <button className="secondary" onClick={addPaper}><Plus size={16} /> Add a paper</button>
-        <button className="text-button" onClick={discover}>論文を探す <ArrowRight size={16} /></button>
+        <button className="primary" onClick={create}>新しい動画を作る <ArrowRight size={16} /></button>
       </div>
     </div>
     <div className="video-library-tools">
@@ -81,16 +78,14 @@ export function VideoLibrary({ version, onError, openLesson, addPaper, discover 
         <input type="search" placeholder="LoRA、Muninn、RSS…" value={query} onChange={e => setQuery(e.target.value)} />
       </label>
       <label>動画の種類<select aria-label="動画の種類" value={kind} onChange={e => setKind(e.target.value)}>
-        <option value="films">全体の動画</option><option value="overview">概要解説</option>
+        <option value="films">すべて</option><option value="overview">概要解説</option>
         <option value="deep_dive">詳細解説</option>
-        {videos?.some(v => v.kind === "full") && <option value="full">全章まとめ</option>}
-        {videos?.some(v => v.kind === "chapter") && <option value="chapter">章別の動画</option>}
       </select></label>
       <label>並び順<select aria-label="並び順" value={order} onChange={e => setOrder(e.target.value)}>
         <option value="newest">新しい順</option><option value="oldest">古い順</option>
       </select></label>
     </div>
-    <p className="video-library-count">{videos === null ? "動画を読み込み中…" : `${filtered.length}本を表示 · 完成した全体の動画 ${filmCount}本`}<span>日時は日本時間</span></p>
+    <p className="video-library-count">{videos === null ? "動画を読み込み中…" : `${filtered.length}本を表示 · 完成した動画 ${filmCount}本`}<span>日時は日本時間</span></p>
     {Array.from(groups).map(([date, rows]) => <section className="video-library-day" key={date} aria-label={`${date}の動画`}>
       <h2>{date}</h2>
       <ol>{rows.map(video => <li key={video.id}>

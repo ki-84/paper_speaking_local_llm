@@ -36,6 +36,18 @@ from .runtime import GPUUnavailable, PracticePreempted, Runtime
 log = logging.getLogger("paperspeak.worker")
 
 
+def import_step(job):
+    pid = papers.register_arxiv(job["payload"]["reference"])
+    papers.ingest(pid)
+    checkpoint = {"paper_id": pid}
+    if job["payload"].get("create_video"):
+        checkpoint["project_id"] = story.create(pid)["project_id"]
+    elif job["payload"].get("generate", True):
+        db.enqueue("lesson", lessons.create(pid))
+    db.patch_job(job["id"], checkpoint=checkpoint, progress=1, stage="Paper added")
+    return True
+
+
 def run():
     db.init()
     owner = db.uid()
@@ -149,17 +161,7 @@ def run():
                 elif job["kind"] == "youtube_upload":
                     done = youtube.upload_step(job, runtime)
                 elif job["kind"] == "import":
-                    pid = papers.register_arxiv(job["payload"]["reference"])
-                    papers.ingest(pid)
-                    if job["payload"].get("generate", True):
-                        db.enqueue("lesson", lessons.create(pid))
-                    db.patch_job(
-                        job["id"],
-                        checkpoint={"paper_id": pid},
-                        progress=1,
-                        stage="Paper added",
-                    )
-                    done = True
+                    done = import_step(job)
                 else:
                     raise ValueError("Unknown job type")
                 current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))

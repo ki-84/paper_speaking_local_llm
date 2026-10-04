@@ -2,11 +2,12 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await page.locator(".login-page, .lesson-card").first().waitFor();
+  await page.locator(".login-page, .video-library").first().waitFor();
   if (await page.getByLabel("Studio password").isVisible()) {
     await page.getByLabel("Studio password").fill("ui-test-only");
     await page.getByRole("button", { name: "Come on in" }).click();
   }
+  await page.locator('nav').getByRole("button", {name:"英語練習",exact:true}).click();
   await expect(
     page.getByRole("button", { name: /Interface test: a small change/ }),
   ).toBeVisible();
@@ -41,19 +42,19 @@ test("video library shows completed films by date with filters and folded revisi
     row("older-full", "full", 1790920000, "Earlier LoRA lesson"),
     row("chapter", "chapter", 1790830000),
   ] }));
-  await page.getByRole("button", { name: "My library", exact: true }).click();
+  await page.locator('nav').getByRole("button", { name: "動画一覧", exact: true }).click();
   const panel = page.getByRole("region", { name: "作成した動画", exact: true });
   const ids = () => panel.locator(".video-library-item").evaluateAll(items => items.map(el => el.getAttribute("data-video-id")));
-  await expect.poll(ids).toEqual(["deep", "overview", "older-full"]);
+  await expect.poll(ids).toEqual(["deep", "overview"]);
   await expect(panel.locator(".video-library-day h2").first()).toHaveText("2026年10月4日");
   await expect(panel.getByText("日時は日本時間")).toBeVisible();
   await panel.getByText("以前の版（1本）", { exact: true }).click();
-  await expect(panel.getByRole("link", { name: "MP4をダウンロード", exact: true })).toHaveCount(4);
+  await expect(panel.getByRole("link", { name: "MP4をダウンロード", exact: true })).toHaveCount(3);
   await expect(panel.locator(".video-library-revisions a")).toHaveAttribute("href", "/api/files/videos/old-render.mp4");
   await panel.getByLabel("並び順", { exact: true }).selectOption("oldest");
-  await expect.poll(ids).toEqual(["older-full", "overview", "deep"]);
-  await panel.getByLabel("論文名・タイトル・学会で検索").fill("LoRA");
-  await expect.poll(ids).toEqual(["older-full"]);
+  await expect.poll(ids).toEqual(["overview", "deep"]);
+  await panel.getByLabel("論文名・タイトル・学会で検索").fill("RSS");
+  await expect.poll(ids).toEqual(["overview", "deep"]);
   await panel.getByLabel("論文名・タイトル・学会で検索").fill("");
   await panel.getByLabel("動画の種類", { exact: true }).selectOption("deep_dive");
   await expect.poll(ids).toEqual(["deep"]);
@@ -63,25 +64,27 @@ test("video library shows completed films by date with filters and folded revisi
   await expect(dialog.getByLabel("YouTube用説明文")).toHaveValue("English practice with this paper.");
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await panel.getByLabel("動画の種類", { exact: true }).selectOption("chapter");
-  await expect.poll(ids).toEqual(["chapter"]);
-  await expect(panel.getByText("第1章", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("option", {name:"章別の動画"})).toHaveCount(0);
+  await expect(panel.getByRole("option", {name:"全章まとめ"})).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
 test("Japanese paper search shows titles, abstracts, and a selectable paper", async ({ page }) => {
-  await page.getByRole("button", { name: "論文を探す" }).click();
+  await page.locator('nav').getByRole("button", { name: "論文を探す" }).click();
   await expect(page.getByRole("heading", { name: "次に読みたい論文を探す。" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "初めて見る物をつかむロボット", exact: true })).toBeVisible();
   await expect(page.getByText("未知の物をつかむ学習について読めます。")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "ロボットが新しい物をつかむ研究" })).toBeVisible();
-  await page.getByRole("button", { name: "この論文で教材とMP4を作る" }).first().click();
-  await expect(page.getByRole("region", { name: "YouTube video export" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "本文を確認したおすすめ" })).toHaveCount(0);
+  const beforeJobs=await (await page.request.get("/api/jobs")).json();
+  await page.getByRole("button", { name: "解説・詳解動画を作る",exact:true }).click();
+  await expect(page.getByRole("region", {name:"解説・詳解動画",exact:true})).toBeVisible();
   await expect.poll(async () => {
     const lessons = await (await page.request.get("/api/lessons")).json();
-    return lessons.some((lesson: any) => lesson.data.title === "A Robot That Learns to Grasp");
-  }).toBeTruthy();
-  await page.getByRole("button", { name: "論文を探す" }).click();
+    return lessons.filter((lesson: any) => lesson.data.format === "paper-story-1" && lesson.data.title.includes("A Robot That Learns to Grasp")).length;
+  }).toBe(2);
+  const afterJobs=await (await page.request.get("/api/jobs")).json();
+  expect(afterJobs.filter((j:any)=>j.kind==='lesson').map((j:any)=>j.id)).toEqual(beforeJobs.filter((j:any)=>j.kind==='lesson').map((j:any)=>j.id));
+  await page.locator('nav').getByRole("button", { name: "論文を探す" }).click();
   await page.getByLabel("どんな論文を読みたいですか？").fill("触覚を使うロボットの論文");
   await page.getByRole("button", { name: "日本語で論文を探す" }).click();
   await expect(page.getByRole("heading", { name: "「触覚を使うロボットの論文」の検索結果" })).toBeVisible();
@@ -105,6 +108,7 @@ test("source, audio, question hints, and saved position", async ({ page }) => {
     "The old weights stay fixed.",
   );
   await page.reload();
+  await page.locator('nav').getByRole("button", {name:"英語練習",exact:true}).click();
   await page
     .getByRole("button", { name: /Interface test: a small change/ })
     .click();
@@ -145,6 +149,7 @@ test("visuals follow speech and keep a pinned figure across reloads", async ({ p
   const lesson = (await (await page.request.get("/api/lessons")).json()).find((l: any) => l.data.title === "Interface test: a small change");
   await expect.poll(async () => (await (await page.request.get(`/api/lessons/${lesson.id}`)).json()).progress.visual_key).toBe("V1");
   await page.reload();
+  await page.locator('nav').getByRole("button", {name:"英語練習",exact:true}).click();
   await page.getByRole("button", { name: /Interface test: a small change/ }).click();
   await expect(panel.getByRole("heading", { name: "An original figure" })).toBeVisible();
   await panel.getByRole("button", { name: "Auto · 自動表示" }).click();
@@ -192,7 +197,7 @@ test("browser microphone saves a real recording and guards navigation", async ({
   await page.getByRole("button", { name: "Stop mic check" }).click();
   await page.getByRole("button", { name: "Your turn", exact: true }).click();
   await expect(page.getByRole("button", { name: /Done ·/ })).toBeVisible();
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.locator('nav').getByRole("button", { name: "設定", exact: true }).click();
   await expect(page.getByText("Finish your recording first.")).toBeVisible();
   await page.waitForTimeout(1200);
   await page.getByRole("button", { name: /Done ·/ }).click();
@@ -239,6 +244,7 @@ test("failed upload stays in this browser and can be sent again", async ({
 test("a stale saved microphone falls back to the system default", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("paperspeak-microphone", "missing-device-id"));
   await page.reload();
+  await page.locator('nav').getByRole("button", {name:"英語練習",exact:true}).click();
   await page.getByRole("button", { name: /Interface test: a small change/ }).click();
   await expect(page.getByRole("option", { name: "Last selected microphone" })).toHaveCount(1);
   await page.getByRole("button", { name: "Your turn", exact: true }).click();
@@ -276,13 +282,13 @@ test("a missing system microphone explains the problem and refreshes connected d
 });
 
 test("nightly videos are independent of old lesson automation", async ({ page }) => {
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.locator('nav').getByRole("button", { name: "設定", exact: true }).click();
   await expect(page.getByRole("heading", { name: "夜間に解説・詳解を自動作成" })).toBeVisible();
   const old = await (await page.request.get('/api/settings')).json();
   await page.getByLabel("毎晩、注目論文から2本の動画と英語教材を作る").check();
   await page.getByLabel("最近のAI・ロボティクス学会の優秀論文賞・Test of Time賞を優先する").check();
   await page.getByLabel("開始時刻 · 日本時間").fill('02:15');
-  await page.getByRole('button', {name:/Save settings/}).click();
+  await page.getByRole('button', {name:/設定を保存/}).click();
   await expect.poll(async()=> (await (await page.request.get('/api/settings')).json()).nightly_video_minute).toBe(15);
   const current = await (await page.request.get('/api/settings')).json();
   expect(current.discovery_enabled).toBe(old.discovery_enabled);
@@ -292,8 +298,8 @@ test("nightly videos are independent of old lesson automation", async ({ page })
 });
 
 test("library nightly start is idempotent and can pause and resume", async ({ page }) => {
-  await page.getByRole('button',{name:'My library',exact:true}).click();
-  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const panel=page.getByRole('region',{name:'自動選定と動画作成'});
   await expect(panel).toBeVisible();
   await panel.getByRole('button',{name:'今すぐ論文を選んで作る'}).click();
   await expect(panel.getByText('論文を探索中',{exact:true})).toBeVisible();
@@ -308,8 +314,8 @@ test("library nightly start is idempotent and can pause and resume", async ({ pa
 test("nightly selection shows the verified conference award source", async ({page}) => {
   const source='https://roboticsconference.org/2026/program/awards/';
   await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'award-run',day:'2026-10-03',state:'ready',job:null,data:{selected:{title:'A useful robot method',awards:[{venue:'RSS',year:2026,name:'Outstanding Paper Award',official_url:source}]},search_plans:[{reason_ja:'候補の少ないロボティクスを補います。'}],search_history:[{category:'cs.RO',terms:['robot learning'],reason_ja:'新しい学習法を探します。',result_count:3}],timings:{}}}]}));
-  await page.getByRole('button',{name:'My library',exact:true}).click();
-  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const panel=page.getByRole('region',{name:'自動選定と動画作成'});
   await expect(panel.getByRole('link',{name:'RSS 2026 · Outstanding Paper Award'})).toHaveAttribute('href',source);
   await expect(panel.getByText(/公式受賞情報確認済み/)).toBeVisible();
   await panel.getByText('選定・作成の記録',{exact:true}).click();
@@ -324,7 +330,8 @@ test("conference awards show counts, official winners and acquisition gaps", asy
     {source:{venue:'CoRL',year:2026,url:'https://www.corl.org/'},status:'not announced',conference_start:'2026-11-09',winner_count:0,paper_count:0,papers:[],failures:[]},
     {source:{venue:'IROS',year:2025,url:'https://iros25.org/'},status:'unavailable',winner_count:0,paper_count:0,papers:[],failures:[{url:'https://iros25.org/',reason:'Certificate validation failed'}]},
   ]}}));
-  await page.getByRole('button',{name:'My library',exact:true}).click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByText('学会の受賞情報・取得状況',{exact:true}).click();
   const panel=page.getByRole('region',{name:'学会別の受賞論文'});
   await expect(panel.getByRole('table')).toBeVisible();
   await expect(panel.locator('.award-total')).toContainText('2件の受賞情報 / 1本');
@@ -341,8 +348,9 @@ test("conference awards show counts, official winners and acquisition gaps", asy
 });
 
 test("award information can be refreshed without starting another film", async ({page}) => {
-  await page.getByRole('button',{name:'My library',exact:true}).click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
   const before=await (await page.request.get('/api/nightly-video-runs')).json();
+  await page.getByText('学会の受賞情報・取得状況',{exact:true}).click();
   const panel=page.getByRole('region',{name:'学会別の受賞論文'});
   await panel.getByRole('button',{name:'受賞情報を更新',exact:true}).click();
   await expect(panel.getByRole('button',{name:'受賞情報を更新中…',exact:true})).toBeDisabled();
@@ -361,36 +369,25 @@ test("award information can be refreshed without starting another film", async (
 test("Test of Time shows the publication year separately from the award year", async ({page}) => {
   const source='https://neurips.cc/virtual/2025/awards_detail';
   await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'classic-run',day:'2026-10-04',state:'ready',job:null,data:{selected:{title:'An enduring learning method',published:'2015-06-01T00:00:00Z',awards:[{venue:'NeurIPS',year:2025,name:'Test of Time Award',kind:'test-of-time',official_url:source}]},timings:{}}}]}));
-  await page.getByRole('button',{name:'My library',exact:true}).click();
-  const panel=page.getByRole('region',{name:'昨夜の動画'});
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const panel=page.getByRole('region',{name:'自動選定と動画作成'});
   await expect(panel.getByRole('link',{name:'NeurIPS 2025 · Test of Time Award'})).toHaveAttribute('href',source);
   await expect(panel.getByText(/長年の影響を評価する賞/)).toContainText('論文発表 2015年 / 受賞 2025年');
 });
 
-test("nightly thumbnails can be downloaded beside films and from past runs", async ({page}) => {
-  const track={
-    label:'解説編', lesson_id:'old-lesson', phase:'complete',
-    videos:[{kind:'overview',state:'ready',data:{title:'Previous film',mp4:'videos/old.mp4'}}],
-    thumbnails:{data:{selected_id:'chosen',candidates:[{id:'chosen',png:'visuals/ui-original.png',jpg:'thumbnails/old.jpg'}]}},
-  };
-  const previous={
-    id:'previous',day:'2026-10-03',state:'ready',job:null,
-    data:{selected:{title:'Previous paper'}},project:{data:{modes:{overview:track}}},
-  };
-  let runs:any[]=[previous];
-  await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:runs}));
-  await page.getByRole('button',{name:'My library',exact:true}).click();
-  const panel=page.getByRole('region',{name:'昨夜の動画'});
-  await expect(panel.getByRole('img',{name:'解説編のサムネイル'})).toBeVisible();
-  await expect(panel.getByRole('link',{name:'サムネイル PNG',exact:true})).toHaveAttribute('download','Previous film-thumbnail.png');
-  await expect(panel.getByRole('link',{name:'サムネイル JPEG',exact:true})).toHaveAttribute('download','Previous film-thumbnail.jpg');
-  runs=[{id:'new',day:'2026-10-03',state:'searching',job:null,data:{manual:true}},previous];
-  await page.reload();
-  await page.getByRole('button',{name:'My library',exact:true}).click();
-  await panel.locator('summary').filter({hasText:'過去の夜間運転'}).click();
-  await expect(panel.getByRole('img',{name:'解説編のサムネイル'})).toBeVisible();
-  await expect(panel.getByRole('link',{name:'動画をダウンロード',exact:true})).toHaveAttribute('download','Previous film.mp4');
-  await expect(panel.getByRole('link',{name:'サムネイル JPEG',exact:true})).toBeVisible();
+test("creation shows compact progress and sends completed films to the video library", async ({page}) => {
+  const track={label:'解説編',lesson_id:'old-lesson',phase:'complete',videos:[{kind:'overview',state:'ready',data:{title:'Previous film',mp4:'videos/old.mp4',duration:150}}]};
+  const previous={id:'previous',day:'2026-10-03',state:'ready',job:null,data:{selected:{title:'Previous paper'}},project:{data:{modes:{overview:track}}}};
+  await page.route('**/api/nightly-video-runs',route=>route.fulfill({json:[{id:'new',day:'2026-10-04',state:'building',job:null,data:{manual:true},project:{data:{modes:{overview:track}}}},previous]}));
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const panel=page.getByRole('region',{name:'自動選定と動画作成'});
+  await expect(panel.getByRole('article',{name:'解説編'})).toContainText('動画完成');
+  await expect(panel.locator('img')).toHaveCount(0);
+  await panel.getByText('過去の夜間運転',{exact:true}).click();
+  await expect(panel.getByText('Previous paper',{exact:true})).toBeVisible();
+  await panel.getByRole('button',{name:'完成動画を見る',exact:true}).first().click();
+  await expect(page.getByRole('region',{name:'作成した動画'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'自動選定と動画作成'})).toHaveCount(0);
 });
 
 test('conference coverage shows missing prizes and institutional evidence', async ({page})=>{
@@ -401,7 +398,8 @@ test('conference coverage shows missing prizes and institutional evidence', asyn
     local_ai:{state:'completed',units:1,records:[{url,reason_ja:'ページの構成変更に合わせて出典を確認しました。'}]},
     papers:[{title:'A Useful Robot Paper',name:'Best Student Paper Award',official_url:'https://www.cs.cmu.edu/~dpathak/',evidence_type:'institution'}],failures:[]
   }]}}));
-  await page.getByRole('button',{name:'My library',exact:true}).click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByText('学会の受賞情報・取得状況',{exact:true}).click();
   const panel=page.getByRole('region',{name:'学会別の受賞論文'});
   await expect(panel.getByRole('table')).toContainText('未取得の賞あり · 1賞確認 / 2掲載枠');
   await panel.getByRole('button',{name:'ICRAの受賞情報を見る'}).click();
@@ -412,4 +410,42 @@ test('conference coverage shows missing prizes and institutional evidence', asyn
   await expect(card.getByText('所属機関の受賞発表',{exact:false})).toBeVisible();
   await card.getByText('ローカルAIの調査記録 · 確認済み · 1工程',{exact:true}).click();
   await expect(card.getByText(/ページの構成変更に合わせて出典を確認しました。/)).toBeVisible();
+});
+
+test("workspaces separate watching, making and practice without legacy controls", async ({page}) => {
+  await expect(page.getByRole('region',{name:'解説・詳解動画',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'YouTube video export'})).toHaveCount(0);
+  await page.locator('nav').getByRole('button',{name:'動画一覧',exact:true}).click();
+  await expect(page.locator('.lesson-card,.story-project,.nightly-panel')).toHaveCount(0);
+  await page.getByRole('button',{name:'新しい動画を作る',exact:true}).click();
+  await expect(page.getByRole('region',{name:'自動選定と動画作成'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'学会別の受賞論文'})).toHaveCount(0);
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
+  await expect(page.getByLabel('動画を作る論文')).toBeVisible();
+  await page.locator('nav').getByRole('button',{name:'設定',exact:true}).click();
+  await expect(page.getByText('従来の論文探索・章教材')).toHaveCount(0);
+  await expect(page.getByLabel('Find papers and make lessons automatically')).toHaveCount(0);
+  for (const name of ['動画一覧','動画を作る','英語練習','論文を探す','設定']) {
+    await page.locator('nav').getByRole('button',{name,exact:true}).click();
+    await page.setViewportSize({width:390,height:844});
+    await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+  }
+});
+
+test("arXiv and PDF import buttons create stories instead of legacy lessons", async ({page}) => {
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('button',{name:'arXiv・PDFを取り込む'}).click();
+  const dialog=page.getByRole('dialog',{name:'論文を取り込む'});
+  await dialog.getByLabel('arXivのURLまたは論文ID').fill('2106.09685');
+  const request=page.waitForRequest(r=>r.url().endsWith('/api/papers/import')&&r.method()==='POST');
+  await dialog.getByRole('button',{name:'取り込んで2本の動画を作る'}).click();
+  expect((await request).postDataJSON()).toEqual({reference:'2106.09685',generate:false,create_video:true});
+  await expect(page.getByText('論文を取り込み中',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'arXiv・PDFを取り込む'}).click();
+  await dialog.locator('input[type=file]').setInputFiles({name:'New paper.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nUI story import fixture')});
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(async()=>{
+    const ls=await (await page.request.get('/api/lessons')).json();
+    return ls.filter((l:any)=>l.data.format==='paper-story-1'&&l.data.title.includes('New paper')).length;
+  }).toBe(2);
 });

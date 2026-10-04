@@ -28,6 +28,7 @@ try {
     await page.getByLabel('Studio password').fill(credentials.password);
     await page.getByRole('button', {name: 'Come on in'}).click();
   }
+  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
   await expect(page.locator('.lesson-card').first()).toBeVisible();
   detail = await (await page.request.get(base + api)).json();
   original = detail.progress;
@@ -67,6 +68,7 @@ try {
   await expect(page.locator('.spoken-sentence')).toHaveText(nextText);
   await expect.poll(async () => (await (await page.request.get(base + api)).json()).progress.turn_index).toBe(index + 1);
   await page.reload();
+  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
   await page.locator('.lesson-card').filter({hasText: detail.data.title}).first().click();
   await expect(page.locator('.spoken-sentence')).toHaveText(nextText);
   report.checks.position_restored = true;

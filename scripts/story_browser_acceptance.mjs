@@ -48,7 +48,8 @@ try {
   const chapter=lesson.chapters.find(c=>c.state==='ready');
   await context.request.put(base+`/api/lessons/${lesson.id}/progress`,{data:{chapter_id:chapter.id,turn_index:0,role:'both',speed:1,subtitles:true}});
   await page.goto(base);
-  await page.locator('.library-studio > summary').click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
  const studio=page.locator('.story-studio');
   await studio.locator('select').selectOption(project.paper_id);
   const panel=studio.getByRole('region',{name:'解説・詳解動画'});
@@ -90,6 +91,7 @@ try {
   await page.getByRole('button',{name:'Next sentence'}).click();
   await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[1].text);
   report.checks.sentence_audio_and_navigation=true;
+  await page.locator('.story-expressions > summary').click();
   const expressions=page.locator('.story-expressions button');
   await expect(expressions.first()).toBeVisible();
   await expressions.first().click();
@@ -101,6 +103,7 @@ try {
     // Reset to the exact line supplied to the file-fed microphone.
     await context.request.put(base+`/api/lessons/${lesson.id}/progress`,{data:{chapter_id:chapter.id,turn_index:0,role:'both',speed:1,subtitles:true}});
     await page.reload();
+    await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
     await page.locator('.lesson-card').filter({hasText:lesson.data.title}).first().click();
     await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[0].text);
     const posted=page.waitForResponse(r=>r.url().endsWith('/api/attempts')&&r.request().method()==='POST',{timeout:60000});
@@ -128,7 +131,8 @@ try {
     if(!turn)throw new Error('The worked example has no figure cue');
     await context.request.put(base+`/api/lessons/${deepLesson.id}/progress`,{data:{chapter_id:c.id,turn_index:i,role:'both',speed:1,subtitles:true}});
     await page.goto(base);
-    await page.locator('.library-studio > summary').click();
+    await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
     await page.locator('.story-studio select').selectOption(project.paper_id);
     await page.locator('.story-studio .story-film').nth(1).getByRole('button',{name:'Practice English · 英語練習'}).click();
     await expect(page.locator('.spoken-sentence')).toHaveText(turn.text);

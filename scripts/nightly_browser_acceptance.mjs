@@ -14,12 +14,16 @@ let restore;
 try{
  const project=await api('/video-projects/'+projectId);
  await page.goto(base);
- const panel=page.getByRole('region',{name:'昨夜の動画'});
+ await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+ const panel=page.getByRole('region',{name:'自動選定と動画作成'});
  await expect(panel).toBeVisible();
  report.checks.nightly_panel=true;
- await page.locator('.library-studio > summary').click();
+ await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
  const studio=page.locator('.story-studio');
  await studio.locator('select').selectOption(project.paper_id);
+  await expect(studio.locator('.story-film')).toHaveCount(2);
+  for(const film of await studio.locator('.story-film').all()) await film.getByText('サムネイルを選ぶ・作り直す',{exact:true}).click();
  await expect(studio.locator('.thumbnail-grid img')).toHaveCount(6,{timeout:30000});
  for(const mode of ['overview','deep_dive']){
   const row=project.data.modes[mode].thumbnails;

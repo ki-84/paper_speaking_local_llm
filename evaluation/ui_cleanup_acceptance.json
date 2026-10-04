@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-04",
+  "status": "passed",
+  "scope": "Task-based UI cleanup and current story creation entry points",
+  "tests": {
+    "backend_api_story_video_library": 60,
+    "frontend_browser": 22,
+    "production_build": "passed",
+    "ruff": "passed"
+  },
+  "lan_ui": {
+    "time": "2026-10-04T10:21:30.327Z",
+    "checks": {
+      "library_is_only_chronological_videos": true,
+      "creation_has_compact_progress": true,
+      "awards_are_available_on_demand": true,
+      "ready_lesson_audio_and_recording_controls": true,
+      "old_automation_controls_removed": true,
+      "no_jobs_started_or_resumed": true,
+      "no_browser_exceptions": true
+    },
+    "pages": [
+      {
+        "name": "videos",
+        "mobile_overflow": false
+      },
+      {
+        "name": "create",
+        "mobile_overflow": false
+      },
+      {
+        "name": "practice",
+        "mobile_overflow": false
+      },
+      {
+        "name": "discover",
+        "mobile_overflow": false
+      },
+      {
+        "name": "settings",
+        "mobile_overflow": false
+      }
+    ],
+    "status": "passed",
+    "video_count": 13,
+    "lesson_count": 14
+  },
+  "lan_media": {
+    "status": "passed",
+    "checks": {
+      "latest_completed_first_with_japan_dates": true,
+      "actual_thumbnails_and_current_and_previous_downloads": true,
+      "earlier_renders_folded_and_preserved": true,
+      "obsolete_chapter_filter_removed": true,
+      "obsolete_full_video_filter_removed": true,
+      "search_sort_and_current_editions": true,
+      "finished_video_plays_and_copy_matches": true,
+      "phone_layout_without_horizontal_overflow": true,
+      "no_jobs_started_or_resumed": true,
+      "no_browser_exceptions": true
+    },
+    "verified_mp4_range_downloads": 18
+  },
+  "deployment": {
+    "service": "paperspeak.service",
+    "health": "ok",
+    "jobs_api_has_import_destination": true,
+    "active_project": "19327e87122e4289bcc7e200a4e4f012",
+    "active_job": {
+      "id": "a9275aa0a40b4f7ca797fddc5607b360",
+      "state": "running",
+      "stage": "詳解編 · Making natural paragraph speech",
+      "progress": 0.7000000000000001,
+      "error": null
+    },
+    "saved_audio_progress": {
+      "scenes_total": 10,
+      "visuals_ready": 10,
+      "utterances_total": 106,
+      "speech_ready": 67,
+      "speech_checked": 0,
+      "subtitled_scenes": 0,
+      "practice_scenes": 0,
+      "speech_retries": 0,
+      "updated": 1791109363.2586162
+    },
+    "legacy_paused_jobs": 3,
+    "legacy_discovery_enabled": false,
+    "nightly_enabled": true,
+    "nightly_start_jst": "02:00"
+  },
+  "changes": [
+    "Five Japanese navigation entries: videos, creation, English practice, paper search, settings",
+    "Removed duplicated production and lesson lists from the library",
+    "Removed chapter MP4, private auto-upload and legacy automation controls from the UI",
+    "Folded awards, selection reasons, script, thumbnail choices and diagnostics",
+    "Japanese search, arXiv import and PDF upload create the current pair of story videos; no legacy lesson job",
+    "Preserved saved media, recordings, progress and the three stopped legacy jobs"
+  ],
+  "limits": [
+    "Microphone browser tests use a file-fed test input; they do not replace physical Mac microphone testing."
+  ],
+  "screenshots": [
+    "data/evaluation/ui-cleanup-videos.png",
+    "data/evaluation/ui-cleanup-create.png",
+    "data/evaluation/ui-cleanup-practice.png",
+    "data/evaluation/ui-cleanup-learn.png",
+    "data/evaluation/ui-cleanup-videos-phone.png"
+  ]
+}

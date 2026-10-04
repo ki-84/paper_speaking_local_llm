@@ -25,7 +25,7 @@ try{
     await page.getByRole('button',{name:'Come on in'}).click();
   }
   const before=await jobs(), rows=await api('/videos');
-  const films=rows.filter(v=>v.kind!=='chapter');
+  const films=rows.filter(v=>['overview','deep_dive'].includes(v.kind));
   if(!films.length)throw new Error('A completed film is required');
   const panel=page.getByRole('region',{name:'作成した動画',exact:true});
   const displayed=()=>panel.locator('.video-library-item').evaluateAll(items=>items.map(item=>item.dataset.videoId));
@@ -68,19 +68,12 @@ try{
   await panel.getByLabel('論文名・タイトル・学会で検索').fill(title);
   await expect.poll(displayed).toEqual(films.filter(v=>`${v.paper_title} ${v.data.title} ${v.data.conference||''}`.toLowerCase().includes(title.toLowerCase())).map(v=>v.id));
   await panel.getByLabel('論文名・タイトル・学会で検索').fill('');
-  if(rows.some(v=>v.kind==='chapter')){
-    await panel.getByLabel('動画の種類',{exact:true}).selectOption('chapter');
-    await expect.poll(displayed).toEqual(rows.filter(v=>v.kind==='chapter').map(v=>v.id));
-  }else{
-    await expect(panel.getByLabel('動画の種類',{exact:true}).locator('option[value="chapter"]')).toHaveCount(0);
-    report.checks.obsolete_chapter_filter_removed=true;
-  }
-  if(!rows.some(v=>v.kind==='full')){
-    await expect(panel.getByLabel('動画の種類',{exact:true}).locator('option[value="full"]')).toHaveCount(0);
-    report.checks.obsolete_full_video_filter_removed=true;
-  }
+  await expect(panel.getByLabel('動画の種類',{exact:true}).locator('option[value="chapter"]')).toHaveCount(0);
+  await expect(panel.getByLabel('動画の種類',{exact:true}).locator('option[value="full"]')).toHaveCount(0);
+  report.checks.obsolete_chapter_filter_removed=true;
+  report.checks.obsolete_full_video_filter_removed=true;
   await panel.getByLabel('動画の種類',{exact:true}).selectOption('films');
-  report.checks.search_sort_and_chapter_filter=true;
+  report.checks.search_sort_and_current_editions=true;
   await panel.locator(`[data-video-id="${films[0].id}"]`).getByRole('button',{name:'タイトル・説明',exact:true}).click();
   const dialog=page.getByRole('dialog');
   await expect(dialog.getByLabel('YouTube用タイトル')).toHaveValue(films[0].data.title);

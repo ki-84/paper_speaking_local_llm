@@ -5,6 +5,8 @@ import {
   Compass,
   Headphones,
   Activity,
+  Film,
+  Clapperboard,
   Settings,
   ArrowUpRight,
   ArrowRight,
@@ -21,8 +23,6 @@ import {
   Upload,
   Radio,
   CircleHelp,
-  Bookmark,
-  Clock,
   LogOut,
   FileText,
   RotateCcw,
@@ -41,7 +41,7 @@ import "./style.css";
 import { VisualPanel } from "./VisualPanel";
 import { VideoLibrary } from "./VideoLibrary";
 
-type Page = "library" | "discover" | "review" | "jobs" | "settings" | "learn";
+type Page = "library" | "create" | "practice" | "discover" | "review" | "settings" | "learn";
 function microphoneError(error: unknown, selectedMic = "") {
   const reason = error instanceof Error ? error.name : "";
   if (reason === "NotAllowedError" || reason === "PermissionDeniedError")
@@ -55,11 +55,11 @@ function microphoneError(error: unknown, selectedMic = "") {
   return error instanceof Error ? error.message : "Chrome could not start the microphone.";
 }
 const tabs: [Page, string, typeof BookOpen][] = [
-  ["library", "My library", BookOpen],
+  ["library", "動画一覧", Film],
+  ["create", "動画を作る", Clapperboard],
+  ["practice", "英語練習", Headphones],
   ["discover", "論文を探す", Compass],
-  ["review", "Practice again", RotateCcw],
-  ["jobs", "In the making", Activity],
-  ["settings", "Settings", Settings],
+  ["settings", "設定", Settings],
 ];
 function Badge({
   children,
@@ -71,32 +71,6 @@ function Badge({
   return <span className={`badge ${state}`}>{children}</span>;
 }
 
-function suggestedVideoTitle(paperTitle: string, chapterNumber?: number) {
-  const suffix = chapterNumber === undefined ? " — 全章" : ` — 第${chapterNumber}章`;
-  const title = paperTitle.replace(/\s+/g, " ").trim() || "Paper lesson";
-  const limit = 100 - Array.from(suffix).length;
-  const characters = Array.from(title);
-  return (characters.length > limit
-    ? characters.slice(0, limit - 1).join("").trimEnd() + "…"
-    : title) + suffix;
-}
-
-function VideoTitleSuggestion({ title, onError }: { title: string; onError: (message: string) => void }) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => setCopied(false), [title]);
-  return <div className="video-title-suggestion">
-    <label>推奨タイトル（YouTube用）<textarea value={title} rows={2} readOnly onFocus={(event) => event.currentTarget.select()} /></label>
-    <button className="secondary" onClick={async () => {
-      try {
-        await navigator.clipboard.writeText(title);
-        setCopied(true);
-      } catch {
-        onError("Could not copy the title. Select the title and copy it manually.");
-      }
-    }}>{copied ? "コピーしました" : "タイトルをコピー"}</button>
-  </div>;
-}
-
 function App() {
   const [signed, setSigned] = useState(false),
     [checking, setChecking] = useState(true);
@@ -105,7 +79,6 @@ function App() {
   const [lessons, setLessons] = useState<Row[]>([]),
     [papers, setPapers] = useState<Row[]>([]),
     [jobs, setJobs] = useState<Row[]>([]),
-    [recs, setRecs] = useState<Row[]>([]),
     [reviews, setReviews] = useState<Row[]>([]);
   const [searches, setSearches] = useState<any[]>([]),
     [searchQuery, setSearchQuery] = useState("");
@@ -113,7 +86,11 @@ function App() {
     [version, setVersion] = useState(0),
     [error, setError] = useState(""),
     [adding, setAdding] = useState(false);
-  const [evidence, setEvidence] = useState<Row | null>(null);
+  const [creationTab, setCreationTab] = useState("auto"),
+    [selectedPaper, setSelectedPaper] = useState(""),
+    [importJob, setImportJob] = useState<string | null>(null),
+    [showAwards, setShowAwards] = useState(false),
+    [showJobs, setShowJobs] = useState(false);
   const refresh = () => setVersion((v) => v + 1);
   const act = async (fn: () => Promise<any>) => {
     try {
@@ -141,15 +118,13 @@ function App() {
       api<Row[]>("/lessons"),
       api<Row[]>("/papers"),
       api<Row[]>("/jobs"),
-      api<Row[]>("/recommendations"),
       api<Row[]>("/reviews"),
       api<any[]>("/paper-searches"),
     ])
-      .then(([l, p, j, r, v, s]) => {
+      .then(([l, p, j, v, s]) => {
         setLessons(l);
         setPapers(p);
         setJobs(j);
-        setRecs(r);
         setReviews(v);
         setSearches(s);
       })
@@ -188,20 +163,29 @@ function App() {
     setPage(p);
   };
   const openLesson = (id: string, target: Row | null = null) => {
+    if (recordBusy) { setError("Finish your recording first."); return; }
     setReviewTarget(target);
     setActive(id);
     navigate("learn");
   };
-  const createLesson = async (paperId: string) => {
+  const createStory = async (paperId: string) => {
     try {
-      const result = await post(`/papers/${paperId}/lessons`);
+      await post(`/papers/${paperId}/video-projects`);
+      setSelectedPaper(paperId);
+      setCreationTab("manual");
+      navigate("create");
       refresh();
-      openLesson(result.lesson_id);
-    } catch (e) {
-      setError((e as Error).message);
-    }
+    } catch (e) { setError((e as Error).message); }
   };
-  const busy = jobs.filter((j) => ["queued", "running"].includes(j.state));
+  const busy = jobs.filter(j => ["queued", "running"].includes(j.state));
+  const imported = jobs.find(j => j.id === importJob);
+  useEffect(() => {
+    if (imported?.state === "completed" && imported.paper_id) {
+      setSelectedPaper(imported.paper_id);
+      setCreationTab("manual");
+      setImportJob(null);
+    }
+  }, [imported?.state, imported?.paper_id]);
   const latestSearch = searches[0];
   const searchRunning = latestSearch && ["queued", "running", "paused"].includes(latestSearch.state);
   if (checking)
@@ -227,16 +211,16 @@ function App() {
             <Radio size={23} />
           </span>
           <span>
-            PaperSpeak<small>THE LEARNING STUDIO</small>
+            PaperSpeak<small>論文・動画・英語練習</small>
           </span>
         </a>
-        <div className="nav-label">A LITTLE DEEPER, EVERY DAY</div>
         <nav>
           {tabs.map(([key, label, Icon]) => (
             <button
               key={key}
+              aria-label={label}
               className={
-                page === key || (key === "library" && page === "learn")
+                page === key || (key === "practice" && ["learn", "review"].includes(page))
                   ? "selected"
                   : ""
               }
@@ -244,37 +228,19 @@ function App() {
             >
               <Icon size={18} />
               {label}
-              {key === "jobs" && busy.length > 0 && <b>{busy.length}</b>}
-              {key === "review" && reviews.length > 0 && (
+              {key === "create" && busy.some(j => ["nightly_video", "video_project", "import"].includes(j.kind)) && <b>作成中</b>}
+              {key === "practice" && reviews.length > 0 && (
                 <b>{reviews.length}</b>
               )}
             </button>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <div className="tiny-wave">
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
-          <p>
-            Big ideas.
-            <br />
-            Simple words.
-            <br />
-            Your own voice.
-          </p>
-        </div>
         <div className="local-status">
           <span
             className={`dot ${status?.worker && Date.now() / 1000 - status.worker.heartbeat < 90 ? "" : "off"}`}
           />
           <div>
-            {status?.password_required === false ? "Open on this LAN" : "Private & local"}
+            {status?.password_required === false ? "LANで利用中" : "ローカルで利用中"}
             <small>
               {status?.gpu?.name?.replace("NVIDIA GeForce ", "") ||
                 "Your Linux studio"}
@@ -296,9 +262,9 @@ function App() {
       </aside>
       <main>
         <header className="topbar">
-          <span>Your space to understand.</span>
+          <span>PaperSpeak</span>
           <span>
-            {new Date().toLocaleDateString("en-US", {
+            {new Date().toLocaleDateString("ja-JP", {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -313,117 +279,23 @@ function App() {
             </button>
           </div>
         )}
-        {page === "library" && (
-          <>
-            <VideoLibrary version={version} onError={setError} openLesson={openLesson} addPaper={() => setAdding(true)} discover={() => navigate("discover")} />
-            <NightlyVideos version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
-            <details className="library-studio">
-              <summary>保存済みの論文から動画を作る・脚本を見る</summary>
-              <StoryStudio papers={papers} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
-            </details>
-            <div className="section-heading">
-              <div>
-                <div className="eyebrow">ONE IDEA AT A TIME</div>
-                <h2>
-                  英語練習教材 <span>{lessons.length}</span>
-                </h2>
-              </div>
-              <span className="subtle">Pick up where you left off</span>
-            </div>
-            {lessons.length ? (
-              <div className="lesson-grid">
-                {lessons.map((l) => (
-                  <button
-                    className="lesson-card"
-                    data-lesson-id={l.id}
-                    key={l.id}
-                    onClick={() => openLesson(l.id)}
-                  >
-                    <div className="card-meta">
-                      <Badge state={l.state === "ready" ? "ready" : l.job_state || l.state}>
-                        {l.state === "ready"
-                          ? "Ready to explore"
-                          : `${l.ready_chapters} chapters ready${l.job_state === "failed" ? " · Needs attention" : l.job_state === "paused" ? " · Paused" : l.job_state === "cancelled" ? " · Stopped" : ""}`}
-                      </Badge>
-                      <span>{date(l.created)}</span>
-                    </div>
-                    <h3>{l.data.title}</h3>
-                    <p className="subtle">{l.data.format === "paper-story-1" ? (l.data.mode === "overview" ? "概要解説の英語練習" : "詳細解説の英語練習") : l.data.format === "paper-visual-2" ? "図付きの章別教材" : "会話の章別教材"}</p>
-                    <div className="card-bottom">
-                      <span>
-                        <Headphones size={16} />
-                        {l.chapter_count || "—"} chapters
-                      </span>
-                      <span className="circle-arrow">
-                        <ArrowUpRight size={20} />
-                      </span>
-                    </div>
-                    <div className="card-progress">
-                      <i
-                        style={{
-                          width: `${(100 * l.ready_chapters) / Math.max(1, l.chapter_count)}%`,
-                        }}
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-library">
-                <div className="empty-icon">
-                  <BookOpen size={26} />
-                </div>
-                <h3>What would you like to understand?</h3>
-                <p>
-                  Add an arXiv paper or a PDF. We will turn it into a
-                  conversation.
-                </p>
-                <div className="example-links">
-                  {[
-                    ["Attention Is All You Need", "1706.03762"],
-                    ["How diffusion models work", "2006.11239"],
-                    ["A closer look at LoRA", "2106.09685"],
-                  ].map(([title, id]) => (
-                    <button
-                      key={id}
-                      onClick={() =>
-                        act(() => post("/papers/import", { reference: id }))
-                      }
-                    >
-                      {title}
-                      <ArrowUpRight size={15} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {papers.filter((p) => !p.lesson_count).length > 0 && (
-              <section>
-                <h2>Saved papers</h2>
-                <div className="list">
-                  {papers
-                    .filter((p) => !p.lesson_count)
-                    .slice(0, 15)
-                    .map((p) => (
-                      <div className="list-row" key={p.id}>
-                        <FileText />
-                        <div>
-                          <strong>{p.title}</strong>
-                          <small>{p.data.categories?.join(" · ")}</small>
-                        </div>
-                        <button
-                          className="secondary"
-                          onClick={() => createLesson(p.id)}
-                        >
-                          Make a lesson + MP4 · 教材と動画を作る
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
+        {page === "library" && <VideoLibrary version={version} onError={setError} openLesson={openLesson} create={() => navigate("create")} />}
+        {page === "create" && <>
+          <div className="workspace-heading"><PageHeading eyebrow="論文から2本の動画へ" title="動画を作る" description="論文を自動で選ぶか、保存済みの論文を指定してください。作成中も完成した動画や英語教材を使えます。" />
+            <button className="secondary" onClick={() => setAdding(true)}><Upload size={16} /> arXiv・PDFを取り込む</button></div>
+          {importJob && <div className="notice" role="status"><div><strong>論文を取り込み中</strong><p>{imported?.error || imported?.stage || "取得後に概要・詳細の2本を自動で作ります。"}</p></div>
+            {imported && ["paused", "failed", "cancelled"].includes(imported.state) && <button className="secondary" onClick={() => act(() => post(`/jobs/${imported.id}/resume`))}>取り込みを再開</button>}
+            <button className="text-button" onClick={() => setImportJob(null)}>表示を閉じる</button></div>}
+          <div className="workspace-tabs" role="tablist" aria-label="動画の作り方">
+            <button role="tab" aria-selected={creationTab === "auto"} onClick={() => setCreationTab("auto")}>自動で論文を選ぶ</button>
+            <button role="tab" aria-selected={creationTab === "manual"} onClick={() => setCreationTab("manual")}>保存済みの論文から作る</button>
+          </div>
+          {creationTab === "auto" ? <NightlyVideos version={version} onError={setError} refresh={refresh} openLesson={openLesson} viewVideos={() => navigate("library")} />
+            : <StoryStudio papers={papers} selectedPaperId={selectedPaper} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />}
+          <details className="workspace-details" onToggle={e => setShowAwards(e.currentTarget.open)}><summary>学会の受賞情報・取得状況</summary>{showAwards && <ConferenceAwards version={version} onError={setError} refresh={refresh} />}</details>
+          <details className="workspace-details" onToggle={e => setShowJobs(e.currentTarget.open)}><summary>詳しい処理状況</summary>{showJobs && <ProcessingJobs jobs={jobs} act={act} />}</details>
+        </>}
+        {page === "practice" && <PracticeLibrary lessons={lessons} reviews={reviews.length} openLesson={openLesson} review={() => navigate("review")} />}
         {page === "discover" && (
           <>
             <PageHeading
@@ -478,8 +350,8 @@ function App() {
                       <strong>{paper.title}</strong><p>{paper.abstract}</p>
                     </details>
                     <div className="actions">
-                      <button className="primary" onClick={() => createLesson(paper.paper_id)}>
-                        この論文で教材とMP4を作る <ArrowRight size={16} />
+                      <button className="primary" onClick={() => createStory(paper.paper_id)}>
+                        解説・詳解動画を作る <ArrowRight size={16} />
                       </button>
                       <a className="text-button" href={paper.url} target="_blank" rel="noreferrer">原論文を見る <ExternalLink size={14} /></a>
                     </div>
@@ -487,218 +359,14 @@ function App() {
                 ))}
               </section>
             )}
-            <h2>本文を確認したおすすめ</h2>
-            <div className="discovery-banner">
-              <Compass size={24} />
-              <p>
-                こちらは論文の本文を読んで選んだ候補です。
-                <small>
-                  毎日の自動探索を、今すぐ実行することもできます。
-                </small>
-              </p>
-              <button
-                className="primary"
-                onClick={() => act(() => post("/discover"))}
-              >
-                <RefreshCw size={16} /> 新しい論文を探す
-              </button>
-            </div>
-            {recs.length ? (
-              <div className="recommendations">
-                {recs.map((r) => (
-                  <article className="recommendation" key={r.id}>
-                    <div className="card-meta">
-                      <Badge state={r.state}>
-                        {r.state === "selected" ? "教材化中" : r.state === "recommended" ? "おすすめ" : "見送り候補"}
-                      </Badge>
-                      <span>{r.day}</span>
-                    </div>
-                    <h3>{r.data.ja?.title || "日本語の題名を準備中…"}</h3>
-                    <p>{r.data.ja?.summary || "要旨を日本語にしています。"}</p>
-                    <div className="learning-box">
-                      <strong>なぜ面白いか</strong>
-                      <p>{r.data.ja?.why || "日本語の説明を準備中です。"}</p>
-                      <strong>学べること</strong>
-                      <p>{r.data.ja?.learn || "日本語の説明を準備中です。"}</p>
-                    </div>
-                    <details>
-                      <summary>論文中の根拠を見る ({r.data.source_ids?.length || 0})</summary>
-                      <div className="actions">
-                      {r.data.source_ids?.map((sid: string, i: number) => (
-                        <button
-                          className="source-chip"
-                          key={sid}
-                          onClick={() =>
-                            api<Row>(`/sources/${encodeURIComponent(sid)}`)
-                              .then(setEvidence)
-                              .catch((e) => setError(e.message))
-                          }
-                        >
-                          <FileText size={12} /> 根拠 {i + 1}
-                        </button>
-                      ))}
-                      </div>
-                    </details>
-                    {r.data.ja?.cautions?.length > 0 && (
-                      <details>
-                        <summary>読むときの注意点</summary>
-                        <ul>
-                          {r.data.ja.cautions.map((c: string, i: number) => (
-                            <li key={i}>{c}</li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
-                    <details><summary>原題・英語の要旨</summary><strong>{r.title}</strong><p>{JSON.parse(r.paper_data).abstract}</p></details>
-                    <div className="actions">
-                      <button
-                        className="primary"
-                        disabled={!r.data.ja?.title}
-                        onClick={() => createLesson(r.paper_id)}
-                      >
-                        この論文で教材とMP4を作る <ArrowRight size={16} />
-                      </button>
-                      <button
-                        className={`secondary ${r.feedback === "interested" ? "active" : ""}`}
-                        onClick={() =>
-                          act(() =>
-                            post(`/recommendations/${r.id}/feedback`, {
-                              value: "interested",
-                            }),
-                          )
-                        }
-                      >
-                        <Bookmark size={16} /> 興味あり
-                      </button>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          act(() =>
-                            post(`/recommendations/${r.id}/feedback`, {
-                              value: "not_interested",
-                            }),
-                          )
-                        }
-                      >
-                        興味なし
-                      </button>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          act(() =>
-                            post(`/recommendations/${r.id}/feedback`, {
-                              value: "read",
-                            }),
-                          )
-                        }
-                      >
-                        {r.feedback === "read" ? "既読" : "既読にする"}
-                      </button>
-                      <a
-                        className="text-button"
-                        target="_blank"
-                        rel="noreferrer"
-                        href={JSON.parse(r.paper_data).url}
-                      >
-                        原論文を見る <ExternalLink size={14} />
-                      </a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={Compass}
-                title="おすすめを準備しています。"
-                text="上の入力欄から、読みたいテーマの論文を日本語で探せます。"
-              />
-            )}
-          </>
-        )}
-        {page === "jobs" && (
-          <>
-            <PageHeading
-              eyebrow="GOOD UNDERSTANDING TAKES CARE"
-              title="In the making."
-              description="You can leave this page. Your studio keeps working."
-            />
-            {jobs.length ? (
-              <div className="jobs">
-                {jobs.map((j) => (
-                  <article className="job" key={j.id}>
-                    <div className="job-top">
-                      <Badge state={j.state}>{j.state}</Badge>
-                      <span>
-                        {j.kind === "lesson"
-                          ? "A new lesson"
-                          : j.kind === "discover"
-                            ? "Finding good papers"
-                            : j.kind === "paper_search"
-                              ? "日本語の希望から論文を検索"
-                            : j.kind === "recommendation_ja"
-                              ? "推薦を日本語に翻訳"
-                            : j.kind === "practice"
-                              ? "Your recording"
-                              : j.kind === "revoice"
-                                ? "Refreshing Maya's voice"
-                              : j.kind === "benchmark"
-                                ? "Comparing paper readers"
-                                : ["calibration","phoneme_probe"].includes(j.kind)
-                                  ? "Checking speech models"
-                                  : "Adding a paper"}
-                      </span>
-                      <small>{date(j.created)}</small>
-                    </div>
-                    <h3>{j.stage}</h3>
-                    <progress value={j.progress} max={1} />
-                    {j.error && <p className="job-error">{j.error}</p>}
-                    <div className="actions">
-                      {["queued", "running"].includes(j.state) && (
-                        <button
-                          className="secondary"
-                          onClick={() => act(() => post(`/jobs/${j.id}/pause`))}
-                        >
-                          <Pause size={14} /> Pause after this step
-                        </button>
-                      )}
-                      {["paused", "failed", "cancelled"].includes(j.state) && (
-                        <button
-                          className="secondary"
-                          onClick={() => act(() => post(`/jobs/${j.id}/retry`))}
-                        >
-                          <Play size={14} />{" "}
-                          {j.state === "failed" ? "Try again" : "Resume"}
-                        </button>
-                      )}
-                      {!["completed", "cancelled"].includes(j.state) && (
-                        <button
-                          className="text-button"
-                          onClick={() =>
-                            act(() => post(`/jobs/${j.id}/cancel`))
-                          }
-                        >
-                          Stop
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={Activity}
-                title="All quiet here."
-                text="Your next paper or recording will appear here."
-              />
-            )}
           </>
         )}
         {page === "review" && (
           <>
             <PageHeading
-              eyebrow="MAKE IT YOURS"
-              title="A second look."
-              description="A small practice today helps an idea stay with you."
+              eyebrow="前に練習した表現をもう一度"
+              title="今日の復習"
+              description="録音練習で保存した文と、理解を確かめる問題を復習できます。"
             />
             {reviews.length ? (
               <div className="list">
@@ -768,29 +436,57 @@ function App() {
             version={version}
             onError={setError}
             refresh={refresh}
-            onBack={() => setPage("library")}
-            onOpenLesson={openLesson}
+            onBack={() => navigate("practice")}
           />
         )}
-        <footer>
-          <span>PaperSpeak</span>
-          <span>Read with care. Speak with confidence.</span>
-          <span>All AI runs on your Linux PC.</span>
-        </footer>
       </main>
-      {evidence && (
-        <SourceDrawer source={evidence} close={() => setEvidence(null)} />
-      )}{" "}
       {adding && (
         <AddPaper
           close={() => setAdding(false)}
           onError={setError}
-          onDone={refresh}
+          onDone={(result) => {
+            setSelectedPaper(result.paper_id || "");
+            setCreationTab("manual");
+            setImportJob(result.paper_id ? null : result.job_id);
+            navigate("create");
+            refresh();
+          }}
         />
       )}
     </div>
   );
 }
+function PracticeLibrary({lessons,reviews,openLesson,review}:{lessons:Row[];reviews:number;openLesson:(id:string)=>void;review:()=>void}) {
+  const [query,setQuery]=useState("");
+  const visible=lessons.filter(l=>l.data.title?.toLowerCase().includes(query.trim().toLowerCase()));
+  return <section aria-label="英語練習教材">
+    <div className="workspace-heading"><PageHeading eyebrow="動画と同じ会話で練習" title="英語練習" description="聞く、話す、理解を確かめる。作成途中の教材も、完成した場面から練習できます。" />
+      <button className="secondary" onClick={review}><RotateCcw size={16}/> 今日の復習{reviews>0&&`（${reviews}件）`}</button></div>
+    <label className="practice-search">教材を検索<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="論文名・概要解説・詳細解説…"/></label>
+    <div className="lesson-grid">{visible.map(l=><button className="lesson-card" data-lesson-id={l.id} key={l.id} onClick={()=>openLesson(l.id)}>
+      <div className="card-meta"><Badge state={l.state === "ready" ? "ready" : l.state}>{l.state === "ready" ? "練習できます" : `${l.ready_chapters||0}場面が完成`}</Badge><span>{date(l.created)}</span></div>
+      <h3>{l.data.title}</h3>
+      <div className="card-bottom"><span><Headphones size={16}/>{l.ready_chapters||0} / {l.chapter_count||0}場面</span><span className="circle-arrow"><ArrowUpRight size={20}/></span></div>
+    </button>)}</div>
+    {!visible.length&&<p className="notice">{query?'条件に合う教材がありません。':'動画を作ると、同じ会話の英語教材がここに表示されます。'}</p>}
+  </section>;
+}
+
+function ProcessingJobs({jobs,act}:{jobs:Row[];act:(fn:()=>Promise<any>)=>Promise<void>}) {
+  const [history,setHistory]=useState(false);
+  const kinds:Record<string,string>={video_project:'概要・詳細動画',story_video:'動画の書き出し',nightly_video:'論文の自動選定',thumbnail:'サムネイル',import:'論文の取り込み',paper_search:'日本語の論文検索',practice:'録音の評価',award_refresh:'受賞情報の更新'};
+  const states:Record<string,string>={running:'処理中',queued:'待機中',paused:'一時停止',failed:'問題あり',cancelled:'停止済み',completed:'完了'};
+  const visible=jobs.filter(j=>kinds[j.kind]&&(history||j.state!=='completed'&&j.state!=='cancelled'));
+  return <section aria-label="処理状況"><label className="check-label"><input type="checkbox" checked={history} onChange={e=>setHistory(e.target.checked)}/> 完了・停止した処理も表示</label>
+    <div className="jobs">{visible.map(j=><article className="job" key={j.id}><div className="job-top"><Badge state={j.state}>{states[j.state]||j.state}</Badge><strong>{kinds[j.kind]}</strong><small>{date(j.created)}</small></div>
+      <p>{j.stage}</p><progress value={j.progress} max={1}/>{j.error&&<p className="job-error">{j.error}</p>}
+      <div className="actions">{['queued','running'].includes(j.state)&&<button className="secondary" onClick={()=>act(()=>post(`/jobs/${j.id}/pause`))}>一時停止</button>}
+        {['paused','failed','cancelled'].includes(j.state)&&<button className="secondary" onClick={()=>act(()=>post(`/jobs/${j.id}/resume`))}>続きから再開</button>}
+        {!['completed','cancelled'].includes(j.state)&&<button className="text-button" onClick={()=>act(()=>post(`/jobs/${j.id}/cancel`))}>停止</button>}</div>
+    </article>)}</div>{!visible.length&&<p>処理中の作業はありません。</p>}
+  </section>;
+}
+
 function PageHeading({
   eyebrow,
   title,
@@ -892,7 +588,7 @@ function AddPaper({
   onError,
 }: {
   close: () => void;
-  onDone: () => void;
+  onDone: (result: any) => void;
   onError: (s: string) => void;
 }) {
   const [ref, setRef] = useState(""),
@@ -902,8 +598,9 @@ function AddPaper({
     try {
       const form = new FormData();
       form.append("file", file);
-      await api("/papers/upload", { method: "POST", body: form });
-      onDone();
+      form.append("create_video", "true");
+      const result = await api("/papers/upload", { method: "POST", body: form });
+      onDone(result);
       close();
     } catch (e) {
       onError((e as Error).message);
@@ -918,21 +615,21 @@ function AddPaper({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Add a paper"
+        aria-label="論文を取り込む"
       >
         <button className="modal-close" onClick={close} aria-label="Close">
           <X />
         </button>
-        <div className="eyebrow">START WITH A QUESTION</div>
-        <h2>Add a paper.</h2>
-        <p>We will read it carefully, then help you hear the big idea.</p>
+        <div className="eyebrow">arXiv / PDF</div>
+        <h2>論文を取り込んで動画を作る</h2>
+        <p>概要解説・詳細解説の動画と、同じ会話で練習できる英語教材を作ります。</p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
             try {
-              await post("/papers/import", { reference: ref });
-              onDone();
+              const result = await post("/papers/import", { reference: ref, generate: false, create_video: true });
+              onDone(result);
               close();
             } catch (e) {
               onError((e as Error).message);
@@ -942,7 +639,7 @@ function AddPaper({
           }}
         >
           <label>
-            arXiv link or paper ID
+            arXivのURLまたは論文ID
             <input
               placeholder="https://arxiv.org/abs/1706.03762"
               value={ref}
@@ -951,13 +648,13 @@ function AddPaper({
             />
           </label>
           <button disabled={busy} className="primary">
-            {busy ? "Adding…" : "Make my lesson + MP4 · 教材と動画を作る"}
+            {busy ? "取り込み中…" : "取り込んで2本の動画を作る"}
             <ArrowRight size={17} />
           </button>
         </form>
-        <div className="or-divider">or bring your own paper</div>
+        <div className="or-divider">またはPDFを取り込む</div>
         <label className="upload">
-          <Upload size={20} /> Choose a PDF
+          <Upload size={20} /> PDFを選ぶ
           <input
             type="file"
             accept="application/pdf"
@@ -968,7 +665,7 @@ function AddPaper({
             }}
           />
         </label>
-        <small>Up to 100 MB. Your paper stays in your private studio.</small>
+        <small>100 MBまで。生成とデータ保存はこのLinux内で行います。</small>
       </section>
     </div>
   );
@@ -996,9 +693,9 @@ function SettingsPage({
   return (
     <>
       <PageHeading
-        eyebrow="MAKE YOURSELF AT HOME"
-        title="Your studio, your pace."
-        description="Choose what you want to learn. We will take care of the preparation."
+        eyebrow="夜間運転とローカルモデル"
+        title="設定"
+        description="夜間の開始時刻・対象分野を変更できます。"
       />
       <form
         className="settings-panel"
@@ -1019,86 +716,9 @@ function SettingsPage({
         <p>朝の完成を目指し、長引いても続行します。前日の作成が残っている日は追加しません。</p>
         <div className="form-grid"><label>開始時刻 · 日本時間<input type="time" value={`${String(s.nightly_video_hour).padStart(2,"0")}:${String(s.nightly_video_minute).padStart(2,"0")}`} onChange={e=>{const [h,m]=e.target.value.split(":").map(Number);setSaved(false);setS({...s,nightly_video_hour:h,nightly_video_minute:m});}}/></label>
         <label>対象分野<select multiple value={s.nightly_video_categories} onChange={e=>update("nightly_video_categories",Array.from(e.target.selectedOptions,o=>o.value))}>{[["cs.AI","AI"],["cs.LG","機械学習"],["cs.CL","LLM・言語"],["cs.CV","画像・視覚"],["cs.RO","ロボティクス"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></div>
-        <h2>従来の論文探索・章教材</h2>
-        <label className="check-label">
-          <input
-            type="checkbox"
-            checked={s.discovery_enabled}
-            onChange={(e) => update("discovery_enabled", e.target.checked)}
-          />{" "}
-          Find papers and make lessons automatically
-        </label>
-        <div className="form-grid">
-          <label>
-            Start time
-            <input
-              type="time"
-              value={`${String(s.schedule_hour).padStart(2, "0")}:${String(s.schedule_minute).padStart(2, "0")}`}
-              onChange={(e) => {
-                const [h, m] = e.target.value.split(":").map(Number);
-                setS({ ...s, schedule_hour: h, schedule_minute: m });
-              }}
-            />
-          </label>
-          <label>
-            Time zone
-            <input
-              value={s.timezone}
-              onChange={(e) => update("timezone", e.target.value)}
-            />
-          </label>
-          <label>
-            New lessons per day
-            <input
-              type="number"
-              min={0}
-              max={3}
-              value={s.daily_limit}
-              onChange={(e) => update("daily_limit", Number(e.target.value))}
-            />
-          </label>
-        </div>
+        <details className="workspace-details"><summary>モデルと診断</summary>
         <label>
-          What interests you?
-          <textarea
-            rows={3}
-            value={s.interests}
-            onChange={(e) => update("interests", e.target.value)}
-          />
-        </label>
-        <label>Areas to explore</label>
-        <div className="category-options">
-          {[
-            ["cs.AI", "AI"],
-            ["cs.LG", "Learning"],
-            ["cs.CL", "Language"],
-            ["cs.CV", "Vision"],
-            ["cs.RO", "Robotics"],
-            ["cs.SD", "Sound"],
-            ["stat.ML", "Statistical learning"],
-            ["cs.NE", "Neural systems"],
-            ["cs.HC", "People & AI"],
-          ].map(([id, title]) => (
-            <label key={id}>
-              <input
-                type="checkbox"
-                checked={s.categories.includes(id)}
-                onChange={(e) =>
-                  update(
-                    "categories",
-                    e.target.checked
-                      ? [...s.categories, id]
-                      : s.categories.filter((c: string) => c !== id),
-                  )
-                }
-              />
-              {title}
-            </label>
-          ))}
-        </div>
-        <h2>Local model</h2>
-        <label>
-          Paper reader
+          論文を読むモデル
           <select
             value={s.model_profile}
             onChange={(e) => update("model_profile", e.target.value)}
@@ -1109,14 +729,15 @@ function SettingsPage({
           </select>
         </label>
         <p className="subtle">
-          Installed: {status?.models?.join(", ") || "Checking models…"}
+          導入済み: {status?.models?.join(", ") || "確認中…"}
         </p>
+        </details>
         <div className="actions">
           <button className="primary">
-            Save settings <Check size={16} />
+            設定を保存 <Check size={16} />
           </button>
           {saved && (
-            <span className="saved">Saved. Make yourself comfortable.</span>
+            <span className="saved">保存しました。</span>
           )}
         </div>
       </form>
@@ -1132,7 +753,6 @@ function Learn({
   onBack,
   reviewTarget,
   onRecording,
-  onOpenLesson,
 }: {
   id: string;
   reviewTarget: Row | null;
@@ -1141,7 +761,6 @@ function Learn({
   onError: (s: string) => void;
   refresh: () => void;
   onBack: () => void;
-  onOpenLesson: (id: string) => void;
 }) {
   const [lesson, setLesson] = useState<Row | null>(null),
     [chapterId, setChapterId] = useState(""),
@@ -1378,12 +997,6 @@ function Learn({
   const earlierVisual = turns.slice(0, index).reverse().find((t: any) => t.visual)?.visual;
   const visualCue = turn?.visual || (earlierVisual ? {key: earlierVisual.key, focus: []} : null);
   const ready = chapter?.state === "ready";
-  const chapterVideos = (lesson?.videos as Row[] || []).filter((v) => v.kind === "chapter" && v.chapter_id === chapterId);
-  const currentVideo = chapterVideos.find((v) => v.state === "ready") || chapterVideos[0];
-  const readyChapterVideo = (lesson?.videos as Row[] || []).find((v) => v.kind === "chapter" && v.state === "ready");
-  const readyChapterNumber = readyChapterVideo ? (lesson?.chapters.findIndex((c: Row) => c.id === readyChapterVideo.chapter_id) ?? -1) + 1 : 0;
-  const completeVideos = (lesson?.videos as Row[] || []).filter((v) => v.kind === "full");
-  const completeVideo = completeVideos.find((v) => v.state === "ready") || completeVideos[0];
   const japanese = (key: string, english?: string) => {
     const item = chapter?.data.translation?.items?.[key];
     return item?.english === english ? item.japanese as string : null;
@@ -1597,7 +1210,7 @@ function Learn({
           onBack();
         }}
       >
-        <ChevronLeft size={17} /> Back to my library
+        <ChevronLeft size={17} /> Back to lessons · 教材一覧
       </button>
       <div className="lesson-heading">
         <div className="eyebrow">LISTEN · UNDERSTAND · SPEAK</div>
@@ -1623,56 +1236,13 @@ function Learn({
           >
             Open paper <ExternalLink size={14} />
           </a>
-          {lesson.data.format !== "paper-story-1" && (lesson.state === "ready" || lesson.data.format !== "paper-visual-2") && (
-            <button
-              className="text-button"
-              onClick={() =>
-                post(`/papers/${lesson.paper_id}/lessons`)
-                  .then(() => {
-                    refresh();
-                    onBack();
-                  })
-                  .catch((e) => onError(e.message))
-              }
-            >
-              {lesson.data.format !== "paper-visual-2" ? "Make a visual lesson · 図付き教材を作る" : "Make a new version · 新しい版を作る"} <RefreshCw size={14} />
-            </button>
-          )}
         </div>
       </div>
-      <StoryProjectPanel paperId={lesson.paper_id} projectId={lesson.data.project_id} version={version} onError={onError} refresh={refresh} openLesson={onOpenLesson} />
-      {lesson.data.format === "paper-story-1" && chapter?.data.expressions?.length > 0 && <section className="story-expressions">
-        <h2>English you can use · 会話から学ぶ英語</h2>
+      {lesson.data.format === "paper-story-1" && chapter?.data.expressions?.length > 0 && <details className="story-expressions">
+        <summary>Useful English · 会話から学ぶ表現</summary>
         {chapter?.data.expressions.map((e:any) => <div key={e.phrase}><strong>{e.phrase}</strong><p lang="ja">{e.meaning_ja}</p><p>{e.usage_en}</p>{e.example_en && <small>{e.example_en}</small>}<button className="secondary" disabled={recording} onClick={()=>{const exact=turns.findIndex((t:any)=>t.story_utterance_id===e.utterance_id&&t.text.toLowerCase().includes(e.phrase.toLowerCase()));const at=exact>=0?exact:turns.findIndex((t:any)=>t.story_utterance_id===e.utterance_id);if(at>=0){move(at);document.querySelector('.sentence-card')?.scrollIntoView({behavior:'smooth',block:'center'});}}}>Practice this expression · この表現を練習</button></div>)}
-      </section>}
-      {lesson.data.format === "paper-visual-2" && <section className="video-export" aria-label="YouTube video export">
-        <div>
-          <strong>Video for YouTube · 動画を書き出し</strong>
-          <p>Figures, English voice, and English/Japanese subtitles are built into the video.</p>
-          <p lang="ja">図・英語音声・英語と日本語の字幕を動画に直接入れます。</p>
-          <p className="subtle">{lesson.chapters.filter((c: Row) => c.state === "ready").length} / {lesson.chapters.length} chapters ready · 完成した章からMP4を作り、全章完成後に一本へまとめます。</p>
-          <p lang="ja">公開するときは完成したMP4をダウンロードし、YouTube Studioから手動でアップロードできます。</p>
-          <a href="https://studio.youtube.com/" target="_blank" rel="noreferrer">Open YouTube Studio · 手動で公開する <ExternalLink size={14} /></a>
-          {lesson.youtube_connected ? <p className="subtle">YouTube: {lesson.youtube_auto_upload ? "automatic private upload is on · 完成後に非公開で自動アップロード" : "automatic upload is off · 自動アップロード停止中"}</p>
-            : <p className="subtle">Optional private auto-upload needs a Google connection. · 非公開の自動投稿を使う場合だけGoogle接続が必要です。</p>}
-          {lesson.youtube_connected && <button className="text-button" onClick={() => api("/youtube/auto-upload", {method:"PUT",body:JSON.stringify({enabled:!lesson.youtube_auto_upload})}).then(refresh).catch((e) => onError(e.message))}>{lesson.youtube_auto_upload ? "Stop auto-upload · 自動アップロード停止" : "Enable auto-upload · 自動アップロード開始"}</button>}
-          {completeVideo?.data.youtube?.url && <a href={completeVideo.data.youtube.url} target="_blank" rel="noreferrer">Open private YouTube video · YouTubeで開く <ExternalLink size={14} /></a>}
-          {completeVideo?.upload_job && !completeVideo?.data.youtube?.url && <p className="subtle">{completeVideo.upload_job.stage}{completeVideo.upload_job.error ? ` · ${completeVideo.upload_job.error}` : ""}</p>}
-          {completeVideo?.upload_job?.state === "failed" && <button className="secondary" onClick={() => post(`/jobs/${completeVideo.upload_job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry YouTube upload · アップロード再試行</button>}
-        </div>
-        {completeVideo?.state === "ready" ? <div className="video-download-panel">
-          <VideoTitleSuggestion title={completeVideo.data.title || suggestedVideoTitle(lesson.paper.title)} onError={onError} />
-          <div className="video-links">
-            <a className="primary" href={fileUrl(completeVideo.data.mp4)} download={`${completeVideo.data.title || suggestedVideoTitle(lesson.paper.title)}.mp4`}>Download complete MP4 · 全章動画</a>
-            <a href={fileUrl(completeVideo.data.en_srt)} download>English SRT</a>
-            <a href={fileUrl(completeVideo.data.ja_srt)} download>日本語 SRT</a>
-          </div>
-        </div> : completeVideo?.job?.state === "failed" ? <button className="secondary" onClick={() => post(`/jobs/${completeVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry complete video · 全章動画を再試行</button> : readyChapterVideo && readyChapterNumber > 0 ? <div className="video-download-panel">
-          <VideoTitleSuggestion title={readyChapterVideo.data.title || suggestedVideoTitle(lesson.paper.title, readyChapterNumber)} onError={onError} />
-          <div className="video-links"><a className="primary" href={fileUrl(readyChapterVideo.data.mp4)} download={`${readyChapterVideo.data.title || suggestedVideoTitle(lesson.paper.title, readyChapterNumber)}.mp4`}>Download first MP4 · 完成した章の動画</a><span className="subtle">{completeVideo?.job?.stage || "Building the remaining chapters · 残りの章を作成中"}</span></div>
-        </div> : <span className="subtle">{completeVideo?.job?.stage || "Building chapters · 章を作成中"}</span>}
-      </section>}
-      {['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/retry`).then(refresh).catch(e=>onError(e.message))}>Resume preparation · 教材作成を再開</button></div>}
+      </details>}
+      {lesson.data.format === 'paper-story-1' && ['failed','paused','cancelled'].includes(lesson.job?.state)&&<div className="notice"><p>{lesson.job.error||'Preparation is stopped. Your finished chapters and recordings are kept.'}</p><button className="secondary" onClick={()=>post(`/jobs/${lesson.job.id}/resume`).then(refresh).catch(e=>onError(e.message))}>Resume preparation · 教材作成を再開</button></div>}
       {!lesson.chapters.length ? (
         <Empty
           icon={Headphones}
@@ -1717,14 +1287,6 @@ function Learn({
               {ready && (chapter?.data.best_effort_omissions?.length || 0) > 0 && (
                 <p className="subtle">Some details were left out because they could not be checked. See the original paper for the full results. · 確認できなかった内容は省略しています。詳細は論文の原文をご覧ください。</p>
               )}
-              {currentVideo?.state === "ready" && <div className="chapter-video-links">
-                <VideoTitleSuggestion title={currentVideo.data.title || suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)} onError={onError} />
-                <a className="secondary" href={fileUrl(currentVideo.data.mp4)} download={`${currentVideo.data.title || suggestedVideoTitle(lesson.paper.title, (chapter?.ordinal ?? 0) + 1)}.mp4`}>Download chapter MP4 · この章の動画</a>
-                <a href={fileUrl(currentVideo.data.en_srt)} download>English SRT</a>
-                <a href={fileUrl(currentVideo.data.ja_srt)} download>日本語 SRT</a>
-              </div>}
-              {currentVideo?.job?.state === "failed" && <button className="secondary" onClick={() => post(`/jobs/${currentVideo.job.id}/retry`).then(refresh).catch((e) => onError(e.message))}>Retry chapter video · 動画を再試行</button>}
-              {currentVideo && currentVideo.state !== "ready" && currentVideo.job?.state !== "failed" && <p className="subtle">{currentVideo.job?.stage || "Preparing chapter video · この章の動画を準備中"}</p>}
               {ready && (
                 <button className="secondary" onClick={requestJapanese}>
                   {showJapanese ? "日本語訳を隠す" : "日本語訳を表示"}
@@ -2528,37 +2090,32 @@ function ConferenceAwards({version,onError,refresh}:{version:number;onError:(s:s
   </section>;
 }
 
-function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void}) {
-  const [runs,setRuns]=useState<any[]>([]),[busy,setBusy]=useState(false),[expanded,setExpanded]=useState(false);
+function NightlyVideos({version,onError,refresh,openLesson,viewVideos}:{version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void;viewVideos:()=>void}) {
+  const [runs,setRuns]=useState<any[] | null>(null),[busy,setBusy]=useState(false),[expanded,setExpanded]=useState(false);
   useEffect(()=>{let live=true;api<any[]>("/nightly-video-runs").then(r=>{if(live)setRuns(r);}).catch(e=>{if(live)onError(e.message);});return()=>{live=false;};},[version]);
   const start=async()=>{setBusy(true);try{await post("/nightly-video-runs");refresh();}catch(e){onError((e as Error).message);}finally{setBusy(false);}};
-  const run=runs[0],activeRun=run?.continuing_run||run,activeJob=activeRun?.job;
+  const run=runs?.[0],activeRun=run?.continuing_run||run,activeJob=activeRun?.job;
   const control=async(action:string)=>{try{await post(`/jobs/${activeJob.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
   const labels:Record<string,string>={searching:"論文を探索中",reading:"本文を確認中",building:"動画を作成中",ready:"2本が完成",skipped:"今夜は見送り",paused:"一時停止",failed:"作成時の問題",cancelled:"停止済み"};
-  return <section id="nightly-videos" className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
-  <ConferenceAwards version={version} onError={onError} refresh={refresh}/>
+  return <section id="nightly-videos" className="nightly-panel" aria-label="自動選定と動画作成"><div className="story-heading"><div><h2>論文を自動で選ぶ</h2><p>最近の学会の受賞論文を中心に、概要・詳細の2本を作ります。夜間運転は設定から変更できます。</p></div><button className="primary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
   {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間{run.data.manual&&' · 手動実行'}</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>{run.state==='ready'&&<p>完成した動画を残して、別の論文で追加作成できます。</p>}
-  <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}
+  <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<details><summary>論文を選んだ理由</summary><p>{activeRun.data.selected.assessment.why_ja}</p></details>}
   {activeRun.data.selected?.awards?.map((a:any)=><p key={`${a.venue}-${a.year}-${a.name}`}><a href={a.official_url} target="_blank" rel="noreferrer">{a.venue} {a.year} · {a.name}</a> · 公式受賞情報確認済み{a.kind==='test-of-time'&&<> · 長年の影響を評価する賞{activeRun.data.selected.published&&<> · 論文発表 {activeRun.data.selected.published.slice(0,4)}年 / 受賞 {a.year}年</>}</>}</p>)}
   {run.data.award_fallback_reason&&<p>{run.data.award_fallback_reason}</p>}
   {run.data.selected?.attention&&<p className="subtle">注目情報: <a href={run.data.selected.attention.source_url} target="_blank" rel="noreferrer">Hugging Face Daily Papers</a> · {new Date(run.data.selected.attention.retrieved_at*1000).toLocaleString()}</p>}
   {run.data.reason&&<p>{run.data.reason}</p>}{run.data.waiting_reason&&(run.state==='building'||run.continuing_run)&&<p>{run.data.waiting_reason}</p>}{activeJob&&<progress max={1} value={run.project?.job?.progress||activeJob.progress||0}/>}
-  {run.project&&<><NightlyFilmCards project={run.project} openLesson={openLesson}/><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・動画・サムネイルを見る'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
+  {run.project&&<><NightlyFilmCards project={run.project} openLesson={openLesson} viewVideos={viewVideos}/><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・プレビュー・サムネイル設定'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
   <details><summary>選定・作成の記録</summary>{run.data.award_sources?.map((r:any,i:number)=><p key={`award-${i}`}><a href={r.source.url} target="_blank" rel="noreferrer">{r.source.venue} {r.source.year}</a>: {awardStatusLabels[r.status]||'受賞を確認できず'}</p>)}{run.data.search_plans?.map((p:any,i:number)=><p key={`plan-${i}`}>ローカルAIの検索方針: {p.reason_ja}</p>)}{run.data.search_history?.map((q:any,i:number)=><p key={`query-${i}`}>{q.title||q.category} · {q.terms?.join(' / ')} · {q.reason_ja}{q.result_count!==undefined&&<> · {q.result_count}候補</>}{q.matched!==undefined&&<> · {q.matched?'題名一致':'一致する取得先なし'}</>}</p>)}{run.data.review_summary?.map((r:any)=><p key={r.paper_id}>{r.title} — {r.assessment.why_ja}</p>)}{Object.entries(run.data.timings||{}).filter(([,v])=>typeof v==='number').map(([k,v])=><p key={k}>{k}: {Math.round(Number(v)/60)}分</p>)}{run.data.warnings?.map((w:any,i:number)=><p key={i}>{w.unit}: {w.reason}</p>)}</details>
-  {runs.length>1&&<details><summary>過去の夜間運転</summary>{runs.slice(1).map(r=><div key={r.id}><p>{r.day} · {labels[r.state]} · {r.data.selected?.title||r.data.reason}</p>{r.project&&<NightlyFilmCards project={r.project} openLesson={openLesson}/>}</div>)}</details>}</>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}
+  {runs&&runs.length>1&&<details><summary>過去の夜間運転</summary><div className="run-history">{runs.slice(1).map(r=><div key={r.id}><span>{r.day}</span><Badge state={r.state}>{labels[r.state]||r.state}</Badge><strong>{r.data.selected?.title||r.data.reason||'選定中'}</strong>{r.project&&<button className="text-button" onClick={viewVideos}>完成動画を見る</button>}</div>)}</div></details>}</>:runs===null?<p role="status">作成状況を読み込み中…</p>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}
   </section>;
 }
 
-function NightlyFilmCards({project,openLesson}:{project:any;openLesson:(id:string)=>void}) {
+function NightlyFilmCards({project,openLesson,viewVideos}:{project:any;openLesson:(id:string)=>void;viewVideos:()=>void}) {
   return <div className="nightly-tracks">{Object.entries(project.data.modes).map(([mode,value])=>{
     const track=value as any;
     const film=track.videos.find((v:any)=>v.kind===mode&&v.state==='ready');
-    const thumbs=track.thumbnails?.data;
-    const thumb=thumbs?.candidates?.find((c:any)=>c.id===thumbs.selected_id&&c.png);
-    const title=film?.data.title||track.packaging?.title||track.label;
     return <article key={mode} aria-label={track.label}><strong>{track.label}</strong>{film?<p>動画完成 · {minutes(film.data.duration)}</p>:<StoryGenerationProgress track={track}/>}
-      {thumb?<><img className="nightly-thumbnail" src={fileUrl(thumb.png)} alt={`${track.label}のサムネイル`}/><div className="actions"><a href={fileUrl(thumb.png)} download={`${title}-thumbnail.png`}>サムネイル PNG</a>{thumb.jpg&&<a href={fileUrl(thumb.jpg)} download={`${title}-thumbnail.jpg`}>サムネイル JPEG</a>}</div></>:<p className="subtle">サムネイルは動画と一緒に作成します。</p>}
-      {film&&<a className="primary" href={fileUrl(film.data.mp4)} download={`${film.data.title}.mp4`}>動画をダウンロード</a>}<button className="text-button" onClick={()=>openLesson(track.lesson_id)}>英語練習</button>
+      {film&&<button className="secondary" onClick={viewVideos}>完成動画を見る</button>}<button className="text-button" onClick={()=>openLesson(track.lesson_id)}>英語練習</button>
     </article>;
   })}</div>;
 }
@@ -2586,18 +2143,20 @@ function ThumbnailChoices({projectId,mode,track,onError,refresh}:{projectId:stri
 
 type StoryPanelProps = {paperId:string;projectId?:string;version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void};
 
-function StoryStudio({papers, ...props}: Omit<StoryPanelProps,"paperId"> & {papers:Row[]}) {
+function StoryStudio({papers, selectedPaperId, ...props}: Omit<StoryPanelProps,"paperId"> & {papers:Row[];selectedPaperId:string}) {
   const [selected,setSelected] = useState("");
-  useEffect(() => {if (!selected && papers.length) setSelected((papers.find(p=>p.source_id === "2106.09685") || papers[0]).id);}, [papers,selected]);
-  if (!papers.length) return null;
-  return <section className="story-studio"><label>One paper. Two stories. · 論文から2本の動画
+  useEffect(() => {if (selectedPaperId) setSelected(selectedPaperId);}, [selectedPaperId]);
+  useEffect(() => {if (!selected && papers.length) setSelected(papers[0].id);}, [papers,selected]);
+  if (!papers.length) return <p className="notice">まだ論文がありません。arXiv・PDFを取り込むか、「論文を探す」から選んでください。</p>;
+  return <section className="story-studio"><label>動画を作る論文
     <select value={selected} onChange={e=>setSelected(e.target.value)}>{papers.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select>
     </label>{selected && <StoryProjectPanel paperId={selected} {...props} />}</section>;
 }
 
 function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson}:StoryPanelProps) {
   const [project,setProject] = useState<any>(null);
-  const [busy,setBusy] = useState(false);
+  const [busy,setBusy] = useState(false), [loading,setLoading] = useState(true);
+  useEffect(() => { setProject(null); setLoading(true); }, [paperId,projectId]);
   useEffect(() => {
     let alive=true;
     const load=async()=> {
@@ -2605,7 +2164,7 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
       const value=id ? await api<any>(`/video-projects/${id}`) : null;
       if(alive)setProject(value);
     };
-    load().catch(e=>{if(alive)onError(e.message);});
+    load().catch(e=>{if(alive)onError(e.message);}).finally(()=>{if(alive)setLoading(false);});
     return ()=>{alive=false;};
   },[paperId,projectId,version]);
   const create=async()=> {
@@ -2618,8 +2177,8 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
   };
   const copy=(text:string)=>navigator.clipboard.writeText(text).catch(e=>onError(e.message));
   return <section className="story-project" aria-label="解説・詳解動画">
-    <div className="story-heading"><div><h2>Stories worth watching · 解説と詳解</h2><p>自然なC1英語の会話、動く図解、英日字幕。数式なしの解説編と、原理まで学ぶ詳解編。長さより面白さとわかりやすさを優先します。</p></div>
-      {!project ? <button className="primary" disabled={busy} onClick={create}>{busy?"Starting…":"解説・詳解動画を作る"} <Play size={16}/></button>
+    <div className="story-heading"><div><h2>概要解説と詳細解説</h2><p>自然なC1英語の会話、動く図解、英日字幕。数式なしの解説編と、原理まで学ぶ詳解編。長さより面白さとわかりやすさを優先します。</p></div>
+      {!project ? <button className="primary" disabled={busy||loading} onClick={create}>{loading?"読み込み中…":busy?"開始中…":"解説・詳解動画を作る"} <Play size={16}/></button>
       : <div className="actions"><Badge state={project.state}>{project.state==="ready"?"2本の動画が完成":project.job?.stage || "Preparing two stories"}</Badge>
         {['queued','running'].includes(project.job?.state) && <button className="secondary" onClick={()=>control('pause')}>Pause · 一時停止</button>}
         {['paused','failed','cancelled'].includes(project.job?.state) && <button className="primary" onClick={()=>control('resume')}>Resume · 続きから再開</button>}</div>}
@@ -2639,7 +2198,7 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
           <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>Download MP4 · 動画</a>}
             {visible&&<a className="secondary" href={fileUrl(visible.data.thumbnail)} download={`${visible.data.title}.png`}>Thumbnail · サムネイル</a>}
             <button className="secondary" onClick={()=>openLesson(track.lesson_id)}>Practice English · 英語練習</button></div>
-          <ThumbnailChoices projectId={project.id} mode={mode} track={track} onError={onError} refresh={refresh}/>
+          <details><summary>サムネイルを選ぶ・作り直す</summary><ThumbnailChoices projectId={project.id} mode={mode} track={track} onError={onError} refresh={refresh}/></details>
           {track.packaging&&<details><summary>Titles & description · タイトルと説明欄</summary>
             {track.packaging.candidates.map((c:any,i:number)=><div className="story-title" key={i}><span>{c.title_ja}</span><button className="text-button" onClick={()=>copy(c.title_ja)}>Copy</button></div>)}
             <textarea aria-label={`${track.label} YouTube description`} readOnly value={complete?.data.description || track.packaging.description || "動画の完成時に説明文とタイムスタンプを用意します。"}/>

@@ -12,13 +12,16 @@ const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto(base);
- await page.locator('.library-studio > summary').click();
+ await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
  const studio=page.locator('.story-studio');
  for(const id of ids){
   const response=await context.request.get(base+'/api/video-projects/'+id);
   expect(response.ok()).toBeTruthy();
   const project=await response.json();
   await studio.locator('select').selectOption(project.paper_id);
+  await expect(studio.locator('.story-film')).toHaveCount(2);
+  for(const film of await studio.locator('.story-film').all()) await film.getByText('サムネイルを選ぶ・作り直す',{exact:true}).click();
   await expect(studio.locator('.thumbnail-grid img')).toHaveCount(6,{timeout:30000});
   const record={id,paper:project.data.paper_title,modes:[]};
   for(const [index,mode] of ['overview','deep_dive'].entries()){

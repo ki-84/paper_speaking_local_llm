@@ -207,6 +207,7 @@ def paper(ident: str):
 class ImportRequest(BaseModel):
     reference: str = Field(max_length=300)
     generate: bool = True
+    create_video: bool = False
 
 
 @app.post("/api/papers/import", dependencies=[Depends(auth)])
@@ -217,15 +218,19 @@ def import_paper(body: ImportRequest):
         raise HTTPException(422, str(e))
     ident = db.enqueue(
         "import",
-        base + version,
-        {"reference": base + version, "generate": body.generate},
+        base + version + (":story" if body.create_video else ""),
+        {
+            "reference": base + version,
+            "generate": body.generate,
+            "create_video": body.create_video,
+        },
         priority=5,
     )
     return {"job_id": ident}
 
 
 @app.post("/api/papers/upload", dependencies=[Depends(auth)])
-async def upload_paper(file: UploadFile = File(...)):
+async def upload_paper(file: UploadFile = File(...), create_video: bool = Form(False)):
     content = await file.read(100 * 1024 * 1024 + 1)
     if len(content) > 100 * 1024 * 1024:
         raise HTTPException(413, "PDF limit is 100 MB.")
@@ -250,6 +255,8 @@ async def upload_paper(file: UploadFile = File(...)):
     p = db.one("SELECT * FROM papers WHERE id=?", (pid,))
     p["data"]["pdf_path"] = str(path.relative_to(config.DATA))
     db.execute("UPDATE papers SET data=? WHERE id=?", (db.dumps(p["data"]), pid))
+    if create_video:
+        return {"paper_id": pid, **story.create(pid)}
     lid = lessons.create(pid)
     jid = db.enqueue("lesson", lid)
     return {"paper_id": pid, "lesson_id": lid, "job_id": jid}
@@ -671,7 +678,7 @@ def jobs():
     # Checkpoints can contain tens of thousands of collected abstracts or audio
     # evaluation results. Status refreshes only need their small public summary.
     return db.all(
-        "SELECT id,kind,target,state,stage,progress,error,priority,created,updated FROM jobs ORDER BY created DESC LIMIT 100"
+        "SELECT id,kind,target,state,stage,progress,error,priority,created,updated,json_extract(checkpoint,'$.paper_id') AS paper_id FROM jobs ORDER BY created DESC LIMIT 100"
     )
 
 

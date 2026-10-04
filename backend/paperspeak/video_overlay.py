@@ -94,11 +94,16 @@ def _wrap_japanese(value: str, size: int) -> list[str]:
         while end > 1 and value[end] in "。、！？,.;:」』）)]":
             end -= 1
         def same_word(a: str, b: str) -> bool:
-            return (0x3040 <= ord(a) <= 0x30ff and 0x3040 <= ord(b) <= 0x30ff) or (
+            # Hiragana often surrounds a loanword; treating both scripts as
+            # one word moved the boundary into ビデオゲーム instead of before it.
+            return (0x30a0 <= ord(a) <= 0x30ff and 0x30a0 <= ord(b) <= 0x30ff) or (
                 a.isascii() and b.isascii() and a.isalnum() and b.isalnum())
         original_end = end
-        while end > 1 and end > original_end - 7 and same_word(value[end - 1], value[end]):
+        while end > 0 and end < len(value) and same_word(value[end - 1], value[end]):
             end -= 1
+        if end == 0:
+            # An identifier longer than a whole line must still be displayed.
+            end = original_end
         if value[end] in "はがをにでとへもの" and _width(value[:end + 1], size) <= CAPTION_WIDTH:
             end += 1
         result.append(value[:end])

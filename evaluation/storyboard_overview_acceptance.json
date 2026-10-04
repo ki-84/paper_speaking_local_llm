@@ -1,0 +1,532 @@
+{
+  "checked_at": "2026-10-04T15:26:54.089249+00:00",
+  "status": "media_and_lan_checks_passed",
+  "project_id": "a7297770703e45fb94f4a19f89385927",
+  "selected_modes": [
+    "overview"
+  ],
+  "export_id": "dba3f0805dec4e51a179e347e7afde49",
+  "pipeline_version": "youtube-storyboard-2",
+  "render_version": "story-film-5-storyboard-captions",
+  "publication": {
+    "status": "verified",
+    "paper_title": "Native and Compact Structured Latents for 3D Generation",
+    "venue": "CVPR",
+    "year": 2026,
+    "label": "CVPR 2026",
+    "source_url": "https://openaccess.thecvf.com/content/CVPR2026/html/Xiang_Native_and_Compact_Structured_Latents_for_3D_Generation_CVPR_2026_paper.html",
+    "source_text": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+    "checked_at": 1791116055.8603888,
+    "source_sha256": "5183e1a59699a6aa0a710c73b4f85f91c351dabd7782afe8c1864e579d972d15",
+    "source_kind": "official-proceedings"
+  },
+  "mp4": {
+    "mp4": "videos/04a548717a0a46a2a075b279db4c7db4/2403c0738e5d/【概要解説】Native and Compact Structured Latents for 3D Generation｜CVPR 2026.mp4",
+    "sha256": "619d4b3a812d4b3c06528bae39b25d47624ced9730a08e8a13775695a464739f",
+    "media_duration": 1008.18,
+    "bytes": 60143982,
+    "title": "【概要解説】Native and Compact Structured Latents for 3D Generation｜CVPR 2026",
+    "thumbnail": "thumbnails/25baaae5ebd94789820e927b4557c673/thumbnail-1.png"
+  },
+  "media": {
+    "state": "ready",
+    "export_id": "dba3f0805dec4e51a179e347e7afde49",
+    "mp4": "videos/04a548717a0a46a2a075b279db4c7db4/2403c0738e5d/【概要解説】Native and Compact Structured Latents for 3D Generation｜CVPR 2026.mp4",
+    "minutes": 16.8,
+    "megabytes": 60.14,
+    "sha256": "619d4b3a812d4b3c06528bae39b25d47624ced9730a08e8a13775695a464739f",
+    "checks": {
+      "duration_positive": true,
+      "duration_error_small": true,
+      "equation_policy": true,
+      "equations_actually_selected": true,
+      "chapters_ready": true,
+      "sentence_clips_exist": true,
+      "japanese_for_every_sentence": true,
+      "expressions_count": true,
+      "questions_available": true,
+      "burned_subtitles": true,
+      "thumbnail_exists": true,
+      "current_renderer": true,
+      "rendered_audio_caption_figure_sync": true,
+      "storyboards_checked_before_dialogue": true
+    },
+    "frames": [
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-01.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-02.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-03.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-04.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-05.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-06.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-04-1.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-05-2.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-06-3.png",
+      "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-06-4.png"
+    ],
+    "sync_samples": [
+      {
+        "time": 12.0,
+        "rgb_mean_error": 0.427,
+        "audio_correlation": 0.99949,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-01.png"
+      },
+      {
+        "time": 202.48,
+        "rgb_mean_error": 0.266,
+        "audio_correlation": 0.99976,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-02.png"
+      },
+      {
+        "time": 396.08,
+        "rgb_mean_error": 0.421,
+        "audio_correlation": 0.99944,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-03.png"
+      },
+      {
+        "time": 501.64,
+        "rgb_mean_error": 0.525,
+        "audio_correlation": 0.99964,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-04.png"
+      },
+      {
+        "time": 685.56,
+        "rgb_mean_error": 0.256,
+        "audio_correlation": 0.99982,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-05.png"
+      },
+      {
+        "time": 850.36,
+        "rgb_mean_error": 0.361,
+        "audio_correlation": 0.99899,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-06.png"
+      },
+      {
+        "time": 60.7,
+        "rgb_mean_error": 0.555,
+        "audio_correlation": 0.99926,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-boundary-60.7.png"
+      },
+      {
+        "time": 121.7,
+        "rgb_mean_error": 0.481,
+        "audio_correlation": 0.99969,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-boundary-121.7.png"
+      },
+      {
+        "time": 524.48,
+        "rgb_mean_error": 0.284,
+        "audio_correlation": 0.99898,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-04-1.png"
+      },
+      {
+        "time": 677.56,
+        "rgb_mean_error": 0.262,
+        "audio_correlation": 0.99944,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-05-2.png"
+      },
+      {
+        "time": 842.2,
+        "rgb_mean_error": 0.516,
+        "audio_correlation": 0.99865,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-06-3.png"
+      },
+      {
+        "time": 897.12,
+        "rgb_mean_error": 0.221,
+        "audio_correlation": 0.9998,
+        "audio_offset_ms": 21.333,
+        "passed": true,
+        "frame": "evaluation/story-a7297770703e45fb94f4a19f89385927/overview-zoom-06-4.png"
+      }
+    ],
+    "spoken_words": 2759,
+    "practice_sentences": 199,
+    "audio_wer_max": 0.046875,
+    "local_model": "qwen-q8",
+    "references": [
+      {
+        "title": "Dora: Sampling and benchmarking for 3d shape variational auto-encoders",
+        "why": "Establishes the baseline for evaluating 3D shape VAEs, highlighting the prior difficulty in balancing reconstruction quality with computational efficiency in latent spaces.",
+        "arxiv_id": "",
+        "paper_id": "1d9125fb42184ae59d69778b9b8441c0",
+        "url": "https://arxiv.org/abs/2412.17808v3",
+        "published": "2024-12-23T18:59:06Z",
+        "status": "downloaded"
+      },
+      {
+        "title": "Structured 3d latents for scalable and versatile 3d generation",
+        "why": "Introduces the foundational concept of structured latents for 3D generation, which this paper extends with the more compact O-Voxel representation.",
+        "arxiv_id": "",
+        "paper_id": "3ab2f792a1964f57aa66a1a7d3c44ca4",
+        "url": "https://arxiv.org/abs/2412.01506v3",
+        "published": "2024-12-02T13:58:38Z",
+        "status": "downloaded"
+      },
+      {
+        "title": "Xcube: Large-scale 3d generative modeling using sparse voxel hierarchies",
+        "why": "Demonstrates the prior use of sparse voxel hierarchies for large-scale 3D modeling, providing the architectural context for the sparse compression techniques used in this work.",
+        "arxiv_id": "",
+        "paper_id": "2ba432fc225c43f1939371669dc7a41b",
+        "url": "https://arxiv.org/abs/2312.03806v2",
+        "published": "2023-12-06T16:23:26Z",
+        "status": "downloaded"
+      }
+    ],
+    "original_figure_scenes": 6,
+    "within_paragraph_visual_cues": 0,
+    "storyboard_reviews": [
+      {
+        "attempts": 1,
+        "history": [
+          {
+            "passed": true,
+            "visible_observation": "The slide displays the title 'The Rigid Box Problem' and presents 'Figure 1' from a research paper. The figure consists of three main sections: a 'Reconstruction' panel showing a complex mechanical object (resembling a turbine or engine part) with visible internal structures and open holes, a 'Generation' panel showing a robot figure with material overlays, and a graph panel on the right. The full caption for Figure 1 is visible at the bottom of the image, confirming that the 'Left' panel demonstrates the reconstruction of a 1536³ asset and explicitly mentions the preservation of 'enclosed structures (shown in the second row)'.",
+            "issues": []
+          }
+        ],
+        "complete": true,
+        "status": "checked",
+        "version": "visual-before-dialogue-1"
+      },
+      {
+        "attempts": 3,
+        "history": [
+          {
+            "passed": false,
+            "visible_observation": "The frames display a slide titled 'History of 3D Compression' featuring two scatter plots comparing '1/Mesh Distance' and 'Normal PSNR' against 'Number of Tokens'. The x-axis is logarithmic, spanning 1K to 100K tokens. The legend in the second frame identifies the data series as 'Ours' (purple diamond), 'Trellis' (orange x), 'Dora' (blue circle), 'SparseFlex' (red plus), and 'Direct3D-S2' (green square). The caption below the plots explicitly compares 'XCube' and 'Dora-VAE', stating that XCube uses over 10,000 tokens while Dora-VAE uses 1,280 tokens.",
+            "issues": [
+              "The caption claims to compare 'XCube', but 'XCube' does not appear in the legend; the legend lists 'Ours', 'Trellis', 'Dora', 'SparseFlex', and 'Direct3D-S2'.",
+              "The caption refers to 'Dora-VAE', but the legend labels the corresponding data point as 'Dora'.",
+              "The visual evidence does not support the caption's claim that XCube uses '>10,000 tokens'; the purple 'Ours' data points (which the caption likely misidentifies as XCube) are plotted in the 10K to 100K range, but the label 'XCube' is absent from the figure itself."
+            ]
+          },
+          {
+            "passed": false,
+            "visible_observation": "The frame displays a slide titled 'History of 3D Compression' featuring two scatter plots. The top plot's y-axis is '1/Mesh Distance' (log scale), and the bottom plot's y-axis is 'Normal PSNR'. The x-axis for both is 'Number of Tokens' (log scale, 1K to 100K). In the top plot, purple diamond markers ('Ours') trend upward toward the top right, indicating higher scores (better quality) at higher token counts. Red plus markers ('SparseFlex') are clustered in the top right, showing high quality but also high token usage. Green squares ('Direct3D-S2') and blue circles ('Dora') are positioned in the bottom left, indicating lower quality scores and lower token counts. The legend is not visible in the main view of Image 1, though Image 2 provides a zoomed-in view of the legend confirming the marker shapes and method names.",
+            "issues": [
+              "The humor beat claims Aiden points to 'dense purple dots' in the high-token range, but the visual evidence shows purple diamonds ('Ours') in the top right, not dense dots, and the red plus markers ('SparseFlex') are the ones actually occupying the extreme high-token/high-quality corner.",
+              "The beat claims the text describes a tradeoff between 'volume-based (like XCube)' and 'vector-set (like Dora)' methods, but the visible text on the slide only mentions 'Latent representation comparison' and does not explicitly categorize methods by volume vs. vector-set or name XCube.",
+              "The visual evidence contradicts the 'dense purple dots' description; the purple markers are distinct diamonds, and the 'high-token' cluster in the top right is dominated by red markers (SparseFlex), not purple."
+            ]
+          },
+          {
+            "passed": false,
+            "visible_observation": "The first frame displays two small scatter plots side-by-side. The top plot's y-axis is labeled '1 / Mesh Distance' and the bottom is 'Normal PSNR', both against 'Number of Tokens'. The points are visible but the specific markers (colors/shapes) are small and not clearly distinguished without a legend. The second frame zooms in on the x-axis labels ('1K', '10K', '100K') and the legend, clearly identifying the markers: Purple Diamond ('Ours'), Red Plus ('SparseFlex'), Blue Circle ('Dora'), Orange Cross ('Trellis'), and Green Square ('Direct3D-S2').",
+            "issues": [
+              "The humor beat is impossible to execute as described: Aiden is instructed to ask why we don't use the 'purple diamonds' (the new method) everywhere, but the joke's punchline relies on the viewer knowing the 'red pluses' (SparseFlex) are the 'burning through the budget' option. In the first frame, the plots are too small to distinguish the red pluses from the purple diamonds, and the legend (which provides the key to the joke) is not visible until the second frame. A viewer watching the first frame would not know which cluster is which.",
+              "The 'notice' in Beat 1 claims the viewer can see 'points in the bottom-left (Dora)' and 'top-right (SparseFlex, Ours)'. While the positions are roughly correct, the specific identification of 'Dora' vs 'SparseFlex' is not possible in the first frame because the legend is missing from that view. The viewer cannot see the labels 'Dora' or 'SparseFlex' on the points themselves."
+            ]
+          }
+        ],
+        "error": "[\"The humor beat is impossible to execute as described: Aiden is instructed to ask why we don't use the 'purple diamonds' (the new method) everywhere, but the joke's punchline relies on the viewer knowing the 'red pluses' (SparseFlex) are the 'burning through the budget' option. In the first frame, the plots are too small to distinguish the red pluses from the purple diamonds, and the legend (which provides the key to the joke) is not visible until the second frame. A viewer watching the first frame would not know which cluster is which.\",\"The 'notice' in Beat 1 claims the viewer can see 'points in the bottom-left (Dora)' and 'top-right (SparseFlex, Ours)'. While the positions are roughly correct, the specific identification of 'Dora' vs 'SparseFlex' is not possible in the first frame because the legend is missing from that view. The viewer cannot see the labels 'Dora' or 'SparseFlex' on the points themselves.\"]",
+        "status": "best_effort",
+        "complete": true
+      },
+      {
+        "attempts": 1,
+        "history": [
+          {
+            "passed": true,
+            "visible_observation": "Frame 1 displays the full source figure (Figure 3) on a slide, showing the bidirectional conversion between 3D assets and O-Voxel, along with the 'Shape: Flexible Dual Grid' and 'Material' panels. Frame 2 zooms in specifically on the 'Shape: Flexible Dual Grid' panel, clearly showing the step-by-step process: constructing the primal grid, determining dual face existence, moving dual vertices, and connecting quads. The dual vertices are visible as dots inside the voxel cells, and the faces are shown as quads connecting them.",
+            "issues": []
+          }
+        ],
+        "complete": true,
+        "status": "checked",
+        "version": "visual-before-dialogue-1"
+      },
+      {
+        "attempts": 3,
+        "history": [
+          {
+            "passed": false,
+            "visible_observation": "The frame displays a slide titled 'From Mesh to Latent: A Concrete Example' featuring a central composite image of a wisteria trellis. The composite is divided into three horizontal rows: the top row shows a small inset reference image and a large PBR render of the trellis; the middle row displays a colorful visualization (likely a normal map or latent representation); and the bottom row shows a multi-view strip of the trellis from different angles. To the right, a 'Zoom location' inset references 'Figure 5 - p.7'. Below the image, text identifies the asset as a 'Wisteria trellis asset with reference, normal map, PBR render and multi-view row'. Pixel-art avatars of Maya and Aiden are in the bottom corners.",
+            "issues": [
+              "The 'visual' plan defines three specific nodes ('Reference', 'Normal Map', 'PBR Render'), but the rendered frame does not display these labels on the image itself; the viewer must rely on the caption text below the image to identify the different visualizations.",
+              "The 'Zoom location' inset in the top right corner references 'Figure 5 - p.7', which is likely a citation error (pointing to the wrong figure number) or a confusing reference for a general audience, as the main visual is the focus of the current explanation."
+            ]
+          },
+          {
+            "passed": false,
+            "visible_observation": "The frame displays a slide titled 'From Mesh to Latent: A Concrete Example'. In the center, a composite image of a wisteria trellis is shown. The top row contains a small inset image (the reference) and a large, full-color render of the trellis with purple flowers. The middle row shows a visualization with purple/magenta wireframes or overlays. The bottom row contains a series of smaller images: one full-color render, one black-and-white silhouette, one white wireframe, and three additional angled views of the trellis. The caption below the image reads 'Wisteria trellis asset with reference, normal map, PBR render and multi-view row'.",
+            "issues": [
+              "The caption and the visual node list identify the middle row as a 'Normal Map', but the image shows a purple/magenta wireframe or mesh overlay, which is not the standard visual representation of a normal map (typically blue/purple gradients indicating surface orientation).",
+              "The bottom row contains a 'multi-view row' (multiple angles of the trellis) which is not listed in the visual nodes or described in the caption, creating a discrepancy between the text and the image content.",
+              "The planned visual nodes list 'Reference', 'Normal Map', and 'PBR Render', but the actual image layout is a complex grid of 8+ sub-images (including the multi-view row and the wireframe overlay) that does not cleanly map to these three simple labels."
+            ]
+          },
+          {
+            "passed": false,
+            "visible_observation": "The slide displays a central figure with three rows of images. The top row contains a small inset reference image, a large purple wireframe visualization, and a realistic render of a wisteria trellis. The bottom row shows a strip of five smaller images displaying the same trellis from various angles, with the middle image being a black silhouette and the others being grayscale or wireframe variations. The caption below the figure lists 'reference, normal map, PBR render and multi-view row'.",
+            "issues": [
+              "The beat for the middle row is factually incorrect; the 'purple/magenta wireframe' is located in the top row, not the middle.",
+              "The figure contains no distinct 'middle row' of images; it consists of a top row and a bottom row, making the 'middle row' label in the beat a hallucination of the layout."
+            ]
+          }
+        ],
+        "error": "[\"The beat for the middle row is factually incorrect; the 'purple/magenta wireframe' is located in the top row, not the middle.\",\"The figure contains no distinct 'middle row' of images; it consists of a top row and a bottom row, making the 'middle row' label in the beat a hallucination of the layout.\"]",
+        "status": "best_effort",
+        "complete": true
+      },
+      {
+        "attempts": 2,
+        "history": [
+          {
+            "passed": true,
+            "visible_observation": "The frame displays a title 'Evidence: Speed and Quality' and a central panel containing two stacked scatter plots. The x-axis is labeled 'Number of Tokens' and the y-axes are '1 / Mesh Distance' (top) and 'Normal PSNR' (bottom). A legend identifies five methods: Ours, Trellis, Dora, SparseFlex, and Direct3D-S2. The 'Ours' method (purple diamonds) appears in the upper-left region of the plots, indicating high fidelity metrics with low token counts. The other methods are clustered in the lower-right or mid-right regions. A small inset on the right shows a thumbnail of the full source figure (labeled 'Figure 1') with a box highlighting the current plot area. A caption below the plots states that the method achieves high fidelity with fewer tokens.",
+            "issues": [
+              "The beat claims the x-axis is 'lower is better/compact' and y-axis is 'higher is better', but the plot's y-axis is '1 / Mesh Distance'. While higher values indicate better performance (lower distance), the label itself is an inverse metric, which might confuse a viewer expecting a direct 'Fidelity' label without explanation.",
+              "The beat references specific data points like '9.6K tokens' and '1024^3 resolution'. While the 'Ours' points are near the 10K mark on the log-scale x-axis, the specific '9.6K' value and the '1024^3' resolution are not explicitly printed on the visible plot or caption in this frame; they are inferred from the source text rather than visible evidence.",
+              "The beat mentions 'Trellis or Dora' points requiring '2.0K to 225K' tokens. While Trellis (orange) and Dora (blue) are visible, the specific range '225K' is not clearly legible or distinct in the cluster at the far right of the x-axis (which ends around 100K-200K visually), making the specific upper bound hard to verify from the image alone."
+            ]
+          },
+          {
+            "passed": true,
+            "visible_observation": "The frame displays a dual-axis scatter plot comparing reconstruction fidelity (1/Mesh Distance and Normal PSNR) against token count. Purple diamond markers labeled 'Ours' are clustered in the top-left quadrant, indicating high fidelity with low token counts (1K-10K). In contrast, orange and red markers (Trellis, SparseFlex) are positioned in the bottom-right, showing lower fidelity with significantly higher token counts (10K-100K). A zoomed-in thumbnail on the right confirms this is the 'plots' region of Figure 1 from the source paper.",
+            "issues": []
+          }
+        ],
+        "error": "[\"The beat claims the x-axis is 'lower is better/compact' and y-axis is 'higher is better', but the plot's y-axis is '1 / Mesh Distance'. While higher values indicate better performance (lower distance), the label itself is an inverse metric, which might confuse a viewer expecting a direct 'Fidelity' label without explanation.\",\"The beat references specific data points like '9.6K tokens' and '1024^3 resolution'. While the 'Ours' points are near the 10K mark on the log-scale x-axis, the specific '9.6K' value and the '1024^3' resolution are not explicitly printed on the visible plot or caption in this frame; they are inferred from the source text rather than visible evidence.\",\"The beat mentions 'Trellis or Dora' points requiring '2.0K to 225K' tokens. While Trellis (orange) and Dora (blue) are visible, the specific range '225K' is not clearly legible or distinct in the cluster at the far right of the x-axis (which ends around 100K-200K visually), making the specific upper bound hard to verify from the image alone.\"]",
+        "complete": true,
+        "status": "checked",
+        "version": "visual-before-dialogue-1"
+      },
+      {
+        "attempts": 2,
+        "history": [
+          {
+            "passed": false,
+            "visible_observation": "Frame 1 displays the 'Generation' panel from Figure 1, showing a 3D robot asset with PBR texture maps (Base Color, Metallic, Roughness, Alpha) and a 'Zoom location' inset. Frame 2 displays the 'plots' panel, showing two scatter graphs comparing methods (Ours, Trellis, Dora, etc.) on axes of '1/Mesh Distance' and 'Normal PSNR' versus 'Number of Tokens'.",
+            "issues": [
+              "The third beat describes a 'left panel' showing a '1536³ reconstruction' and 'enclosed structures,' but neither of the provided frames displays this panel; only the 'Generation' and 'plots' panels are visible.",
+              "The first beat claims the 'bottom row' indicates a generation time of roughly 60 seconds, but the provided 'Generation' panel image does not show a bottom row with runtime data.",
+              "The second beat identifies the method as 'red dots,' but the legend in the visible 'plots' panel identifies 'Ours' with purple diamonds, while red markers correspond to 'SparseFlex'."
+            ]
+          },
+          {
+            "passed": true,
+            "visible_observation": "The first frame displays a 'Generation' panel featuring a detailed 3D robot asset with four corresponding texture maps labeled 'Base Color,' 'Metallic,' 'Roughness,' and 'Alpha.' A small inset in the top right corner, labeled 'Zoom location,' provides a map of where this generation panel fits within the full Figure 1. The second frame displays two scatter plots comparing different methods. The x-axis is 'Number of Tokens' (log scale) and the y-axes are '1 / Mesh Distance' and 'Normal PSNR.' A legend identifies 'Ours' with purple diamonds, which are plotted in the upper-left region of the graphs, indicating high scores with low token counts.",
+            "issues": []
+          }
+        ],
+        "error": "[\"The third beat describes a 'left panel' showing a '1536³ reconstruction' and 'enclosed structures,' but neither of the provided frames displays this panel; only the 'Generation' and 'plots' panels are visible.\",\"The first beat claims the 'bottom row' indicates a generation time of roughly 60 seconds, but the provided 'Generation' panel image does not show a bottom row with runtime data.\",\"The second beat identifies the method as 'red dots,' but the legend in the visible 'plots' panel identifies 'Ours' with purple diamonds, while red markers correspond to 'SparseFlex'.\"]",
+        "complete": true,
+        "status": "checked",
+        "version": "visual-before-dialogue-1"
+      }
+    ],
+    "warnings": [
+      {
+        "unit": "storyboard:overview:1",
+        "reason": "[\"The humor beat is impossible to execute as described: Aiden is instructed to ask why we don't use the 'purple diamonds' (the new method) everywhere, but the joke's punchline relies on the viewer knowing the 'red pluses' (SparseFlex) are the 'burning through the budget' option. In the first frame, the plots are too small to distinguish the red pluses from the purple diamonds, and the legend (which provides the key to the joke) is not visible until the second frame. A viewer watching the first frame would not know which cluster is which.\",\"The 'notice' in Beat 1 claims the viewer can see 'points in the bottom-left (Dora)' and 'top-right (SparseFlex, Ours)'. While the positions are roughly correct, the specific identification of 'Dora' vs 'SparseFlex' is not possible in the first frame because the legend is missing from that view. The viewer cannot see the labels 'Dora' or 'SparseFlex' on the points themselves.\"]",
+        "action": "Use a complete checked original instead of an unclear invented diagram"
+      },
+      {
+        "unit": "storyboard:overview:3",
+        "reason": "[\"The beat for the middle row is factually incorrect; the 'purple/magenta wireframe' is located in the top row, not the middle.\",\"The figure contains no distinct 'middle row' of images; it consists of a top row and a bottom row, making the 'middle row' label in the beat a hallucination of the layout.\"]",
+        "action": "Use a complete checked original instead of an unclear invented diagram"
+      },
+      {
+        "unit": "845b2a4a18904595afc03b9eb3220d52",
+        "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+        "wer": 0.03773584905660377
+      },
+      {
+        "unit": "9fd8eff4ca1e4811a8647f09bd7495d6",
+        "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+        "wer": 0.015151515151515152
+      },
+      {
+        "unit": "24aacd7dcc484af58a1ae7e34d4ad95b",
+        "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+        "wer": 0.044444444444444446
+      },
+      {
+        "unit": "48af9c9331ad4a9e8094964c466e7fd0",
+        "reason": "Recognizer disagreement after three local voice retries; retained the recording with the lowest disagreement.",
+        "wer": 0.02247191011235955
+      }
+    ],
+    "review_caveat": "Bounded local-model reviews are recorded; they are not independent accuracy certification."
+  },
+  "media_checks_pass": true,
+  "browser": {
+    "project_id": "a7297770703e45fb94f4a19f89385927",
+    "time": "2026-10-04T15:19:37.888Z",
+    "checks": {
+      "official_publication_displayed": true,
+      "thumbnail_downloads": true,
+      "mp4_range_downloads": true,
+      "full_hd_browser_playback": true,
+      "same_script_practice": true,
+      "initial_japanese_translation": true,
+      "practice_audio_plays": true,
+      "copy_matches_download_metadata": true,
+      "url_free_descriptions": true,
+      "no_jobs_started_or_resumed": true,
+      "no_browser_exceptions": true
+    },
+    "exports": [
+      {
+        "id": "dba3f0805dec4e51a179e347e7afde49",
+        "kind": "overview",
+        "title": "【概要解説】Native and Compact Structured Latents for 3D Generation｜CVPR 2026",
+        "conference": "CVPR 2026",
+        "awards": [
+          {
+            "title": "Native and Compact Structured Latents for 3D Generation",
+            "venue": "CVPR",
+            "year": 2026,
+            "name": "Best Student Paper",
+            "kind": "research-paper",
+            "status": "winner",
+            "verified": true,
+            "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+            "paper_url": "",
+            "retrieved_at": 1791101642.028947,
+            "source_sha256": "55e4cf8842f03c08f2d8ea4cd946ef16d98608271c5ade63ccbecb1331898994",
+            "area": "ai",
+            "source_name": "CVPR 2026 Best Student Paper",
+            "name_ja": "最優秀学生論文賞",
+            "label": "CVPR 2026 最優秀学生論文賞"
+          }
+        ],
+        "thumbnail": "thumbnails/25baaae5ebd94789820e927b4557c673/thumbnail-1.png",
+        "thumbnail_download": 200,
+        "mp4_range_download": 206
+      }
+    ],
+    "status": "passed"
+  },
+  "original_figures": {
+    "scenes": 6,
+    "distinct_source_assets": 4,
+    "previous_overview_scenes_with_originals": 0
+  },
+  "expressions": 9,
+  "new_dialogue_audio_shared_with_previous_overview": 0,
+  "old_mp4_integrity": [
+    {
+      "export_id": "4b856aadcafd4a1f94ef033e27fb7630",
+      "unchanged": true
+    },
+    {
+      "export_id": "dfea89cae0b342218ce8dd895cbe2c8a",
+      "unchanged": true
+    }
+  ],
+  "thumbnail": {
+    "set_id": "25baaae5ebd94789820e927b4557c673",
+    "selected_id": "336e3ccbba2748268d29e9edcef26810",
+    "lines": [
+      "「封じた泡」",
+      "からの解放"
+    ],
+    "local_generation": {
+      "path": "/home/kuwabara/devwork/paper_speaking_linux/data/thumbnails/25baaae5ebd94789820e927b4557c673/idea-1.png",
+      "sha256": "63b70a19e7793437aa10268f4a9b83cea625e8ab13960d6dbf64d5dfbff99b6a",
+      "seconds": 25.74,
+      "peak_allocated_mib": 7997.9,
+      "peak_reserved_mib": 8596.0,
+      "settings": {
+        "width": 1280,
+        "height": 720,
+        "num_inference_steps": 50,
+        "guidance_scale": 4.0,
+        "seed": 3556855133,
+        "dtype": "bfloat16",
+        "repo": "black-forest-labs/FLUX.2-klein-base-4B",
+        "revision": "a3b4f4849157f664bdbc776fd7453c2783562f4d",
+        "prompt_sha256": "e4aa3110b787b91b9a4c626e5d15210d9a8bda0a2e9d05133860ba11bb1ff0a4"
+      }
+    },
+    "candidates": 3,
+    "selection_source": "manual",
+    "selection_reason": "Choose the existing visual-idea alternative; 2D-speed comparison in earlier marketing was not supported by a direct paper benchmark."
+  },
+  "checks": {
+    "tests_initial_full_suite": {
+      "passed": 105,
+      "command": ".venv/bin/pytest -q tests/test_storyboards.py tests/test_story.py tests/test_publication.py tests/test_award_packaging.py tests/test_video.py"
+    },
+    "tests_after_final_editorial_changes": {
+      "passed": 59,
+      "command": ".venv/bin/pytest -q tests/test_storyboards.py tests/test_story.py"
+    },
+    "thumbnail_tests": {
+      "passed": 8,
+      "command": ".venv/bin/pytest -q tests/test_thumbnails.py"
+    },
+    "ruff": "passed",
+    "typescript_vite_build": "passed",
+    "node_syntax": "passed",
+    "service_health": 200,
+    "idle_gpu_compute_processes": 0
+  },
+  "network_scope": {
+    "generation_worker_inference_only": "Python network guard for inference; localhost allowed",
+    "render_browser": "All network routes aborted",
+    "model_workers": "HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1",
+    "external_sources": "Three referenced papers newly acquired",
+    "whole_os_network_block_test": false
+  },
+  "stage_seconds": {
+    "sources": 494.157,
+    "background": 262.365,
+    "plan": 192.58,
+    "overview:script": 4745.852,
+    "overview:tts": 746.755,
+    "overview:align": 502.911,
+    "overview:learning": 279.054,
+    "overview:export": 0.05
+  },
+  "operation": {
+    "legacy_lesson_jobs_paused": 3,
+    "discovery_enabled": false,
+    "nightly_video_enabled": true,
+    "nightly_time_jst": "02:00",
+    "youtube_auto_upload": false
+  },
+  "limitations": {
+    "bounded_storyboard_fallbacks": [
+      "History of 3D Compression",
+      "From Mesh to Latent: A Concrete Example"
+    ],
+    "actual_within_paragraph_visual_cues": 0,
+    "remaining_exact_repetition_flags": [
+      {
+        "scene": "History of 3D Compression",
+        "flags": [
+          {
+            "utterance_id": "e11fb0edb52446c4a3327b510aa9c8d9",
+            "earlier_utterance_id": "1e0f027e411f4651933089febcd94445",
+            "sentence": "Did they just... delete some of the data to make the file smaller?"
+          }
+        ]
+      }
+    ],
+    "automatic_quality_review": "Recorded local-model reviews are not independent viewer-comprehension or humor validation."
+  }
+}

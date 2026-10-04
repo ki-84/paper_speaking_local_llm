@@ -12,8 +12,39 @@ import imageio_ffmpeg
 
 from . import config, db, publication, video, video_overlay
 
-VERSION = "story-film-3-original-panels"
+VERSION = "story-film-5-storyboard-captions"
 RELEASE_VERSION = "verified-video-packaging-1"
+
+
+def contextual_region(region, regions):
+    """A chart needs its verified legend; combine only already checked regions."""
+    if not re.search(
+        r"\b(?:plot|chart|graph)s?\b",
+        region.get("id", "") + " " + region.get("label_en", ""),
+        re.I,
+    ):
+        return region
+    legend = next(
+        (
+            r
+            for r in regions
+            if re.search(
+                r"\blegend\b", r.get("id", "") + " " + r.get("label_en", ""), re.I
+            )
+        ),
+        None,
+    )
+    if not legend:
+        return region
+    boxes = [region["box"], legend["box"]]
+    left, top = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    right, bottom = max(b[0] + b[2] for b in boxes), max(b[1] + b[3] for b in boxes)
+    return region | {
+        "box": [left, top, right - left, bottom - top],
+        "label_en": "Plot with original method legend",
+        "label_ja": "比較グラフと原図の凡例",
+        "verified_region_ids": [region["id"], legend["id"]],
+    }
 
 
 def portable_title(title):
@@ -84,9 +115,18 @@ def render_scene(project, mode, index):
                     None,
                 )
             if region:
+                region = contextual_region(region, regions)
                 if region not in zoom_regions:
                     zoom_regions.append(region)
                 zoom_cues[ui] = zoom_regions.index(region)
+        for beat in scene.get("storyboard", {}).get("beats", []):
+            region = next(
+                (r for r in regions if r.get("id") == beat.get("region")), None
+            )
+            if region and region not in zoom_regions:
+                region = contextual_region(region, regions)
+                if region not in zoom_regions:
+                    zoom_regions.append(region)
     elif any(u.get("visual_focus_region") for u in scene["utterances"]):
         raise ValueError("A verified region cue needs a checked original figure")
     focus_count = max(
@@ -268,6 +308,9 @@ def enqueue(project, mode, *, preview=False):
         "renderer_sha256": video.file_digest(
             config.ROOT / "scripts/render_story_slide.mjs"
         ),
+        "caption_renderer_sha256": video.file_digest(
+            config.ROOT / "backend/paperspeak/video_overlay.py"
+        ),
         "title": portable_title(track["packaging"]["title"]),
         "packaging": track["packaging"],
         "characters": video_overlay.character_manifest(),
@@ -284,6 +327,8 @@ def enqueue(project, mode, *, preview=False):
                 "utterances": s["utterances"],
                 "subtitle_items": s["subtitle_items"],
                 "reviews": s.get("reviews", {}),
+                "storyboard": s.get("storyboard"),
+                "storyboard_review": s.get("storyboard_review"),
                 "omissions": s.get("omissions", []),
             }
             for s in scenes
@@ -369,7 +414,35 @@ def timeline(manifest, root):
                     captions.append(pause)
                     frame += frames
             total = video._duration_frames(config.safe_path(u["audio"]))
-            speech.append({"audio": u["audio"], "frames": total, "scene": image})
+            events = [(0, image)]
+            for event in u.get("visual_events", []):
+                when = round(event["start"] * 24000)
+                target = event.get("focus")
+                if (
+                    0 < when < total
+                    and isinstance(target, int)
+                    and 0 <= target < len(scene["render_paths"])
+                ):
+                    events.append((when, scene["render_paths"][target]))
+            events = sorted(dict(events).items())
+            for event_index, (begin, picture) in enumerate(events):
+                end = (
+                    events[event_index + 1][0]
+                    if event_index + 1 < len(events)
+                    else total
+                )
+                audio = u["audio"]
+                if len(events) > 1:
+                    clip = root / f"{u['id']}-visual-{begin}-{end}.wav"
+                    if not clip.is_file():
+                        clip_audio(
+                            config.safe_path(u["audio"]),
+                            clip,
+                            begin / 24000,
+                            end / 24000,
+                        )
+                    audio = str(clip.relative_to(config.DATA))
+                speech.append({"audio": audio, "frames": end - begin, "scene": picture})
             ranges = u.get("caption_ranges", u["sentence_ranges"])
             used = 0
             for si, (text, start, end) in enumerate(ranges):

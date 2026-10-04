@@ -15,6 +15,16 @@ VERSION = "surprised-pixel-3-awards"
 CHECK_VERSION = "thumbnail-dom-check-1"
 
 
+def paper_claim_context(project):
+    """Give thumbnail writers the paper's claims, separately from catchy packaging."""
+    prefix = project["paper_id"] + ":"
+    return [
+        {"claim": row.get("claim", ""), "source_ids": row["source_ids"]}
+        for row in project["data"].get("evidence", [])
+        if any(s.startswith(prefix) for s in row.get("source_ids", []))
+    ][:40]
+
+
 def get(project_id, mode):
     row = db.one(
         "SELECT * FROM thumbnail_sets WHERE project_id=? AND mode=? ORDER BY created DESC LIMIT 1",
@@ -585,8 +595,10 @@ def step(job, runtime):
 
             def draft():
                 result = runtime.ask(
-                    'Make three catchy Japanese YouTube thumbnail ideas matching this actual film. Titles have exactly two lines, each at most 12 Japanese characters (short paper/model names may be English). No unsupported result promises or made-up statistics. Maya and Aiden are composited separately at the left and right; NEVER include or describe them in concept. Describe ONLY the central scientific object/metaphor, without humans, faces, text, numbers or charts. Return {"candidates":[{"lines":["line1","line2"],"concept":"English image description of objects only"}]}.\n'
-                    + db.dumps(project["data"]["modes"][mode]["packaging"]),
+                    'Make three catchy Japanese YouTube thumbnail ideas matching this actual film. Titles have exactly two lines, each at most 12 Japanese characters (short paper/model names may be English). No unsupported result promises or made-up statistics. A speed comparison with 2D image generation, another model, or a particular GPU needs direct support in PAPER CLAIMS; an entertaining line spoken in the film is not benchmark evidence. Prefer a truthful visual idea over an unverified performance comparison. Maya and Aiden are composited separately at the left and right; NEVER include or describe them in concept. Describe ONLY the central scientific object/metaphor, without humans, faces, text, numbers or charts. Return {"candidates":[{"lines":["line1","line2"],"concept":"English image description of objects only"}]}.\nFILM: '
+                    + db.dumps(project["data"]["modes"][mode]["packaging"])
+                    + "\nPAPER CLAIMS: "
+                    + db.dumps(paper_claim_context(project)),
                     profile=project["data"]["model"],
                     max_tokens=1600,
                     thinking=False,
@@ -708,10 +720,12 @@ def step(job, runtime):
 
         def review():
             result = runtime.ask(
-                'Compare three YouTube thumbnails for the supplied film. Check recognizable surprised Maya on left and Aiden on right, catchy readable large Japanese text at phone size, and truthful correspondence to the film. Also check the fixed paper name, publication conference/year, Japanese edition badge, and verified award name/year match IDENTITY exactly and remain readable. No award may be claimed unless present in IDENTITY.awards. The publication year is not the later award year. Pick the clearest, most compelling candidate. issues must describe problems in the SELECTED candidate only; ignore imperfections in alternatives. Return {"selected_index":0,"notes_ja":"reason","issues":[]}. No popularity/view-count guarantees.\nIDENTITY: '
+                'Compare three YouTube thumbnails for the supplied film. Check recognizable surprised Maya on left and Aiden on right, catchy readable large Japanese text at phone size, and truthful correspondence to PAPER CLAIMS. A speed comparison with 2D image generation, another model, or a GPU requires direct benchmark support in PAPER CLAIMS; dialogue and catchy packaging are not benchmark evidence. Choose a supported alternative when available. Also check the fixed paper name, publication conference/year, Japanese edition badge, and verified award name/year match IDENTITY exactly and remain readable. No award may be claimed unless present in IDENTITY.awards. The publication year is not the later award year. Pick the clearest, most compelling candidate. issues must describe problems in the SELECTED candidate only; ignore imperfections in alternatives. Return {"selected_index":0,"notes_ja":"reason","issues":[]}. No popularity/view-count guarantees.\nIDENTITY: '
                 + db.dumps(identity)
                 + "\nFILM: "
-                + db.dumps(project["data"]["modes"][mode]["packaging"]),
+                + db.dumps(project["data"]["modes"][mode]["packaging"])
+                + "\nPAPER CLAIMS: "
+                + db.dumps(paper_claim_context(project)),
                 images=[config.safe_path(c["png"]) for c in data["candidates"]],
                 profile=project["data"]["model"],
                 max_tokens=1400,

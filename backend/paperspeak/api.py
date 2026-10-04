@@ -283,10 +283,14 @@ def list_videos():
     return video_library.catalogue()
 
 
+class VideoProjectRequest(BaseModel):
+    modes: list[str] | None = None
+
+
 @app.post("/api/papers/{ident}/video-projects", dependencies=[Depends(auth)])
-def create_video_project(ident: str):
+def create_video_project(ident: str, body: VideoProjectRequest | None = None):
     try:
-        return story.create(ident)
+        return story.create(ident, modes=body.modes if body else None)
     except ValueError as e:
         raise HTTPException(404, str(e))
 

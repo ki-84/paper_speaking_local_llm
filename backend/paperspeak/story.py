@@ -28,9 +28,9 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-dual-1"
+VERSION = "youtube-storyboard-2"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
-EDITORIAL_REVIEW_VERSION = "content-first-editorial-1"
+EDITORIAL_REVIEW_VERSION = "content-first-editorial-2"
 VISUAL_DIRECTION_VERSION = "original-first-clear-1"
 VISUAL_DIRECTION_BRIEF = (
     "Direct the scene visually before drafting the spoken exchange: one viewer question, one visible contrast, then its explanation. "
@@ -165,13 +165,16 @@ def story_beats(project, mode):
     ]
 
 
-def create(paper_id, *, profile=None):
+def create(paper_id, *, profile=None, modes=None):
     paper = db.one("SELECT * FROM papers WHERE id=?", (paper_id,))
     if not paper:
         raise ValueError("Paper not found")
     model = profile or db.settings()["model_profile"]
+    selected = list(dict.fromkeys(modes if modes is not None else MODES))
+    if not selected or any(mode not in MODES for mode in selected):
+        raise ValueError("Choose overview, deep_dive, or both")
     fingerprint = video.digest(
-        [paper_id, paper["version"], VERSION, model, MODES, DURATION_POLICY]
+        [paper_id, paper["version"], VERSION, model, selected, MODES, DURATION_POLICY]
     )
     with db.connection() as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -194,8 +197,39 @@ def create(paper_id, *, profile=None):
                 "records": [],
                 "warnings": [],
                 "modes": {},
+                "storyboard_policy": "visual-before-dialogue-1",
             }
-            for mode, preset in MODES.items():
+            # Reuse source reading, never the earlier dialogue or recordings.
+            prior = db.row(
+                conn.execute(
+                    "SELECT * FROM video_projects WHERE paper_id=? AND state='ready' ORDER BY created DESC LIMIT 1",
+                    (paper_id,),
+                ).fetchone()
+            )
+            if prior:
+                known = {
+                    r["id"]
+                    for r in conn.execute(
+                        "SELECT id FROM sources WHERE paper_id=?", (paper_id,)
+                    )
+                }
+                reused = [
+                    c
+                    for c in prior["data"].get("evidence", [])
+                    if c.get("source_ids") and set(c["source_ids"]) <= known
+                ]
+                if reused:
+                    data.update(
+                        evidence=reused,
+                        reading_complete=True,
+                        reading_includes_structured=bool(
+                            prior["data"].get("reading_includes_structured")
+                        ),
+                        reading_reuse=prior["id"],
+                        reading_reuse_digest=video.digest(reused),
+                    )
+            for mode in selected:
+                preset = MODES[mode]
                 lid = db.uid()
                 data["modes"][mode] = {
                     "lesson_id": lid,
@@ -342,7 +376,16 @@ def get(ident):
         value["scenes"] = [
             {
                 k: s[k]
-                for k in ("title", "title_ja", "focus", "visual", "reviews")
+                for k in (
+                    "title",
+                    "title_ja",
+                    "focus",
+                    "visual",
+                    "reviews",
+                    "storyboard",
+                    "storyboard_review",
+                    "storyboard_preview",
+                )
                 if k in s
             }
             | {
@@ -394,13 +437,14 @@ def get(ident):
     return project
 
 
-def ask(project, runtime, task, prompt, *, max_tokens=5500):
+def ask(project, runtime, task, prompt, *, max_tokens=5500, images=None):
     result = runtime.ask(
         prompt,
         system=SYSTEM,
         profile=project["data"]["model"],
         thinking=False,
         max_tokens=max_tokens,
+        **({"images": images} if images else {}),
     )
     project["data"]["records"].append(
         {
@@ -412,7 +456,9 @@ def ask(project, runtime, task, prompt, *, max_tokens=5500):
     return result
 
 
-def bounded(project, runtime, key, prompt, validate, fallback, *, max_tokens=5500):
+def bounded(
+    project, runtime, key, prompt, validate, fallback, *, max_tokens=5500, images=None
+):
     """A malformed local-model response gets three repair attempts, then a recorded fallback."""
     state = project["data"]["repairs"].setdefault(key, {"attempts": 0})
     if state["attempts"] >= 3:
@@ -427,6 +473,7 @@ def bounded(project, runtime, key, prompt, validate, fallback, *, max_tokens=550
             key,
             prompt + "\nPREVIOUS ISSUE: " + state.get("error", ""),
             max_tokens=max_tokens,
+            images=images,
         )
 
         # A later tiny/incomplete object must not erase an earlier usable draft.
@@ -1118,6 +1165,11 @@ def _script_prompt(project, mode, scene, index):
         + json.dumps(track["packaging"].get("hook"))
         + "\nSCENE: "
         + json.dumps(_without_duration_quotas(scene))
+        + "\nAPPROVED VISUAL STORYBOARD (write to this actual visual; do not replace it): "
+        + json.dumps(scene.get("storyboard", {}))
+        + "\nFor each paragraph supply visual_beat as an integer index of the storyboard beat. Optionally visual_cues:[{phrase:exact spoken words,beat:integer}] for a later visual change within that paragraph. "
+        "Observe the picture, ask a concrete question, answer it causally, and then move on. Do not explain the same concept again with a different metaphor. "
+        "Use only exchanges that advance understanding. Typically 4–7 substantial turns can resolve one scene; use more only if there is a genuinely new step, never to fill time. "
         + "\nPREVIOUS SCENES: "
         + json.dumps(preceding)
         + "\nACTUAL OPENING EXCHANGE (use its joke for the final callback): "
@@ -1271,6 +1323,27 @@ def _recover_repaired_turns(project, mode, scene, index, record):
         scene.pop("visual_ready", None)
 
 
+def duplicate_dialogue_flags(scene):
+    """Name exact long repetitions for the local editor, without rewriting speech."""
+    seen, flags = {}, []
+    for u in scene["utterances"]:
+        for sentence in sentences(u["text"]):
+            key = tuple(re.findall(r"[a-z0-9]+", sentence.lower()))
+            if len(key) < 12:
+                continue
+            if key in seen:
+                flags.append(
+                    {
+                        "utterance_id": u["id"],
+                        "earlier_utterance_id": seen[key],
+                        "sentence": sentence,
+                    }
+                )
+            else:
+                seen[key] = u["id"]
+    return flags
+
+
 def _review_scene(project, runtime, mode, scene, index, kind):
     reviews = scene.setdefault("reviews", {})
     record = reviews.setdefault(kind, {"attempts": 0, "history": []})
@@ -1294,6 +1367,9 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         + (
             "Check scientific claims against SOURCE TEXT (not just notes); verify dates, experimental conditions, equations, causality, analogy boundaries and the English/Japanese labels. "
             "Check attribution carefully: a named historical method's alleged failure needs evidence about that method. A later paper's ablation of its own baseline must not be presented as the historical paper's result. Qualify comparisons by source paper and tested task. "
+            "Do not turn a limitation of one representation into a claim that all earlier models fail. Distinguish an open surface from a hollow object whose boundary is closed; a visible hole or a thin blade alone does not establish non-manifold geometry. An open sheet can be a manifold with boundary; do not call every open surface non-manifold either. A cup with a thick wall can have a closed manifold boundary. Explain the source's closed/watertight requirement using open boundaries, not an incorrect topology definition. Use the source's qualified difficulty, not an invented impossibility. "
+            "Check the actual supplied picture: a joke or analogy must not invent a failure of the baseline. Correct the causal explanation while preserving useful humor. "
+            "Use the original caption to attribute pictured outputs; do not guess a baseline from a nearby plot legend or treat a joke's smooth-blob prediction as an observed result. "
             if kind == "content"
             else "Check the scene works as part of an entertaining documentary: new insight, a concrete example, clear transitions, natural C1 English, substantive questions and gentle witty humor. "
             "Flag repeated explanations within this scene and ideas already explained in earlier scenes; replace redundant recaps with a useful transition. "
@@ -1324,6 +1400,8 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         + mode
         + "\nSCENE: "
         + json.dumps({k: scene[k] for k in ("title", "focus", "utterances", "visual")})
+        + "\nEXACT LONG SENTENCES REPEATED IN THIS SCENE (replace the later occurrence with a useful reaction or transition): "
+        + json.dumps(duplicate_dialogue_flags(scene) if kind == "editorial" else [])
         + "\nEARLIER SCENE SUMMARIES: "
         + json.dumps(
             [
@@ -1353,6 +1431,16 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         )
         + "\nEVIDENCE: "
         + json.dumps(evidence)
+        + "\nSELECTED ORIGINAL FIGURE CAPTION AND VERIFIED PANELS: "
+        + json.dumps(
+            [
+                a
+                for a in original_catalogue(project)
+                if a["asset_id"] == scene["visual"].get("original_asset_id")
+            ]
+            if scene["visual"].get("original_asset_id")
+            else []
+        )
     )
     if record["attempts"] >= 3:
         # Retain revisions already made; remove precisely identified unresolved claims.
@@ -1396,7 +1484,15 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         return True
     try:
         result = ask(
-            project, runtime, f"{mode}:{index}:{kind}", prompt, max_tokens=5500
+            project,
+            runtime,
+            f"{mode}:{index}:{kind}",
+            prompt,
+            max_tokens=5500,
+            images=[
+                config.safe_path(path)
+                for path in scene.get("storyboard_preview", [])[:1]
+            ],
         )
         issues = result.get("issues")
         if not isinstance(issues, list):
@@ -1456,7 +1552,7 @@ def simple_visual(scene):
     return {
         "type": "flow",
         "nodes": [{"en": scene["title"][:80], "ja": scene["title_ja"][:60]}],
-        "caption_en": scene["focus"],
+        "caption_en": scene["title"],
         "caption_ja": scene["title_ja"],
     }
 
@@ -1541,6 +1637,19 @@ def _sources_step(project, runtime):
                 )
                 data["figure_index"] = index + 1
                 return
+            if asset["data"].get("review", {}).get("issues") and unit.get(
+                "attempts", 0
+            ) > unit.get("repaired_after", 0):
+                try:
+                    visuals.repair_asset(
+                        asset, {"data": {"model": data["model"]}}, runtime
+                    )
+                    unit["repaired_after"] = unit["attempts"]
+                except (PracticePreempted, GPUUnavailable):
+                    raise
+                except Exception as exc:
+                    unit.update(repaired_after=unit["attempts"], error=str(exc)[:300])
+                return
             try:
                 passed = visuals.review_asset(
                     asset, {"data": {"model": data["model"]}}, runtime
@@ -1612,33 +1721,72 @@ def _sources_step(project, runtime):
             if re.search(r"references|bibliography", s["data"].get("label", ""), re.I)
         ]
         if not refs:
-            pages = [s for s in sources if s["kind"] == "page"]
+            pages = list(
+                {
+                    s["data"].get("page", s["id"]): s
+                    for s in sources
+                    if s["kind"] == "page"
+                }.values()
+            )
             first = next(
                 (
                     i
                     for i, s in enumerate(pages)
                     if re.search(
-                        r"(?im)^\s*(references|bibliography)\s*$", s["data"]["text"]
+                        r"(?im)^\s*(references|bibliography)\b", s["data"]["text"]
                     )
                 ),
                 None,
             )
             refs = pages[first : first + 4] if first is not None else pages[:4]
+        paper = db.one("SELECT * FROM papers WHERE id=?", (project["paper_id"],))
+        pdf_path = paper["data"].get("pdf_path")
+        if pdf_path and config.safe_path(pdf_path).is_file():
+            # Bibliographic titles must not interleave the two PDF columns.
+            import pymupdf
+
+            with pymupdf.open(config.safe_path(pdf_path)) as document:
+                reformatted = []
+                for source in refs:
+                    page_number = source["data"].get("page")
+                    if (
+                        source["kind"] == "page"
+                        and isinstance(page_number, int)
+                        and 0 < page_number <= len(document)
+                    ):
+                        page = document[page_number - 1]
+                        midpoint = page.rect.width / 2
+                        text = "\n".join(
+                            page.get_text(clip=box, sort=True)
+                            for box in (
+                                pymupdf.Rect(0, 0, midpoint, page.rect.height),
+                                pymupdf.Rect(
+                                    midpoint, 0, page.rect.width, page.rect.height
+                                ),
+                            )
+                        )
+                        source = source | {
+                            "data": source["data"]
+                            | {"text": re.sub(r"-\n(?=[a-z])", "", text)}
+                        }
+                    reformatted.append(source)
+                refs = reformatted
         prompt = (
-            "Select three to six EARLIER primary research papers from this bibliography that explain the historical problem and prior attempts leading to this paper. "
+            "Select three EARLIER primary research papers from this bibliography that explain the historical problem and prior attempts leading to this paper. "
             "Copy exact paper titles. Include arxiv_id ONLY if a matching arXiv URL is explicitly printed with that reference; never guess it. "
+            "Use complete bibliographic titles, NEVER short method names like Trellis or Dora. Choose at most three relevant references, not an exhaustive survey. "
             'Return {"references":[{"title":"exact title","arxiv_id":"ID from printed URL, otherwise empty","why":"why it helps this story"}]}.\n'
             + data["paper_title"]
             + award_context_prompt(project)
             + "\n"
-            + lessons.source_context(refs)[:26000]
+            + lessons.source_context(refs)[:42000]
         )
         result = bounded(
             project,
             runtime,
             "reference_selection",
             prompt,
-            lambda r: _reference_titles(r),
+            lambda r: _reference_titles(r, bibliography=lessons.source_context(refs)),
             lambda _: [],
             max_tokens=1800,
         )
@@ -1691,7 +1839,7 @@ def _sources_step(project, runtime):
     data["phase"] = "background"
 
 
-def _reference_titles(result):
+def _reference_titles(result, *, bibliography=""):
     rows = result.get("references")
     if not isinstance(rows, list):
         raise ValueError("A reference list is required")
@@ -1699,6 +1847,16 @@ def _reference_titles(result):
         raise ValueError(
             "Choose at least three historical references from the supplied bibliography"
         )
+    if bibliography:
+        normalize = lambda value: re.sub(r"[^a-z0-9]", "", value.lower())
+        printed = normalize(bibliography)
+        for row in rows[:6]:
+            title = row.get("title", "") if isinstance(row, dict) else ""
+            if len(title.split()) < 4 or normalize(title) not in printed:
+                raise ValueError(
+                    "Copy the complete printed bibliographic title, not a short method name: "
+                    + str(title)[:120]
+                )
     return [
         {
             "title": r["title"],
@@ -1857,6 +2015,40 @@ def plan_evidence(project, mode):
     return selected
 
 
+def validate_hooks(result):
+    rows = result.get("hook_candidates", [])
+    if len(rows) != 3 or any(
+        not all(
+            isinstance(row.get(key), str) and row[key].strip()
+            for key in ("title_ja", "title_en", "hook", "thumbnail_ja")
+        )
+        for row in rows
+    ):
+        raise ValueError("Supply three complete, distinct hook candidates")
+    if len({row["title_en"] for row in rows}) != 3:
+        raise ValueError("Make three distinct approaches")
+    for row in rows:
+        # Research names (3D, GPT-4) and conference years are not performance
+        # promises. The old blanket digit ban rejected every title about 3D.
+        title = row["title_en"] + " " + row["title_ja"]
+        if re.search(
+            r"\d[\d,.]*\s*(?:[%％]|倍|[x×]\b|times\b|fold\b)|万倍",
+            title,
+            re.I,
+        ) or re.search(
+            r"magic|change everything|without (?:ever )?(?:erasing|losing) "
+            r"(?:any|all|old|prior|previous) (?:knowledge|memory|capabilit)",
+            title + " " + row["hook"],
+            re.I,
+        ):
+            raise ValueError(
+                "Remove numerical performance promises and universal guarantees; "
+                "keep a concrete question about this paper's actual problem. "
+                "Research names and conference years may include digits."
+            )
+    return result
+
+
 def _plan_step(project, runtime):
     data = project["data"]
     for mode, track in data["modes"].items():
@@ -1958,31 +2150,6 @@ def _plan_step(project, runtime):
         if track.get("hooks_refined"):
             continue
 
-        def valid_hooks(r):
-            rows = r.get("hook_candidates", [])
-            if len(rows) != 3 or any(
-                not all(
-                    isinstance(v.get(k), str) and v[k].strip()
-                    for k in ("title_ja", "title_en", "hook", "thumbnail_ja")
-                )
-                for v in rows
-            ):
-                raise ValueError("Supply three complete, distinct hook candidates")
-            if len({v["title_en"] for v in rows}) != 3:
-                raise ValueError("Make three distinct approaches")
-            for v in rows:
-                if re.search(
-                    r"\d|万倍", v["title_en"] + " " + v["title_ja"]
-                ) or re.search(
-                    r"magic|without (?:erasing|losing)|two (?:tendons|levers)|change everything|10,000|万倍",
-                    v["hook"],
-                    re.I,
-                ):
-                    raise ValueError(
-                        "Remove numeric promises, fixed-rank claims and unsupported memory-preservation promises. Use a practical dilemma about adapting a model, not a frozen brain."
-                    )
-            return r
-
         r = bounded(
             project,
             runtime,
@@ -2002,7 +2169,7 @@ def _plan_step(project, runtime):
             + json.dumps(story_beats(project, mode))
             + "\nSUPPORTED IDEAS: "
             + json.dumps(plan_evidence(project, mode)[:12]),
-            valid_hooks,
+            validate_hooks,
             lambda _: _fallback_plan(project, mode),
             max_tokens=2200,
         )
@@ -2011,6 +2178,16 @@ def _plan_step(project, runtime):
                 hook_candidates=r["hook_candidates"],
                 selected_hook=r.get("selected_hook", 0),
             )
+            chosen = r["hook_candidates"][
+                max(0, min(2, int(r.get("selected_hook", 0))))
+            ]
+            track["packaging"] = {
+                "candidates": r["hook_candidates"],
+                "title": chosen["title_ja"][:95],
+                "title_en": chosen["title_en"],
+                "hook": chosen["hook"],
+                "thumbnail_text": chosen["thumbnail_ja"],
+            }
             track["hooks_refined"] = True
         return
     for mode, track in data["modes"].items():
@@ -2073,7 +2250,7 @@ def _plan_step(project, runtime):
             }
             track["plan_checked"] = True
         return
-    data.update(phase="production", current_mode="overview")
+    data.update(phase="production", current_mode=next(iter(data["modes"])))
 
 
 def _usable_plan(candidate, project, mode):
@@ -2260,6 +2437,15 @@ def fallback_hooks(project, mode):
 def _script_step(project, runtime, mode):
     track = project["data"]["modes"][mode]
     for index, scene in enumerate(track["scenes"]):
+        if (
+            "utterances" not in scene
+            and project["data"].get("storyboard_policy")
+            and not scene.get("storyboard_ready")
+        ):
+            from . import storyboards
+
+            storyboards.step(project, runtime, mode, index)
+            return
         if "utterances" not in scene:
             if index == 0:
                 track["opening_policy"] = {
@@ -2282,6 +2468,11 @@ def _script_step(project, runtime, mode):
 
             def valid(r):
                 r["utterances"] = validate_script(r, mode, known)
+                if scene.get("storyboard"):
+                    from . import storyboards
+
+                    r["visual"] = scene["storyboard"]["visual"]
+                    storyboards.bind_dialogue(scene["storyboard"], r["utterances"])
                 return r
 
             result = bounded(
@@ -2292,11 +2483,20 @@ def _script_step(project, runtime, mode):
                 valid,
                 lambda r: _fallback_script(project, mode, scene, r),
                 max_tokens=6500,
+                images=[
+                    config.safe_path(path)
+                    for path in scene.get("storyboard_preview", [])[:1]
+                ],
             )
             if result is not None:
                 scene.update(
                     {k: result.get(k) for k in ("utterances", "summary", "visual")}
                 )
+                if scene.get("storyboard"):
+                    from . import storyboards
+
+                    scene["visual"] = scene["storyboard"]["visual"]
+                    storyboards.bind_dialogue(scene["storyboard"], scene["utterances"])
                 for u in scene["utterances"]:
                     u["id"] = db.uid()
             return
@@ -2578,6 +2778,10 @@ def _align_step(project, runtime, mode):
             u["caption_ranges"] = aligned_ranges(
                 caption_units(u["text"]), result.get("timestamps", []), u["duration"]
             )
+            if scene.get("storyboard"):
+                from . import storyboards
+
+                u["visual_events"] = storyboards.timed_cues(scene, u)
             return
         if not scene.get("subtitles_ready"):
             _subtitle_step(project, runtime, mode, index)
@@ -3014,7 +3218,11 @@ def step(job, runtime):
         progress = 0.05
     elif phase == "plan":
         _plan_step(project, runtime)
-        stage = "Designing two stories and three opening approaches"
+        stage = (
+            "Designing the story and three opening approaches"
+            if len(data["modes"]) == 1
+            else "Designing two stories and three opening approaches"
+        )
         progress = 0.08
     elif phase == "production":
         mode = data["current_mode"]
@@ -3055,8 +3263,13 @@ def step(job, runtime):
                 track["release_check"] = story_video.finalize_packaging(
                     export["id"], project=project
                 )
-                if mode == "overview":
-                    data["current_mode"] = "deep_dive"
+                remaining = [
+                    m
+                    for m, t in data["modes"].items()
+                    if m != mode and not t.get("release_check")
+                ]
+                if remaining:
+                    data["current_mode"] = remaining[0]
                 else:
                     data["phase"] = "complete"
                     project["state"] = "ready"
@@ -3094,7 +3307,7 @@ def step(job, runtime):
     finished = project["state"] == "ready"
     db.patch_job(
         job["id"],
-        stage="Both documentary films are ready" if finished else stage,
+        stage="Documentary video is ready" if finished else stage,
         progress=1 if finished else progress,
     )
     return finished

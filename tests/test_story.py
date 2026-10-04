@@ -473,6 +473,8 @@ def test_script_generation_ignores_legacy_scene_word_quotas(
         "SELECT * FROM video_projects WHERE id=?",
         (story.create(paper())["project_id"],),
     )
+    # This unit exercises the existing writer after visual direction is ready.
+    p["data"].pop("storyboard_policy", None)
     track = p["data"]["modes"]["overview"]
     scene = {
         "title": "A useful example",

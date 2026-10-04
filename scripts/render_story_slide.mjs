@@ -47,6 +47,20 @@ const equations = (spec.equations || []).slice(0, 3).map((eq,i) => {
   const rendered = katex.renderToString(eq.latex, {displayMode:true,throwOnError:true,trust:false,strict:"warn",maxExpand:1000});
   return `<div class="equation ${i===mathFocus?'active':''}">${rendered}<p>${esc(eq.en)} <span lang="ja">${esc(eq.ja)}</span></p></div>`;
 }).join("");
+let pictorial="";
+if(spec.template==='surface_cells'){
+  if(nodes.length!==3)throw new Error('The surface-cell sketch needs three panels');
+  const grid=(sparse)=>{
+    let cells='';
+    for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+      const r=Math.hypot(x-3.5,y-3.5),surface=r>1.7&&r<3.2;
+      cells+=`<rect x="${x*43+70}" y="${y*43+20}" width="40" height="40" rx="4" fill="${surface?'#5daebd':sparse?'none':'#c7d3d2'}" stroke="${surface?'#266d80':'#b5c4c2'}" opacity="${surface||!sparse?1:.18}"/>`;
+    }
+    return `<svg viewBox="0 0 500 390"><g>${cells}</g><circle cx="240" cy="190" r="123" fill="none" stroke="#253e57" stroke-width="5"/><circle cx="240" cy="190" r="75" fill="none" stroke="#253e57" stroke-width="5"/></svg>`;
+  };
+  const attributes=`<svg viewBox="0 0 500 390"><rect x="120" y="40" width="240" height="240" rx="14" fill="#e2eced" stroke="#376a72" stroke-width="4"/><path d="M130 230 Q245 40 350 130" fill="none" stroke="#276f86" stroke-width="9"/><circle cx="240" cy="134" r="10" fill="#276f86"/><path d="M245 160 L245 305" stroke="#647785" stroke-width="4"/><circle cx="190" cy="327" r="23" fill="#e99c3b"/><circle cx="245" cy="327" r="23" fill="#6088ad"/><circle cx="300" cy="327" r="23" fill="#9a85b5"/></svg>`;
+  pictorial=nodes.map((node,i)=>`<section class="picture-panel ${Number(scene.focus||0)===i?'active':''}" style="left:${100+i*584}px"><div>${i===2?attributes:grid(i===1)}</div><h2>${esc(node.en)}</h2><p lang="ja">${esc(node.ja)}</p></section>`).join('');
+}
 let original = "";
 if (spec.image_path) {
   const filename = path.resolve(scene.data_root, spec.image_path);
@@ -56,10 +70,12 @@ if (spec.image_path) {
   if(zoom){
     if(!Array.isArray(zoom.box)||zoom.box.length!==4||zoom.box.some(n=>!Number.isFinite(n)||n<0||n>1)||zoom.box[2]<=0||zoom.box[3]<=0||zoom.box[0]+zoom.box[2]>1.001||zoom.box[1]+zoom.box[3]>1.001)throw new Error('Invalid verified region');
     const source=spec.original_source||{};
+    const labelEn=zoom.verified_region_ids?zoom.label_en:String(zoom.label_en||'').split(/\swith\s|[（(]/)[0];
+    const labelJa=String(zoom.label_ja||'').split(/[（(]/)[0];
     // Keep the whole source in view so a zoom never loses its location/context.
     original=`<div class="original-window" data-box="${esc(JSON.stringify(zoom.box))}">${original}</div>
       <aside class="source-overview"><div class="source-image">${original}<span class="source-highlight"></span></div><p>${esc(source.label||'Original figure')} ${source.page?`· p.${esc(source.page)}`:''}<br>Zoom location · 拡大位置</p></aside>
-      <div class="region-label"><div>${esc(zoom.label_en)}</div><div lang="ja">${esc(zoom.label_ja)}</div></div>`;
+      <div class="region-label"><div>${esc(labelEn)}</div><div lang="ja">${esc(labelJa)}</div></div>`;
   }
 }
 const badge = scene.mode === "overview" ? "THE IDEA · 解説編" : "UNDER THE HOOD · 詳解編";
@@ -67,7 +83,7 @@ const content = scene.thumbnail
   ? `<div class="thumbnail"><p>AI PAPERS × REAL ENGLISH</p><h1 lang="ja">${esc(scene.title_ja)}</h1><h2>${esc(scene.title_en)}</h2><span>図解・英日字幕 / ${badge}</span></div>`
   : `<header><div><h1>${esc(scene.title_en)}</h1><p lang="ja">${esc(scene.title_ja)}</p></div><span>${badge}</span></header>
     <main id="diagram"><div class="badge">${spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
-    ${showOriginal ? original : `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
+    ${showOriginal ? original : pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
     <div class="caption"><div>${esc(spec.caption_en)}</div><div lang="ja">${esc(spec.caption_ja)}</div></div></main>`;
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
@@ -93,6 +109,8 @@ header span{font-size:20px;color:#f4b950;flex:none}main{position:relative;height
 .source-overview p{font-size:18px;line-height:1.4;text-align:center;margin:8px 0 0;color:#466f5b}
 .region-label{position:absolute;top:521px;left:100px;right:100px;text-align:center;font-size:20px;line-height:1.3;color:#466f5b}
 .matrix{font-size:27px;font-family:monospace;margin-top:8px}
+.picture-panel{position:absolute;top:80px;width:550px;height:470px;padding:12px 20px;border-radius:18px;background:#ffffff9c;border:3px solid #b9cbbe}
+.picture-panel.active{border-color:#df9a32;background:#fff8e8}.picture-panel svg{display:block;width:100%;height:350px}.picture-panel h2{font-size:28px;text-align:center;margin:8px 0 5px;line-height:1.5}.picture-panel p{font-size:23px;text-align:center;color:#527362;margin:0;line-height:1.5}
 .captions{height:270px;background:#122e2c;position:relative;border-top:${Number(characters.layout.footer_border)}px solid #d99550}
 .avatar{position:absolute;top:10px;width:225px;height:245px;text-align:center;z-index:2}.avatar.left{left:34px}.avatar.right{right:34px}
 .avatar img{display:block;width:210px;height:210px;margin:0 auto;image-rendering:pixelated}
@@ -136,7 +154,7 @@ try {
     }
   });
   const errors = await page.evaluate(() => {
-    const problems=[...document.querySelectorAll(".node h2,.node p,.caption,.equation,.thumbnail h1,header h1,.region-label,.source-overview p")]
+    const problems=[...document.querySelectorAll(".node h2,.node p,.caption,.equation,.thumbnail h1,header h1,.region-label,.source-overview p,.picture-panel h2,.picture-panel p")]
       .filter(e => e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1).map(e => e.textContent);
     const caption=document.querySelector('.caption')?.getBoundingClientRect();
     for(const node of document.querySelectorAll('.node')) {
@@ -149,6 +167,7 @@ try {
     if(equations&&firstNode&&equations.bottom>firstNode.top-10)problems.push('Equations overlap meaning labels');
     const region=document.querySelector('.region-label')?.getBoundingClientRect();
     if(region&&caption&&region.bottom>caption.top-10)problems.push('Region label overlaps caption');
+    for(const panel of document.querySelectorAll('.picture-panel'))if(panel.querySelector('p').getBoundingClientRect().bottom>panel.getBoundingClientRect().bottom-8)problems.push('Picture label outside its panel');
     return problems;
   });
   if (errors.length) throw new Error("Visual text overflow: " + errors.join(" | "));

@@ -2199,10 +2199,13 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
     try {await post(`/jobs/${project.job.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}
   };
   const copy=(text:string)=>navigator.clipboard.writeText(text).catch(e=>onError(e.message));
+  const selectedModes=Object.keys(project?.data.modes || {});
+  const filmCount=selectedModes.length || 2;
+  const heading=filmCount===1 ? (selectedModes[0]==='overview'?'概要解説':'詳細解説') : '概要解説と詳細解説';
   return <section className="story-project" aria-label="解説・詳解動画">
-    <div className="story-heading"><div><h2>概要解説と詳細解説</h2><p>概要はアイデアを、詳細は原理・数式を解説します。図解と英日字幕、同じ会話の英語教材も一緒に作ります。</p></div>
+    <div className="story-heading"><div><h2>{heading}</h2><p>概要はアイデアを、詳細は原理・数式を解説します。図解と英日字幕、同じ会話の英語教材も一緒に作ります。</p></div>
       {!project ? <button className="primary" disabled={busy||loading} onClick={create}>{loading?"読み込み中…":busy?"開始中…":"解説・詳解動画を作る"} <Play size={16}/></button>
-      : <div className="actions"><Badge state={project.state}>{project.state==="ready"?"2本の動画が完成":project.job?.stage || "2本の動画を準備中"}</Badge>
+      : <div className="actions"><Badge state={project.state}>{project.state==="ready"?`${filmCount}本の動画が完成`:project.job?.stage || `${filmCount}本の動画を準備中`}</Badge>
         {['queued','running'].includes(project.job?.state) && <button className="secondary" onClick={()=>control('pause')}>一時停止</button>}
         {['paused','failed','cancelled'].includes(project.job?.state) && <button className="primary" onClick={()=>control('resume')}>続きから再開</button>}</div>}
     </div>

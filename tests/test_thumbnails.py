@@ -109,6 +109,46 @@ def test_selection_preserves_movies_audio_and_old_thumbnail_and_serves_both_form
     assert thumbnails.selected(row["id"], "overview")["id"] == "1"
 
 
+def test_thumbnail_writer_receives_main_paper_evidence_separately_from_hype(database):
+    row = project()
+    db.execute("UPDATE papers SET source_id='new-paper' WHERE id=?", (row["paper_id"],))
+    row["data"]["evidence"] = [
+        {
+            "claim": "Open surface boundaries are preserved.",
+            "source_ids": [row["paper_id"] + ":H1"],
+        },
+        {
+            "claim": "A different historical system matches 2D generation speed.",
+            "source_ids": ["other-paper:H1"],
+        },
+    ]
+    row["data"]["modes"]["overview"]["packaging"]["hook"] = "As fast as 2D?"
+    story.save(row)
+    ident = thumbnails.enqueue(row, "overview")
+    job = db.one("SELECT * FROM jobs WHERE kind='thumbnail' AND target=?", (ident,))
+
+    class LocalWriter:
+        def ask(self, prompt, **kwargs):
+            assert "PAPER CLAIMS:" in prompt
+            facts = prompt.split("PAPER CLAIMS:")[1]
+            assert "Open surface boundaries are preserved." in facts
+            assert "different historical system" not in facts
+            assert "As fast as 2D?" not in facts
+            assert "not benchmark evidence" in prompt
+            return {
+                "candidates": [
+                    {
+                        "lines": ["開いた形", "新しい表現"],
+                        "concept": "An open folded sheet",
+                    }
+                ]
+                * 3
+            }
+
+    assert thumbnails.step(job, LocalWriter()) is False
+    assert thumbnails.get(row["id"], "overview")["data"]["phase"] == "characters"
+
+
 def test_missing_image_cannot_be_selected(database):
     row = project()
     ident = thumbnails.enqueue(row, "overview")

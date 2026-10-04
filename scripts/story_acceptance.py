@@ -124,6 +124,7 @@ def inspect(ident, screenshots=False, sync=False):
     report = {
         "project_id": ident,
         "format": story.FORMAT,
+        "pipeline_version": project["data"].get("version"),
         "state": project["state"],
         "films": {},
         "discovery_enabled": db.settings()["discovery_enabled"],
@@ -307,11 +308,56 @@ def inspect(ident, screenshots=False, sync=False):
                                     path,
                                 )
                             )
+                    for cue_index, cue in enumerate(u.get("visual_events", [])):
+                        when = float(cue["start"])
+                        if not 0 < when < u["duration"]:
+                            continue
+                        timestamp = offset + min(when + 0.1, u["duration"] - 0.01)
+                        path = (
+                            root
+                            / f"{mode}-word-cue-{index + 1:02}-{ui}-{cue_index}.png"
+                        )
+                        subprocess.run(
+                            [
+                                imageio_ffmpeg.get_ffmpeg_exe(),
+                                "-hide_banner",
+                                "-loglevel",
+                                "error",
+                                "-y",
+                                "-ss",
+                                str(timestamp),
+                                "-i",
+                                str(mp4),
+                                "-frames:v",
+                                "1",
+                                str(path),
+                            ],
+                            check=True,
+                            timeout=40,
+                        )
+                        paths.append(str(path.relative_to(config.DATA)))
+                        if sync:
+                            sync_samples.append(
+                                media_sync_check(
+                                    mp4,
+                                    speech,
+                                    work / "captions.ass",
+                                    timestamp,
+                                    path,
+                                )
+                            )
                     offset += u["duration"]
                     previous = u
         if sync:
             checks["rendered_audio_caption_figure_sync"] = bool(sync_samples) and all(
                 s["passed"] for s in sync_samples
+            )
+        if project["data"].get("storyboard_policy"):
+            checks["storyboards_checked_before_dialogue"] = all(
+                s.get("storyboard_ready")
+                and s.get("storyboard_review", {}).get("complete")
+                and all(config.safe_path(p).is_file() for p in s["storyboard_preview"])
+                for s in track["scenes"]
             )
         report["films"][mode] = {
             "state": "ready",
@@ -332,12 +378,23 @@ def inspect(ident, screenshots=False, sync=False):
             ),
             "local_model": project["data"]["model"],
             "references": project["data"]["references"],
+            "original_figure_scenes": sum(
+                bool(s["visual"].get("original_asset_id")) for s in manifest["scenes"]
+            ),
+            "within_paragraph_visual_cues": sum(
+                len(u.get("visual_events", []))
+                for s in manifest["scenes"]
+                for u in s["utterances"]
+            ),
+            "storyboard_reviews": [s.get("storyboard_review") for s in track["scenes"]],
+            "warnings": project["data"].get("warnings", []),
             "review_caveat": "Bounded local-model reviews are recorded; they are not independent accuracy certification.",
         }
-    match = SequenceMatcher(None, *scripts, autojunk=False).find_longest_match()
-    report["longest_shared_word_sequence"] = match.size
-    report["shared_sequence"] = " ".join(scripts[0][match.a : match.a + match.size])
-    report["media_checks_pass"] = len(report["films"]) == 2 and all(
+    if len(scripts) == 2:
+        match = SequenceMatcher(None, *scripts, autojunk=False).find_longest_match()
+        report["longest_shared_word_sequence"] = match.size
+        report["shared_sequence"] = " ".join(scripts[0][match.a : match.a + match.size])
+    report["media_checks_pass"] = bool(report["films"]) and all(
         f.get("state") == "ready" and all(f["checks"].values())
         for f in report["films"].values()
     )

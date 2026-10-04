@@ -7,7 +7,6 @@ from urllib.parse import quote
 import httpx
 import imageio_ffmpeg
 import pytest
-
 from paperspeak import config, db, papers, video, video_overlay, youtube
 from paperspeak.runtime import PracticePreempted
 
@@ -70,6 +69,21 @@ def test_long_bilingual_captions_fit_between_the_characters_without_truncation()
     assert all(video_overlay._width(line, layout["ja_size"]) <= video_overlay.CAPTION_WIDTH
                for line in layout["japanese"])
     assert layout["ja_top"] + len(layout["japanese"]) * layout["ja_size"] * 1.17 <= 1070
+
+
+def test_japanese_captions_keep_fitting_loanwords_whole_and_preserve_all_text():
+    text = "だいたい、とても高価で、しかも非常にぼやけたビデオゲームのキャラクターみたいな見た目です。"
+    for size in video_overlay.JA_SIZES:
+        lines = video_overlay._wrap_japanese(text, size)
+        assert "".join(lines) == text
+        assert any("ビデオゲーム" in line for line in lines)
+        assert any("キャラクター" in line for line in lines)
+        assert all(video_overlay._width(line, size) <= video_overlay.CAPTION_WIDTH for line in lines)
+    # A single overlong identifier must not cause a loop or silently lose text.
+    for text in ("A" * 150, "カ" * 100, "あ" * 100):
+        lines = video_overlay._wrap_japanese(text, 37)
+        assert "".join(lines) == text
+        assert all(line and video_overlay._width(line, 37) <= video_overlay.CAPTION_WIDTH for line in lines)
 
 
 def test_wav_lip_sync_closes_during_pauses_and_only_marks_the_speaker(database):
@@ -227,7 +241,7 @@ def test_complete_video_joins_chapters_and_offsets_both_srt_tracks(database):
     for ordinal, color in enumerate(("red", "blue")):
         path = database / "videos" / f"part-{ordinal}.mp4"
         subprocess.run([ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi",
-                        "-i", f"testsrc2=s=1920x1080:r=30:d=2", "-f", "lavfi",
+                        "-i", "testsrc2=s=1920x1080:r=30:d=2", "-f", "lavfi",
                         "-i", "sine=frequency=440:sample_rate=48000:duration=2",
                         "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
                         "-c:a", "aac", "-ar", "48000", "-ac", "2", "-shortest", "-y", str(path)],

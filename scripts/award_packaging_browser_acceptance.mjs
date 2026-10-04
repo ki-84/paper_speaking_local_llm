@@ -41,9 +41,9 @@ try{
     expect(complete.data.description).toContain(prize.name);
     expect(complete.data.description).toContain(`${prize.venue} ${prize.year}`);
    }
-   await film.getByText('Titles & description · タイトルと説明欄',{exact:true}).click();
+   await film.getByText('投稿タイトル・説明文',{exact:true}).click();
    await expect(film.locator('textarea')).toHaveValue(complete.data.description);
-   await expect(film.getByRole('link',{name:'Download MP4 · 動画',exact:true})).toHaveAttribute('download',complete.data.title+'.mp4');
+   await expect(film.getByRole('link',{name:'MP4をダウンロード',exact:true})).toHaveAttribute('download',complete.data.title+'.mp4');
    const downloads=[];
    for(const candidate of set.data.candidates){
     for(const format of ['png','jpg']){

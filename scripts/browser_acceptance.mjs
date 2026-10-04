@@ -38,7 +38,7 @@ try {
   if (index < 0) throw new Error('No paper claim with original evidence.');
   const progress = {chapter_id: chapter.id, turn_index: index, role: 'both', speed: 1, subtitles: true};
   await page.request.put(base + api + '/progress', {data: progress});
-  await page.locator('.lesson-card').filter({hasText: detail.data.title}).first().click();
+  await page.getByRole('button',{name: detail.data.title+'を練習',exact:true}).first().click();
   await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[index].text);
   await expect(page.locator('.player-tools label.inline-label select')).toHaveValue('1');
   if (chapter.data.turns[index].speaker === 'guide' && chapter.data.turns[index].voice === 'Maya') {
@@ -69,7 +69,7 @@ try {
   await expect.poll(async () => (await (await page.request.get(base + api)).json()).progress.turn_index).toBe(index + 1);
   await page.reload();
   await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
-  await page.locator('.lesson-card').filter({hasText: detail.data.title}).first().click();
+  await page.getByRole('button',{name: detail.data.title+'を練習',exact:true}).first().click();
   await expect(page.locator('.spoken-sentence')).toHaveText(nextText);
   report.checks.position_restored = true;
   await page.locator('.question').first().click();

@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-04",
+  "status": "passed",
+  "scope": "Further UI cleanup: grouped practice, focused paper selection, Japanese production controls and readable mobile navigation",
+  "tests": {
+    "frontend_browser": 24,
+    "production_build": "passed",
+    "git_diff_check": "passed",
+    "script_syntax": "passed"
+  },
+  "lan_ui": {
+    "time": "2026-10-04T10:36:04.294Z",
+    "checks": {
+      "library_is_only_chronological_videos": true,
+      "creation_has_compact_progress": true,
+      "awards_are_available_on_demand": true,
+      "paper_picker_prioritises_current_projects": true,
+      "project_details_load_with_japanese_controls": true,
+      "practice_editions_grouped_by_paper": true,
+      "ready_lesson_audio_and_recording_controls": true,
+      "old_automation_controls_removed": true,
+      "no_jobs_started_or_resumed": true,
+      "no_browser_exceptions": true
+    },
+    "pages": [
+      {
+        "name": "videos",
+        "mobile_overflow": false
+      },
+      {
+        "name": "create",
+        "mobile_overflow": false
+      },
+      {
+        "name": "practice",
+        "mobile_overflow": false
+      },
+      {
+        "name": "discover",
+        "mobile_overflow": false
+      },
+      {
+        "name": "settings",
+        "mobile_overflow": false
+      }
+    ],
+    "status": "passed",
+    "video_count": 13,
+    "lesson_count": 14,
+    "practice_paper_count": 7
+  },
+  "changes": [
+    "Grouped overview and deep-dive practice under one paper title; older lesson versions are folded with their original IDs",
+    "Default paper picker includes papers with current lessons; other saved papers remain accessible through an explicit option and title/ID search",
+    "Production actions, download buttons, script and packaging labels use Japanese",
+    "At small widths, the menu moves to the top and displays all five Japanese labels",
+    "Removed unused decorative hero, simulated paper, old recommendation and progress styling"
+  ],
+  "deployment": {
+    "service": "paperspeak.service",
+    "frontend_updated": true,
+    "service_restart_required": false,
+    "active_jobs": [
+      {
+        "id": "a9275aa0a40b4f7ca797fddc5607b360",
+        "kind": "video_project",
+        "state": "running",
+        "stage": "詳解編 · Checking speech and preparing Japanese subtitles"
+      }
+    ],
+    "old_lessons_paused": 3
+  },
+  "screenshots": [
+    "data/evaluation/ui-cleanup-practice.png",
+    "data/evaluation/ui-cleanup-paper-picker.png",
+    "data/evaluation/ui-cleanup-videos-phone.png"
+  ],
+  "limits": [
+    "Browser microphone tests use file-fed audio; physical Mac hardware was not retested."
+  ]
+}

@@ -33,9 +33,19 @@ try {
  await expect(page.getByRole('region',{name:'学会別の受賞論文'}).getByRole('table')).toBeVisible();
  report.checks.awards_are_available_on_demand=true;
  await page.getByText('学会の受賞情報・取得状況',{exact:true}).click();
+ await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
+ const currentLessons=await api('/lessons'), activePapers=new Set(currentLessons.map(l=>l.paper_id));
+ await expect(page.getByLabel('動画を作る論文').locator('option')).toHaveCount(activePapers.size);
+ report.checks.paper_picker_prioritises_current_projects=true;
+ await expect(page.locator('.story-studio .story-film')).toHaveCount(2,{timeout:30000});
+ report.checks.project_details_load_with_japanese_controls=true;
+ await shot('paper-picker');
  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
  const lessons=await api('/lessons');report.lesson_count=lessons.length;
  await expect(page.locator('.lesson-card')).toHaveCount(lessons.length);
+ await expect(page.locator('.practice-paper')).toHaveCount(new Set(lessons.map(l=>l.paper_id)).size);
+ report.practice_paper_count=new Set(lessons.map(l=>l.paper_id)).size;
+ report.checks.practice_editions_grouped_by_paper=true;
  await shot('practice');
  const id=lessons.find(l=>l.data.format==='paper-story-1'&&l.state==='ready')?.id;
  if(!id)throw new Error('No ready story lesson');
@@ -55,6 +65,7 @@ try {
   await page.locator('nav').getByRole('button',{name:label,exact:true}).click();
   await page.setViewportSize({width:390,height:844});
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+  await expect.poll(()=>page.locator('nav button').evaluateAll(buttons=>buttons.every(b=>parseFloat(getComputedStyle(b).fontSize)>0))).toBeTruthy();
   await shot(name+'-phone');report.pages.push({name,mobile_overflow:false});
  }
  await expect(page.getByText('従来の論文探索・章教材')).toHaveCount(0);

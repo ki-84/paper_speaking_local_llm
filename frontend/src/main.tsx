@@ -291,11 +291,11 @@ function App() {
             <button role="tab" aria-selected={creationTab === "manual"} onClick={() => setCreationTab("manual")}>保存済みの論文から作る</button>
           </div>
           {creationTab === "auto" ? <NightlyVideos version={version} onError={setError} refresh={refresh} openLesson={openLesson} viewVideos={() => navigate("library")} />
-            : <StoryStudio papers={papers} selectedPaperId={selectedPaper} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />}
+            : <StoryStudio papers={papers} lessonPaperIds={lessons.map(l=>l.paper_id)} selectedPaperId={selectedPaper} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />}
           <details className="workspace-details" onToggle={e => setShowAwards(e.currentTarget.open)}><summary>学会の受賞情報・取得状況</summary>{showAwards && <ConferenceAwards version={version} onError={setError} refresh={refresh} />}</details>
           <details className="workspace-details" onToggle={e => setShowJobs(e.currentTarget.open)}><summary>詳しい処理状況</summary>{showJobs && <ProcessingJobs jobs={jobs} act={act} />}</details>
         </>}
-        {page === "practice" && <PracticeLibrary lessons={lessons} reviews={reviews.length} openLesson={openLesson} review={() => navigate("review")} />}
+        {page === "practice" && <PracticeLibrary lessons={lessons} papers={papers} reviews={reviews.length} openLesson={openLesson} review={() => navigate("review")} />}
         {page === "discover" && (
           <>
             <PageHeading
@@ -456,18 +456,35 @@ function App() {
     </div>
   );
 }
-function PracticeLibrary({lessons,reviews,openLesson,review}:{lessons:Row[];reviews:number;openLesson:(id:string)=>void;review:()=>void}) {
+function PracticeLibrary({lessons,papers,reviews,openLesson,review}:{lessons:Row[];papers:Row[];reviews:number;openLesson:(id:string)=>void;review:()=>void}) {
   const [query,setQuery]=useState("");
-  const visible=lessons.filter(l=>l.data.title?.toLowerCase().includes(query.trim().toLowerCase()));
+  const paperById=new Map(papers.map(p=>[p.id,p]));
+  const groups=new Map<string,Row[]>();
+  for(const lesson of lessons) {
+    const key=lesson.paper_id||lesson.id;
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key)!.push(lesson);
+  }
+  const titleFor=(id:string,rows:Row[])=>paperById.get(id)?.title||rows[0].data.title.replace(/\s*[·—]\s*(解説編|詳解編|概要解説|詳細解説)$/,'');
+  const labelFor=(l:Row)=>l.data.mode==='overview'?'概要解説':l.data.mode==='deep_dive'?'詳細解説':'英語練習';
+  const visible=Array.from(groups).filter(([id,rows])=>`${titleFor(id,rows)} ${rows.map(l=>l.data.title+' '+labelFor(l)).join(' ')}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const lessonButton=(l:Row)=><button className="lesson-card" aria-label={`${l.data.title}を練習`} data-lesson-id={l.id} key={l.id} onClick={()=>openLesson(l.id)}>
+    <Headphones size={17}/><span className="practice-track-label">{labelFor(l)}<small>{l.ready_chapters||0} / {l.chapter_count||0}場面</small></span>
+    <Badge state={l.state==='ready'?'ready':l.state}>{l.state==='ready'?'練習できます':l.ready_chapters?'完成分を練習':'作成中'}</Badge><ArrowUpRight size={18}/>
+  </button>;
   return <section aria-label="英語練習教材">
-    <div className="workspace-heading"><PageHeading eyebrow="動画と同じ会話で練習" title="英語練習" description="聞く、話す、理解を確かめる。作成途中の教材も、完成した場面から練習できます。" />
+    <div className="workspace-heading"><PageHeading eyebrow="動画と同じ会話で練習" title="英語練習" description="論文を選んで、概要・詳細の会話を練習できます。完成した場面から聞く・話す・理解を確かめる練習へ。" />
       <button className="secondary" onClick={review}><RotateCcw size={16}/> 今日の復習{reviews>0&&`（${reviews}件）`}</button></div>
     <label className="practice-search">教材を検索<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="論文名・概要解説・詳細解説…"/></label>
-    <div className="lesson-grid">{visible.map(l=><button className="lesson-card" data-lesson-id={l.id} key={l.id} onClick={()=>openLesson(l.id)}>
-      <div className="card-meta"><Badge state={l.state === "ready" ? "ready" : l.state}>{l.state === "ready" ? "練習できます" : `${l.ready_chapters||0}場面が完成`}</Badge><span>{date(l.created)}</span></div>
-      <h3>{l.data.title}</h3>
-      <div className="card-bottom"><span><Headphones size={16}/>{l.ready_chapters||0} / {l.chapter_count||0}場面</span><span className="circle-arrow"><ArrowUpRight size={20}/></span></div>
-    </button>)}</div>
+    <div className="lesson-grid practice-groups">{visible.map(([id,rows])=>{
+      const latest=new Map<string,Row>(),earlier:Row[]=[];
+      for(const l of rows){const mode=l.data.mode||'lesson';if(!latest.has(mode))latest.set(mode,l);else earlier.push(l);}
+      return <article className="practice-paper" key={id} data-paper-id={id}>
+        <div className="card-meta"><span>英語教材</span><time dateTime={new Date(rows[0].created*1000).toISOString()}>{new Date(rows[0].created*1000).toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo',month:'long',day:'numeric'})}</time></div>
+        <h2>{titleFor(id,rows)}</h2><div className="practice-tracks">{Array.from(latest.values()).map(lessonButton)}</div>
+        {earlier.length>0&&<details className="practice-revisions"><summary>以前の教材（{earlier.length}件）</summary>{earlier.map(lessonButton)}</details>}
+      </article>;
+    })}</div>
     {!visible.length&&<p className="notice">{query?'条件に合う教材がありません。':'動画を作ると、同じ会話の英語教材がここに表示されます。'}</p>}
   </section>;
 }
@@ -2143,14 +2160,20 @@ function ThumbnailChoices({projectId,mode,track,onError,refresh}:{projectId:stri
 
 type StoryPanelProps = {paperId:string;projectId?:string;version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void};
 
-function StoryStudio({papers, selectedPaperId, ...props}: Omit<StoryPanelProps,"paperId"> & {papers:Row[];selectedPaperId:string}) {
-  const [selected,setSelected] = useState("");
-  useEffect(() => {if (selectedPaperId) setSelected(selectedPaperId);}, [selectedPaperId]);
-  useEffect(() => {if (!selected && papers.length) setSelected(papers[0].id);}, [papers,selected]);
-  if (!papers.length) return <p className="notice">まだ論文がありません。arXiv・PDFを取り込むか、「論文を探す」から選んでください。</p>;
-  return <section className="story-studio"><label>動画を作る論文
-    <select value={selected} onChange={e=>setSelected(e.target.value)}>{papers.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select>
-    </label>{selected && <StoryProjectPanel paperId={selected} {...props} />}</section>;
+function StoryStudio({papers,lessonPaperIds,selectedPaperId,...props}:Omit<StoryPanelProps,"paperId">&{papers:Row[];lessonPaperIds:string[];selectedPaperId:string}) {
+  const [selected,setSelected]=useState(selectedPaperId),[query,setQuery]=useState(""),[showOthers,setShowOthers]=useState(false);
+  const activeIds=new Set(lessonPaperIds);
+  const current=papers.filter(p=>activeIds.has(p.id)||p.id===selectedPaperId);
+  const offered=(showOthers||!current.length?papers:current).filter(p=>`${p.title} ${p.source_id}`.toLowerCase().includes(query.trim().toLowerCase()));
+  useEffect(()=>{if(selectedPaperId){setQuery("");setSelected(selectedPaperId);}},[selectedPaperId]);
+  useEffect(()=>{if(!offered.some(p=>p.id===selected))setSelected(offered[0]?.id||"");},[offered,selected]);
+  if(!papers.length)return <p className="notice">まだ論文がありません。arXiv・PDFを取り込むか、「論文を探す」から選んでください。</p>;
+  return <section className="story-studio">
+    <label>保存済みの論文を検索<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="論文名・arXiv ID…"/></label>
+    <div className="paper-picker-tools"><label className="check-label"><input type="checkbox" checked={showOthers} onChange={e=>setShowOthers(e.target.checked)}/> 参考文献・未作成の論文も表示</label><small>{offered.length}本</small></div>
+    {offered.length?<label>動画を作る論文<select value={selected} onChange={e=>setSelected(e.target.value)}>{offered.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>:<p>条件に合う保存済み論文がありません。</p>}
+    {selected&&<StoryProjectPanel paperId={selected} {...props}/>}
+  </section>;
 }
 
 function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson}:StoryPanelProps) {
@@ -2177,11 +2200,11 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
   };
   const copy=(text:string)=>navigator.clipboard.writeText(text).catch(e=>onError(e.message));
   return <section className="story-project" aria-label="解説・詳解動画">
-    <div className="story-heading"><div><h2>概要解説と詳細解説</h2><p>自然なC1英語の会話、動く図解、英日字幕。数式なしの解説編と、原理まで学ぶ詳解編。長さより面白さとわかりやすさを優先します。</p></div>
+    <div className="story-heading"><div><h2>概要解説と詳細解説</h2><p>概要はアイデアを、詳細は原理・数式を解説します。図解と英日字幕、同じ会話の英語教材も一緒に作ります。</p></div>
       {!project ? <button className="primary" disabled={busy||loading} onClick={create}>{loading?"読み込み中…":busy?"開始中…":"解説・詳解動画を作る"} <Play size={16}/></button>
-      : <div className="actions"><Badge state={project.state}>{project.state==="ready"?"2本の動画が完成":project.job?.stage || "Preparing two stories"}</Badge>
-        {['queued','running'].includes(project.job?.state) && <button className="secondary" onClick={()=>control('pause')}>Pause · 一時停止</button>}
-        {['paused','failed','cancelled'].includes(project.job?.state) && <button className="primary" onClick={()=>control('resume')}>Resume · 続きから再開</button>}</div>}
+      : <div className="actions"><Badge state={project.state}>{project.state==="ready"?"2本の動画が完成":project.job?.stage || "2本の動画を準備中"}</Badge>
+        {['queued','running'].includes(project.job?.state) && <button className="secondary" onClick={()=>control('pause')}>一時停止</button>}
+        {['paused','failed','cancelled'].includes(project.job?.state) && <button className="primary" onClick={()=>control('resume')}>続きから再開</button>}</div>}
     </div>
     {project && <>
       {project.job?.error && <p role="alert">{project.job.error}</p>}
@@ -2191,23 +2214,23 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
         const complete=track.videos?.find((v:any)=>v.kind===mode&&v.state==='ready');
         const preview=track.videos?.find((v:any)=>v.kind===`${mode}_preview`&&v.state==='ready');
         const visible=complete||preview;
-        return <article className="story-film" key={mode}><div className="eyebrow">{mode==='overview'?'THE IDEA · 数式なし':'UNDER THE HOOD · 数式と原理'}</div>
+        return <article className="story-film" key={mode}><div className="eyebrow">{mode==='overview'?'概要解説 · 数式なし':'詳細解説 · 数式と原理'}</div>
           <h3>{track.packaging?.title || track.label}</h3>{complete ? <p>{minutes(complete.data.duration)} · 完成</p> : <StoryGenerationProgress track={track}/>}
           {visible && <video controls preload="metadata" poster={fileUrl(visible.data.thumbnail)} src={fileUrl(visible.data.mp4)} />}
           {preview&&!complete&&<small>冒頭約90秒のプレビューです。全体の作成は続いています。</small>}
-          <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>Download MP4 · 動画</a>}
-            {visible&&<a className="secondary" href={fileUrl(visible.data.thumbnail)} download={`${visible.data.title}.png`}>Thumbnail · サムネイル</a>}
-            <button className="secondary" onClick={()=>openLesson(track.lesson_id)}>Practice English · 英語練習</button></div>
+          <div className="actions">{complete&&<a className="primary" href={fileUrl(complete.data.mp4)} download={`${complete.data.title}.mp4`}>MP4をダウンロード</a>}
+            {visible&&<a className="secondary" href={fileUrl(visible.data.thumbnail)} download={`${visible.data.title}.png`}>サムネイルをダウンロード</a>}
+            <button className="secondary" onClick={()=>openLesson(track.lesson_id)}>この会話で英語練習</button></div>
           <details><summary>サムネイルを選ぶ・作り直す</summary><ThumbnailChoices projectId={project.id} mode={mode} track={track} onError={onError} refresh={refresh}/></details>
-          {track.packaging&&<details><summary>Titles & description · タイトルと説明欄</summary>
-            {track.packaging.candidates.map((c:any,i:number)=><div className="story-title" key={i}><span>{c.title_ja}</span><button className="text-button" onClick={()=>copy(c.title_ja)}>Copy</button></div>)}
+          {track.packaging&&<details><summary>投稿タイトル・説明文</summary>
+            {track.packaging.candidates.map((c:any,i:number)=><div className="story-title" key={i}><span>{c.title_ja}</span><button className="text-button" onClick={()=>copy(c.title_ja)}>コピー</button></div>)}
             <textarea aria-label={`${track.label} YouTube description`} readOnly value={complete?.data.description || track.packaging.description || "動画の完成時に説明文とタイムスタンプを用意します。"}/>
-            <button className="secondary" onClick={()=>copy(complete?.data.description || track.packaging.description || '')}>Copy description · 説明欄をコピー</button></details>}
-          {!!track.scenes?.length&&<details><summary>Script & review · 脚本と確認結果</summary>{track.scenes.map((s:any,i:number)=><div className="story-script" key={i}><h4>{s.title} / {s.title_ja}</h4>{s.utterances.map((u:any)=><p key={u.id}><strong>{u.speaker==='guide'?'Maya':'Aiden'}:</strong> {u.text}</p>)}{Object.entries(s.reviews||{}).map(([kind,value])=>{const review=value as any;return <small className="story-review" key={kind}>{kind==='content'?'Content · 内容':'Editing · 編集'}: {review.status||'checking'}{review.history?.at(-1)?.notes&&` — ${review.history.at(-1).notes}`}</small>;})}</div>)}</details>}
-          {!!track.expressions?.length&&<details><summary>Useful English · 使える表現</summary>{track.expressions.map((e:any)=><p key={e.phrase}><strong>{e.phrase}</strong> — {e.meaning_ja}<br/>{e.usage_en}</p>)}</details>}
+            <button className="secondary" onClick={()=>copy(complete?.data.description || track.packaging.description || '')}>説明文をコピー</button></details>}
+          {!!track.scenes?.length&&<details><summary>脚本・確認結果</summary>{track.scenes.map((s:any,i:number)=><div className="story-script" key={i}><h4>{s.title} / {s.title_ja}</h4>{s.utterances.map((u:any)=><p key={u.id}><strong>{u.speaker==='guide'?'Maya':'Aiden'}:</strong> {u.text}</p>)}{Object.entries(s.reviews||{}).map(([kind,value])=>{const review=value as any;return <small className="story-review" key={kind}>{kind==='content'?'Content · 内容':'Editing · 編集'}: {review.status||'checking'}{review.history?.at(-1)?.notes&&` — ${review.history.at(-1).notes}`}</small>;})}</div>)}</details>}
+          {!!track.expressions?.length&&<details><summary>使える英語表現</summary>{track.expressions.map((e:any)=><p key={e.phrase}><strong>{e.phrase}</strong> — {e.meaning_ja}<br/>{e.usage_en}</p>)}</details>}
         </article>;
       })}</div>
-      {!!project.data.warnings?.length&&<details><summary>Generation notes · 作成時の補足 ({project.data.warnings.length})</summary>{project.data.warnings.map((w:any,i:number)=><p key={i}>{w.reason} · {w.action}</p>)}</details>}
+      {!!project.data.warnings?.length&&<details><summary>作成時の補足 ({project.data.warnings.length})</summary>{project.data.warnings.map((w:any,i:number)=><p key={i}>{w.reason} · {w.action}</p>)}</details>}
       <p className="subtle">完成した動画はYouTube Studioへ手動でアップロードできます。英語と日本語の字幕は動画に直接入ります。</p>
     </>}
   </section>;

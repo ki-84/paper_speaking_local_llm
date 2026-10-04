@@ -60,7 +60,7 @@ try {
   if(process.argv.includes('--require-complete')){
     for(let i=0;i<2;i++){
       const card=movies.nth(i),v=card.locator('video');
-      await expect(card.getByRole('link',{name:'Download MP4 · 動画'})).toBeVisible();
+      await expect(card.getByRole('link',{name:'MP4をダウンロード'})).toBeVisible();
       await v.evaluate(video=>video.play());
       await expect.poll(()=>v.evaluate(video=>video.currentTime)).toBeGreaterThan(0);
       await v.evaluate(video=>video.pause());
@@ -74,15 +74,15 @@ try {
   await expect.poll(()=>film.evaluate(v=>v.currentTime)).toBeGreaterThan(0);
   report.checks.finished_movie_plays=true;
   await film.evaluate(v=>v.pause());
-  const href=await overview.getByRole('link',{name:'Download MP4 · 動画'}).getAttribute('href');
+  const href=await overview.getByRole('link',{name:'MP4をダウンロード'}).getAttribute('href');
   const range=await context.request.get(new URL(href,base).href,{headers:{Range:'bytes=0-1023'}});
   report.checks.lan_mp4_range_download=range.status()===206&&(await range.body()).length===1024;
-  await overview.locator('summary').filter({hasText:'Titles & description'}).click();
+  await overview.locator('summary').filter({hasText:'投稿タイトル・説明文'}).click();
   await expect(overview.locator('.story-title')).toHaveCount(3);
   await expect(overview.locator('textarea')).toHaveValue(/0:00/);
   report.checks.packaging_and_timestamps=true;
   await page.screenshot({path:path.join(root,'data/evaluation/story-library.png'),fullPage:true});
-  await overview.getByRole('button',{name:'Practice English · 英語練習'}).click();
+  await overview.getByRole('button',{name:'この会話で英語練習'}).click();
   await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[0].text);
   await expect(page.locator('.sentence-translation')).not.toBeEmpty();
   report.checks.same_script_and_initial_japanese=true;
@@ -104,7 +104,7 @@ try {
     await context.request.put(base+`/api/lessons/${lesson.id}/progress`,{data:{chapter_id:chapter.id,turn_index:0,role:'both',speed:1,subtitles:true}});
     await page.reload();
     await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
-    await page.locator('.lesson-card').filter({hasText:lesson.data.title}).first().click();
+    await page.getByRole('button',{name:lesson.data.title+'を練習',exact:true}).first().click();
     await expect(page.locator('.spoken-sentence')).toHaveText(chapter.data.turns[0].text);
     const posted=page.waitForResponse(r=>r.url().endsWith('/api/attempts')&&r.request().method()==='POST',{timeout:60000});
     await page.locator('.record-button').click();
@@ -134,7 +134,7 @@ try {
     await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
   await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
     await page.locator('.story-studio select').selectOption(project.paper_id);
-    await page.locator('.story-studio .story-film').nth(1).getByRole('button',{name:'Practice English · 英語練習'}).click();
+    await page.locator('.story-studio .story-film').nth(1).getByRole('button',{name:'この会話で英語練習'}).click();
     await expect(page.locator('.spoken-sentence')).toHaveText(turn.text);
     await expect(page.locator('.sentence-translation')).not.toBeEmpty();
     const img=page.locator('.visual-picture img');

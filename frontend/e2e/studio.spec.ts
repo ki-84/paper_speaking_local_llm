@@ -429,6 +429,7 @@ test("workspaces separate watching, making and practice without legacy controls"
     await page.locator('nav').getByRole('button',{name,exact:true}).click();
     await page.setViewportSize({width:390,height:844});
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+    await expect.poll(()=>page.locator('nav button').evaluateAll(buttons=>buttons.every(b=>parseFloat(getComputedStyle(b).fontSize)>0))).toBeTruthy();
   }
 });
 
@@ -448,4 +449,46 @@ test("arXiv and PDF import buttons create stories instead of legacy lessons", as
     const ls=await (await page.request.get('/api/lessons')).json();
     return ls.filter((l:any)=>l.data.format==='paper-story-1'&&l.data.title.includes('New paper')).length;
   }).toBe(2);
+});
+
+test('practice shows one paper with two editions and folds older lessons', async ({page})=>{
+  const base=(await (await page.request.get('/api/lessons')).json()).find((l:any)=>l.data.title==='Interface test: a small change');
+  const overview={...base,data:{...base.data,title:'One useful paper · 解説編',format:'paper-story-1',mode:'overview'}};
+  const deep={...base,id:'test-deep',state:'building',ready_chapters:1,chapter_count:5,data:{...base.data,title:'One useful paper · 詳解編',format:'paper-story-1',mode:'deep_dive'}};
+  const earlier={...overview,id:'earlier-lesson',created:base.created-86400,data:{...overview.data,title:'Earlier conversation'}};
+  await page.route('**/api/lessons',route=>route.fulfill({json:[overview,deep,earlier]}));
+  await page.route('**/api/papers',route=>route.fulfill({json:[{id:base.paper_id,title:'One useful paper',data:{}}]}));
+  await page.reload();
+  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'One useful paper',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'One useful paper · 詳解編を練習',exact:true})).toContainText('完成分を練習');
+  await expect(page.getByRole('button',{name:'Earlier conversationを練習',exact:true})).not.toBeVisible();
+  await page.getByText('以前の教材（1件）',{exact:true}).click();
+  await expect(page.getByRole('button',{name:'Earlier conversationを練習',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'One useful paper · 解説編を練習',exact:true}).click();
+  await expect(page.locator('.spoken-sentence')).toHaveText('The model learns a small change instead of changing every weight.');
+});
+
+test('saved-paper picker prioritises current projects and searches other saved papers on request', async ({page})=>{
+  const base=(await (await page.request.get('/api/lessons')).json()).find((l:any)=>l.data.title==='Interface test: a small change');
+  await page.route('**/api/lessons',route=>route.fulfill({json:[base]}));
+  await page.route('**/api/papers',route=>route.fulfill({json:[
+    {id:'archived-paper',title:'Old legacy paper',source_id:'1001.00001',lesson_count:1,data:{}},
+    {id:'reference-paper',title:'Related reference',source_id:'1234.56789',lesson_count:0,data:{}},
+    {id:base.paper_id,title:'Current project paper',source_id:'2106.09685',lesson_count:2,data:{}},
+  ]}));
+  await page.reload();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
+  const picker=page.getByLabel('動画を作る論文');
+  await expect(picker.locator('option')).toHaveCount(1);
+  await expect(picker).toHaveValue(base.paper_id);
+  await page.getByLabel('参考文献・未作成の論文も表示').check();
+  await expect(picker.locator('option')).toHaveCount(3);
+  await page.getByLabel('保存済みの論文を検索').fill('1234.56789');
+  await expect(picker.locator('option')).toHaveCount(1);
+  await expect(picker).toHaveValue('reference-paper');
+  await page.getByLabel('参考文献・未作成の論文も表示').uncheck();
+  await expect(page.getByText('条件に合う保存済み論文がありません。')).toBeVisible();
+  await expect(page.getByRole('region',{name:'解説・詳解動画',exact:true})).toHaveCount(0);
 });

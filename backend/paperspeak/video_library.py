@@ -2,9 +2,56 @@
 
 from __future__ import annotations
 
+import json
+import time
+
 from . import config, db
 
 KINDS = {"overview": "概要解説", "deep_dive": "詳細解説", "full": "全章まとめ"}
+
+
+def archive_before_story(*, apply=False):
+    """Hide older teaching formats without deleting media, practice or jobs."""
+    from .story import FORMAT
+
+    with db.connection() as conn:
+        if apply:
+            conn.execute("BEGIN IMMEDIATE")
+        cutoff = conn.execute(
+            "SELECT min(created) AS first FROM lessons WHERE json_extract(data,'$.format')=?",
+            (FORMAT,),
+        ).fetchone()["first"]
+        rows = (
+            conn.execute(
+                "SELECT id,state,data FROM lessons WHERE created<? AND coalesce(json_extract(data,'$.format'),'')<>? AND coalesce(json_extract(data,'$.archived'),0)=0 ORDER BY created",
+                (cutoff, FORMAT),
+            ).fetchall()
+            if cutoff is not None
+            else []
+        )
+        result = {"applied": apply, "story_started_at": cutoff, "lessons": []}
+        for row in rows:
+            data = json.loads(row["data"])
+            result["lessons"].append(
+                {
+                    "id": row["id"],
+                    "title": data.get("title"),
+                    "state": row["state"],
+                    "format": data.get("format"),
+                }
+            )
+            if apply:
+                data.update(
+                    archived=True,
+                    archived_at=time.time(),
+                    archive_reason="Superseded by overview and deep-dive videos",
+                )
+                conn.execute(
+                    "UPDATE lessons SET data=? WHERE id=?", (db.dumps(data), row["id"])
+                )
+    if apply and rows:
+        db.event("library", {"archived_lessons": [r["id"] for r in result["lessons"]]})
+    return result
 
 
 def catalogue():
@@ -32,6 +79,7 @@ def catalogue():
         JOIN papers p ON p.id=l.paper_id
         LEFT JOIN chapters c ON c.id=v.chapter_id AND c.lesson_id=v.lesson_id
         WHERE v.state='ready' AND v.kind IN ('overview','deep_dive','full','chapter')
+          AND coalesce(json_extract(l.data,'$.archived'),0)=0
         """)
     ready = []
     for export in exports:

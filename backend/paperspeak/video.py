@@ -140,7 +140,7 @@ def _insert_export(lesson_id, chapter_id, kind, manifest):
 
 def schedule():
     """Schedule immutable chapter revisions; join only when *every* chapter is ready."""
-    for lesson in db.all("SELECT * FROM lessons WHERE json_extract(data,'$.format')=?", (visuals.FORMAT,)):
+    for lesson in db.all("SELECT * FROM lessons WHERE json_extract(data,'$.format')=? AND coalesce(json_extract(data,'$.archived'),0)=0", (visuals.FORMAT,)):
         chapters = db.all("SELECT * FROM chapters WHERE lesson_id=? ORDER BY ordinal", (lesson["id"],))
         if not chapters:
             continue

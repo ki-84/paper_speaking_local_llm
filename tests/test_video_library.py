@@ -120,3 +120,64 @@ def test_completed_at_is_saved_once_for_future_exports(database, monkeypatch):
     assert stored["data"]["completed_at"] == 200
     assert stored["updated"] == 500
     assert video_library.catalogue()[0]["completed_at"] == 200
+
+
+def test_archiving_old_formats_removes_cards_and_exports_without_deleting_work(
+    client, database, monkeypatch
+):
+    old = lesson()
+    modern = lesson()
+    later_manual = lesson()
+    db.execute("UPDATE lessons SET created=10 WHERE id=?", (old,))
+    db.execute(
+        "UPDATE lessons SET created=20,data=? WHERE id=?",
+        (db.dumps({"format": "paper-story-1", "title": "LoRA · 解説編"}), modern),
+    )
+    db.execute("UPDATE lessons SET created=30 WHERE id=?", (later_manual,))
+    movie = add_export(database, old, "legacy", "full", 100)
+    add_export(database, modern, "modern", "overview", 200)
+    db.execute(
+        "INSERT INTO chapters VALUES (?,?,?,?,?)",
+        ("old-chapter", old, 0, "ready", '{"turns":[]}'),
+    )
+    db.execute(
+        "INSERT INTO reviews VALUES (?,?,?,?,?,?,?)",
+        ("old-review", old, "old-chapter", None, 0, 0, "{}"),
+    )
+    job = db.enqueue("lesson", old)
+    db.patch_job(job, state="paused")
+    before_job = db.one("SELECT * FROM jobs WHERE id=?", (job,))
+    preview = video_library.archive_before_story()
+    assert not preview["applied"]
+    assert [r["id"] for r in preview["lessons"]] == [old]
+    assert len(client.get("/api/videos").json()) == 2
+    result = video_library.archive_before_story(apply=True)
+    assert [r["id"] for r in result["lessons"]] == [old]
+    assert {r["id"] for r in client.get("/api/lessons").json()} == {
+        modern,
+        later_manual,
+    }
+    assert [r["id"] for r in client.get("/api/videos").json()] == ["modern"]
+    assert client.get("/api/reviews").json() == []
+    assert client.get("/api/lessons/" + old).status_code == 200
+    assert (
+        client.get("/api/files/" + movie["data"]["mp4"]).content
+        == b"Saved film fixture"
+    )
+    assert db.one("SELECT id FROM reviews WHERE id='old-review'")
+    assert db.one("SELECT * FROM jobs WHERE id=?", (job,)) == before_job
+    assert video_library.archive_before_story(apply=True)["lessons"] == []
+
+    def no_archived_chapter_render(*args):
+        raise AssertionError("Archived chapters must not be rescheduled")
+
+    monkeypatch.setattr(video, "chapter_manifest", no_archived_chapter_render)
+    video.schedule()
+    assert not db.one("SELECT id FROM jobs WHERE kind='chapter_video'")
+    db.execute("UPDATE lessons SET state='ready' WHERE id=?", (later_manual,))
+    assert (
+        lessons.create(
+            db.one("SELECT paper_id FROM lessons WHERE id=?", (old,))["paper_id"]
+        )
+        != old
+    )

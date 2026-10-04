@@ -267,7 +267,7 @@ def generate_lesson(ident: str):
 @app.get("/api/lessons", dependencies=[Depends(auth)])
 def list_lessons():
     return db.all(
-        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format'),'project_id',json_extract(l.data,'$.project_id'),'mode',json_extract(l.data,'$.mode')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE (j.kind='lesson' AND j.target=l.id) OR (j.kind='video_project' AND j.target=json_extract(l.data,'$.project_id')) ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l ORDER BY created DESC"
+        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format'),'project_id',json_extract(l.data,'$.project_id'),'mode',json_extract(l.data,'$.mode')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE (j.kind='lesson' AND j.target=l.id) OR (j.kind='video_project' AND j.target=json_extract(l.data,'$.project_id')) ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l WHERE coalesce(json_extract(l.data,'$.archived'),0)=0 ORDER BY created DESC"
     )
 
 
@@ -648,7 +648,7 @@ def delete_attempt(ident: str):
 @app.get("/api/reviews", dependencies=[Depends(auth)])
 def reviews():
     return db.all(
-        "SELECT r.*,json_object('title',json_extract(l.data,'$.title')) AS lesson_data FROM reviews r JOIN lessons l ON l.id=r.lesson_id WHERE r.due<=? ORDER BY r.due",
+        "SELECT r.*,json_object('title',json_extract(l.data,'$.title')) AS lesson_data FROM reviews r JOIN lessons l ON l.id=r.lesson_id WHERE r.due<=? AND coalesce(json_extract(l.data,'$.archived'),0)=0 ORDER BY r.due",
         (time.time(),),
     )
 

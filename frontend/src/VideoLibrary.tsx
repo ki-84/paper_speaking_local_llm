@@ -82,8 +82,9 @@ export function VideoLibrary({ version, onError, openLesson, addPaper, discover 
       </label>
       <label>動画の種類<select aria-label="動画の種類" value={kind} onChange={e => setKind(e.target.value)}>
         <option value="films">全体の動画</option><option value="overview">概要解説</option>
-        <option value="deep_dive">詳細解説</option><option value="full">全章まとめ</option>
-        <option value="chapter">章別の動画</option>
+        <option value="deep_dive">詳細解説</option>
+        {videos?.some(v => v.kind === "full") && <option value="full">全章まとめ</option>}
+        {videos?.some(v => v.kind === "chapter") && <option value="chapter">章別の動画</option>}
       </select></label>
       <label>並び順<select aria-label="並び順" value={order} onChange={e => setOrder(e.target.value)}>
         <option value="newest">新しい順</option><option value="oldest">古い順</option>

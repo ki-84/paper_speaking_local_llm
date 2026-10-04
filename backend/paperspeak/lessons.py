@@ -28,7 +28,7 @@ def create(paper_id, format_version=VERSION, *, force_new=False):
         raise ValueError("Paper not found")
     # A pending revision is reused. Completed revisions are immutable.
     pending = db.one(
-        "SELECT * FROM lessons WHERE paper_id=? AND state NOT IN ('ready','cancelled') AND json_extract(data,'$.format')=? ORDER BY created DESC LIMIT 1",
+        "SELECT * FROM lessons WHERE paper_id=? AND state NOT IN ('ready','cancelled') AND json_extract(data,'$.format')=? AND coalesce(json_extract(data,'$.archived'),0)=0 ORDER BY created DESC LIMIT 1",
         (paper_id, format_version),
     )
     if pending and not force_new:

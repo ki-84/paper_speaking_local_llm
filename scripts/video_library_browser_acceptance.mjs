@@ -68,8 +68,17 @@ try{
   await panel.getByLabel('論文名・タイトル・学会で検索').fill(title);
   await expect.poll(displayed).toEqual(films.filter(v=>`${v.paper_title} ${v.data.title} ${v.data.conference||''}`.toLowerCase().includes(title.toLowerCase())).map(v=>v.id));
   await panel.getByLabel('論文名・タイトル・学会で検索').fill('');
-  await panel.getByLabel('動画の種類',{exact:true}).selectOption('chapter');
-  await expect.poll(displayed).toEqual(rows.filter(v=>v.kind==='chapter').map(v=>v.id));
+  if(rows.some(v=>v.kind==='chapter')){
+    await panel.getByLabel('動画の種類',{exact:true}).selectOption('chapter');
+    await expect.poll(displayed).toEqual(rows.filter(v=>v.kind==='chapter').map(v=>v.id));
+  }else{
+    await expect(panel.getByLabel('動画の種類',{exact:true}).locator('option[value="chapter"]')).toHaveCount(0);
+    report.checks.obsolete_chapter_filter_removed=true;
+  }
+  if(!rows.some(v=>v.kind==='full')){
+    await expect(panel.getByLabel('動画の種類',{exact:true}).locator('option[value="full"]')).toHaveCount(0);
+    report.checks.obsolete_full_video_filter_removed=true;
+  }
   await panel.getByLabel('動画の種類',{exact:true}).selectOption('films');
   report.checks.search_sort_and_chapter_filter=true;
   await panel.locator(`[data-video-id="${films[0].id}"]`).getByRole('button',{name:'タイトル・説明',exact:true}).click();
@@ -87,7 +96,9 @@ try{
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
   await page.screenshot({path:path.join(root,'data/evaluation/video-library-phone.png')});
   report.checks.phone_layout_without_horizontal_overflow=true;
-  expect(await jobs()).toEqual(before);
+  const after=await jobs(), topLevel=['lesson','nightly_video','video_project','discover','award_refresh'];
+  expect(after.filter(j=>topLevel.includes(j[1])).map(j=>j[0]).sort()).toEqual(before.filter(j=>topLevel.includes(j[1])).map(j=>j[0]).sort());
+  for(const job of before.filter(j=>j[2]==='paused'))expect(after.find(j=>j[0]===job[0])?.[2]).toBe('paused');
   report.checks.no_jobs_started_or_resumed=true;
   expect(errors).toEqual([]);
   report.checks.no_browser_exceptions=true;

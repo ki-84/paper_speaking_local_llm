@@ -1,0 +1,192 @@
+{
+  "time": "2026-10-04T08:41:16.419Z",
+  "checks": {
+    "latest_completed_first_with_japan_dates": true,
+    "actual_thumbnails_and_current_and_previous_downloads": true,
+    "earlier_renders_folded_and_preserved": true,
+    "search_sort_and_chapter_filter": true,
+    "finished_video_plays_and_copy_matches": true,
+    "phone_layout_without_horizontal_overflow": true,
+    "no_jobs_started_or_resumed": true,
+    "no_browser_exceptions": true
+  },
+  "downloads": [
+    {
+      "id": "3fd9530ee62945ea88f472c5260fae62",
+      "range": "bytes 0-1023/129117209"
+    },
+    {
+      "id": "adf87bf9146f4e75ac07ca6b5745bd43",
+      "range": "bytes 0-1023/69276763"
+    },
+    {
+      "id": "0b0a8a53b587497db62decbbec947a49",
+      "range": "bytes 0-1023/93766497"
+    },
+    {
+      "id": "dc126b2df292467484d0ed909c4d358e",
+      "range": "bytes 0-1023/46000602"
+    },
+    {
+      "id": "6630bd8c6f8743a4919dbb4a7b570df2",
+      "range": "bytes 0-1023/103028280"
+    },
+    {
+      "id": "4d886c5fb48b4df688c5d4a5b5ff5f1a",
+      "range": "bytes 0-1023/44973659"
+    },
+    {
+      "id": "a1bd67d90ec04ed2b0ecf29506471f33",
+      "range": "bytes 0-1023/105586870"
+    },
+    {
+      "id": "0601479643764e64bf3193c4b4555f06",
+      "range": "bytes 0-1023/46033915"
+    },
+    {
+      "id": "83769e4beef345ab88d8c152c28aa331",
+      "range": "bytes 0-1023/109138180"
+    },
+    {
+      "id": "c49675038e974e4c8dc017be602c11ba",
+      "range": "bytes 0-1023/48781047"
+    },
+    {
+      "id": "27ffe90c54564d62ab8c287d96b484a7",
+      "range": "bytes 0-1023/48183068"
+    },
+    {
+      "id": "729e902a92474279b85a002d2e5275bb",
+      "range": "bytes 0-1023/94534499"
+    },
+    {
+      "id": "f18332f3572c49118ba8d3361e294322",
+      "range": "bytes 0-1023/94687778"
+    },
+    {
+      "id": "e020240123f641c58df245e695b25967",
+      "range": "bytes 0-1023/94916440"
+    },
+    {
+      "id": "9029f46f14854fc2904b93de4fb027db",
+      "range": "bytes 0-1023/51191208"
+    },
+    {
+      "id": "6569fd1f76204ed09aba7516950e266c",
+      "range": "bytes 0-1023/50317551"
+    },
+    {
+      "id": "c4329159b0494dfcb56b6ae760721969",
+      "range": "bytes 0-1023/50317551"
+    },
+    {
+      "id": "5a1e9e6525de4ff09e45c565d4c9019b",
+      "range": "bytes 0-1023/216355237"
+    }
+  ],
+  "films": [
+    {
+      "id": "3fd9530ee62945ea88f472c5260fae62",
+      "label": "詳細解説",
+      "title": "Muninn: Your Trajectory Diffusion Model But Faster",
+      "completed_at": 1791087126.4970522,
+      "revisions": 0
+    },
+    {
+      "id": "adf87bf9146f4e75ac07ca6b5745bd43",
+      "label": "概要解説",
+      "title": "Muninn: Your Trajectory Diffusion Model But Faster",
+      "completed_at": 1791080533.4520082,
+      "revisions": 0
+    },
+    {
+      "id": "0b0a8a53b587497db62decbbec947a49",
+      "label": "詳細解説",
+      "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "completed_at": 1791055512.1519232,
+      "revisions": 0
+    },
+    {
+      "id": "dc126b2df292467484d0ed909c4d358e",
+      "label": "概要解説",
+      "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "completed_at": 1791051353.39955,
+      "revisions": 0
+    },
+    {
+      "id": "6630bd8c6f8743a4919dbb4a7b570df2",
+      "label": "詳細解説",
+      "title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+      "completed_at": 1791039854.535173,
+      "revisions": 0
+    },
+    {
+      "id": "4d886c5fb48b4df688c5d4a5b5ff5f1a",
+      "label": "概要解説",
+      "title": "NeuralActuator: Neural Actuation Modeling for Robot Dynamics and External Force Perception",
+      "completed_at": 1791035343.1138864,
+      "revisions": 0
+    },
+    {
+      "id": "a1bd67d90ec04ed2b0ecf29506471f33",
+      "label": "詳細解説",
+      "title": "Asynchronous Methods for Deep Reinforcement Learning",
+      "completed_at": 1791030079.6774101,
+      "revisions": 0
+    },
+    {
+      "id": "0601479643764e64bf3193c4b4555f06",
+      "label": "概要解説",
+      "title": "Asynchronous Methods for Deep Reinforcement Learning",
+      "completed_at": 1791026261.072439,
+      "revisions": 0
+    },
+    {
+      "id": "83769e4beef345ab88d8c152c28aa331",
+      "label": "詳細解説",
+      "title": "Hierarchical Continuous Diffusion Language Models",
+      "completed_at": 1791001386.7715263,
+      "revisions": 0
+    },
+    {
+      "id": "c49675038e974e4c8dc017be602c11ba",
+      "label": "概要解説",
+      "title": "Hierarchical Continuous Diffusion Language Models",
+      "completed_at": 1790997274.8905392,
+      "revisions": 1
+    },
+    {
+      "id": "729e902a92474279b85a002d2e5275bb",
+      "label": "詳細解説",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "completed_at": 1790967258.401603,
+      "revisions": 2
+    },
+    {
+      "id": "9029f46f14854fc2904b93de4fb027db",
+      "label": "概要解説",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "completed_at": 1790967155.1794689,
+      "revisions": 2
+    },
+    {
+      "id": "5a1e9e6525de4ff09e45c565d4c9019b",
+      "label": "全章まとめ",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "completed_at": 1790802286.8189201,
+      "revisions": 0
+    }
+  ],
+  "status": "passed",
+  "validation": {
+    "python_api_and_render_regressions": {
+      "passed": 33
+    },
+    "playwright": {
+      "passed": 20
+    },
+    "typescript_and_production_build": "passed",
+    "changed_python_ruff": "passed",
+    "lan_real_browser": "passed"
+  }
+}

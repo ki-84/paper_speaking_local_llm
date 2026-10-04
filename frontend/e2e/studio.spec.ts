@@ -27,6 +27,48 @@ test.beforeEach(async ({ page }) => {
       .first(),
   ).toBeVisible();
 });
+test("video library shows completed films by date with filters and folded revisions", async ({ page }) => {
+  const row = (id: string, kind: string, completed: number, paper = "A useful robot paper") => ({
+    id, kind, completed_at: completed, lesson_id: "test-lesson", paper_title: paper,
+    label: ({ overview: "概要解説", deep_dive: "詳細解説", full: "全章まとめ", chapter: "第1章" } as Record<string, string>)[kind],
+    data: { title: `${paper} ${kind}`, mp4: `videos/${id}.mp4`, thumbnail: "visuals/ui-original.png", duration: 120, bytes: 1000000, conference: "RSS 2026", description: "English practice with this paper." },
+    revisions: [] as any[],
+  });
+  const overview = row("overview", "overview", 1791080000);
+  overview.revisions = [row("old-render", "overview", 1790990000)];
+  await page.route("**/api/videos", route => route.fulfill({ json: [
+    row("deep", "deep_dive", 1791087000), overview,
+    row("older-full", "full", 1790920000, "Earlier LoRA lesson"),
+    row("chapter", "chapter", 1790830000),
+  ] }));
+  await page.getByRole("button", { name: "My library", exact: true }).click();
+  const panel = page.getByRole("region", { name: "作成した動画", exact: true });
+  const ids = () => panel.locator(".video-library-item").evaluateAll(items => items.map(el => el.getAttribute("data-video-id")));
+  await expect.poll(ids).toEqual(["deep", "overview", "older-full"]);
+  await expect(panel.locator(".video-library-day h2").first()).toHaveText("2026年10月4日");
+  await expect(panel.getByText("日時は日本時間")).toBeVisible();
+  await panel.getByText("以前の版（1本）", { exact: true }).click();
+  await expect(panel.getByRole("link", { name: "MP4をダウンロード", exact: true })).toHaveCount(4);
+  await expect(panel.locator(".video-library-revisions a")).toHaveAttribute("href", "/api/files/videos/old-render.mp4");
+  await panel.getByLabel("並び順", { exact: true }).selectOption("oldest");
+  await expect.poll(ids).toEqual(["older-full", "overview", "deep"]);
+  await panel.getByLabel("論文名・タイトル・学会で検索").fill("LoRA");
+  await expect.poll(ids).toEqual(["older-full"]);
+  await panel.getByLabel("論文名・タイトル・学会で検索").fill("");
+  await panel.getByLabel("動画の種類", { exact: true }).selectOption("deep_dive");
+  await expect.poll(ids).toEqual(["deep"]);
+  await panel.getByRole("button", { name: "タイトル・説明", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "詳細解説の再生と投稿情報" });
+  await expect(dialog.getByLabel("YouTube用タイトル")).toHaveValue("A useful robot paper deep_dive");
+  await expect(dialog.getByLabel("YouTube用説明文")).toHaveValue("English practice with this paper.");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await panel.getByLabel("動画の種類", { exact: true }).selectOption("chapter");
+  await expect.poll(ids).toEqual(["chapter"]);
+  await expect(panel.getByText("第1章", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+});
 test("Japanese paper search shows titles, abstracts, and a selectable paper", async ({ page }) => {
   await page.getByRole("button", { name: "論文を探す" }).click();
   await expect(page.getByRole("heading", { name: "次に読みたい論文を探す。" })).toBeVisible();

@@ -48,7 +48,8 @@ try {
   const chapter=lesson.chapters.find(c=>c.state==='ready');
   await context.request.put(base+`/api/lessons/${lesson.id}/progress`,{data:{chapter_id:chapter.id,turn_index:0,role:'both',speed:1,subtitles:true}});
   await page.goto(base);
-  const studio=page.locator('.story-studio');
+  await page.locator('.library-studio > summary').click();
+ const studio=page.locator('.story-studio');
   await studio.locator('select').selectOption(project.paper_id);
   const panel=studio.getByRole('region',{name:'解説・詳解動画'});
   await expect(panel).toBeVisible();
@@ -127,6 +128,7 @@ try {
     if(!turn)throw new Error('The worked example has no figure cue');
     await context.request.put(base+`/api/lessons/${deepLesson.id}/progress`,{data:{chapter_id:c.id,turn_index:i,role:'both',speed:1,subtitles:true}});
     await page.goto(base);
+    await page.locator('.library-studio > summary').click();
     await page.locator('.story-studio select').selectOption(project.paper_id);
     await page.locator('.story-studio .story-film').nth(1).getByRole('button',{name:'Practice English · 英語練習'}).click();
     await expect(page.locator('.spoken-sentence')).toHaveText(turn.text);

@@ -185,6 +185,8 @@ def _set_export(export, state, **data):
             data.pop("thumbnail", None)
             data.pop("thumbnail_jpg", None)
         record.update(data)
+        if state == "ready":
+            record.setdefault("completed_at", time.time())
         conn.execute(
             "UPDATE video_exports SET state=?,data=?,updated=? WHERE id=?",
             (state, db.dumps(record), time.time(), export["id"]),

@@ -8,7 +8,6 @@ import {
   Settings,
   ArrowUpRight,
   ArrowRight,
-  Plus,
   Play,
   Pause,
   Mic,
@@ -40,6 +39,7 @@ import {
 } from "./api";
 import "./style.css";
 import { VisualPanel } from "./VisualPanel";
+import { VideoLibrary } from "./VideoLibrary";
 
 type Page = "library" | "discover" | "review" | "jobs" | "settings" | "learn";
 function microphoneError(error: unknown, selectedMic = "") {
@@ -315,69 +315,17 @@ function App() {
         )}
         {page === "library" && (
           <>
-            <section className="hero">
-              <div>
-                <div className="eyebrow">
-                  <span />
-                  YOUR PERSONAL PAPER RADIO
-                </div>
-                <h1>
-                  A good paper.
-                  <br />A clearer idea.
-                </h1>
-                <p>
-                  Listen to the story behind the science.
-                  <br />
-                  Then find the words to tell it yourself.
-                </p>
-                <div className="actions">
-                  <button className="primary" onClick={() => setAdding(true)}>
-                    <Plus size={17} /> Add a paper
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => setPage("discover")}
-                  >
-                    Find something new <ArrowRight size={17} />
-                  </button>
-                </div>
-              </div>
-              <div className="hero-art" aria-hidden="true">
-                <div className="orbit orbit-one" />
-                <div className="orbit orbit-two" />
-                <div className="paper-shape">
-                  <div className="paper-tag">AN IDEA WORTH HEARING</div>
-                  <div className="paper-lines">
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                  <div className="sound-bars">
-                    {[18, 34, 51, 29, 72, 92, 61, 37, 67, 45, 23, 40, 16].map(
-                      (h, i) => (
-                        <i key={i} style={{ height: h }} />
-                      ),
-                    )}
-                  </div>
-                  <div className="paper-bottom">
-                    <span>01 / LISTEN & LEARN</span>
-                    <Headphones size={21} />
-                  </div>
-                </div>
-                <span className="art-stamp">
-                  Made for
-                  <br />
-                  <em>curious minds.</em>
-                </span>
-              </div>
-            </section>
+            <VideoLibrary version={version} onError={setError} openLesson={openLesson} addPaper={() => setAdding(true)} discover={() => navigate("discover")} />
             <NightlyVideos version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
-            <StoryStudio papers={papers} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
+            <details className="library-studio">
+              <summary>保存済みの論文から動画を作る・脚本を見る</summary>
+              <StoryStudio papers={papers} version={version} onError={setError} refresh={refresh} openLesson={openLesson} />
+            </details>
             <div className="section-heading">
               <div>
                 <div className="eyebrow">ONE IDEA AT A TIME</div>
                 <h2>
-                  Your library <span>{lessons.length}</span>
+                  英語練習教材 <span>{lessons.length}</span>
                 </h2>
               </div>
               <span className="subtle">Pick up where you left off</span>
@@ -400,7 +348,7 @@ function App() {
                       <span>{date(l.created)}</span>
                     </div>
                     <h3>{l.data.title}</h3>
-                    <p className="subtle">{l.data.format === "paper-story-1" ? "Film & C1 English practice · 動画と英語練習" : l.data.format === "paper-visual-2" ? "Visual lesson · 図付き教材" : "Earlier edition · 旧版"}</p>
+                    <p className="subtle">{l.data.format === "paper-story-1" ? (l.data.mode === "overview" ? "概要解説の英語練習" : "詳細解説の英語練習") : l.data.format === "paper-visual-2" ? "図付きの章別教材" : "会話の章別教材"}</p>
                     <div className="card-bottom">
                       <span>
                         <Headphones size={16} />
@@ -2587,7 +2535,7 @@ function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onEr
   const run=runs[0],activeRun=run?.continuing_run||run,activeJob=activeRun?.job;
   const control=async(action:string)=>{try{await post(`/jobs/${activeJob.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
   const labels:Record<string,string>={searching:"論文を探索中",reading:"本文を確認中",building:"動画を作成中",ready:"2本が完成",skipped:"今夜は見送り",paused:"一時停止",failed:"作成時の問題",cancelled:"停止済み"};
-  return <section className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
+  return <section id="nightly-videos" className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
   <ConferenceAwards version={version} onError={onError} refresh={refresh}/>
   {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間{run.data.manual&&' · 手動実行'}</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>{run.state==='ready'&&<p>完成した動画を残して、別の論文で追加作成できます。</p>}
   <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}

@@ -12,6 +12,7 @@ const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto(base);
+ await page.locator('.library-studio > summary').click();
  const studio=page.locator('.story-studio');
  for(const id of ids){
   const response=await context.request.get(base+'/api/video-projects/'+id);

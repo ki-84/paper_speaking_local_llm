@@ -537,6 +537,9 @@ def finalize_packaging(export_id, *, project=None):
             ),
             "repairs": repairs,
         }
+        record.setdefault(
+            "completed_at", config.safe_path(record["mp4"]).stat().st_mtime
+        )
         conn.execute(
             "UPDATE video_exports SET state='ready',data=?,updated=? WHERE id=?",
             (db.dumps(record), time.time(), export_id),

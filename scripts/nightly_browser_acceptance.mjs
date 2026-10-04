@@ -17,6 +17,7 @@ try{
  const panel=page.getByRole('region',{name:'昨夜の動画'});
  await expect(panel).toBeVisible();
  report.checks.nightly_panel=true;
+ await page.locator('.library-studio > summary').click();
  const studio=page.locator('.story-studio');
  await studio.locator('select').selectOption(project.paper_id);
  await expect(studio.locator('.thumbnail-grid img')).toHaveCount(6,{timeout:30000});

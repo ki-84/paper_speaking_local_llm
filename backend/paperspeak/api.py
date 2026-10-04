@@ -25,6 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import (
+    awards,
     config,
     db,
     lessons,
@@ -297,6 +298,11 @@ def get_video_project(ident: str):
         return story.get(ident)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+@app.get("/api/conference-awards", dependencies=[Depends(auth)])
+def conference_awards():
+    return awards.catalogue()
 
 
 @app.get("/api/nightly-video-runs", dependencies=[Depends(auth)])

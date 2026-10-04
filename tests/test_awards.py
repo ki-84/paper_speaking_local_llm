@@ -155,10 +155,353 @@ def test_icra_plain_winner_and_other_finalists():
     assert [r["title"] for r in rows] == ["A Useful New Robot Learning Method"]
 
 
-def test_icra_finalist_page_without_winners_does_not_promote_papers():
-    html = """<main><h1>ICRA 2026 Award Finalists</h1><h2>Best Paper Award on Robot Learning</h2>
+@pytest.mark.parametrize(
+    "heading", ["Award Finalists", "Awards and Finalists", "Awards Finalists"]
+)
+def test_icra_finalist_page_without_winners_does_not_promote_papers(heading):
+    html = f"""<main><h1>ICRA 2026 {heading}</h1><h2>Best Paper Award on Robot Learning</h2>
     <p><a href="https://openreview.net/forum?id=nom">A Useful New Robot Learning Method</a></p></main>"""
     assert not awards.parse(document(html), "ICRA", 2026)
+
+
+def test_icra_plural_winners_split_markup_and_late_finalist_paragraph():
+    html = """<main><h1>ICRA 2025 Awards and Finalists</h1>
+    <h3>IEEE ICRA Best Conference Paper Award</h3><h4>Award Winners:</h4>
+    <p><b>*</b><b>First Useful Robot Paper</b><br><em>Authors: A, B</em></p>
+    <p>For a useful contribution to robotics.</p>
+    <p><b>*</b><b>Second Useful Robot Paper</b><br><em>Author: C</em></p>
+    <p><strong>Awards Committee</strong>: A, B</p>
+    <p><strong>In addition to the papers listed above, the following papers were also finalists for the IEEE ICRA Best Conference Paper Award:</strong></p>
+    <p><b>A Finalist Robot Paper</b><br><em>Authors: D</em></p>
+    <h3>IEEE ICRA Best Student Paper Award</h3><h4>Award Winners:</h4>
+    <p><b>First Useful Robot Paper</b><br><em>Authors: A, B</em></p>
+    <p><b>A Different Student Robot Paper</b><br><em>Authors: E</em></p>
+    <p><strong>Other Finalists:</strong></p>
+    <p><b>Another Finalist Robot Paper</b><br><em>Authors: F</em></p></main>"""
+    rows = awards.parse(document(html), "ICRA", 2025)
+    assert [r["title"] for r in rows] == [
+        "First Useful Robot Paper",
+        "Second Useful Robot Paper",
+        "First Useful Robot Paper",
+        "A Different Student Robot Paper",
+    ]
+    assert len({r["name"] for r in rows}) == 2
+
+
+def test_ras_archive_uses_exact_year_and_retrospective_prize():
+    html = """<main><h1>IEEE ICRA Best Conference Paper Award</h1>
+    <p>Eligibility since 2025: “Not a Winning Paper”</p>
+    <h2>Winners of this Award</h2><p><strong>2025</strong></p>
+    <p>Authors A: “First Useful Robot Paper”</p><p>Authors B: “Second Useful Robot Paper”</p>
+    <p><strong>2024</strong></p><p>“An Older Winning Robot Paper”</p>
+    <h2>Related Pages</h2><p>“Not a Winning Robot Paper”</p></main>"""
+    saved = document(html, awards.RAS_INDEX + "ieee-icra-best-conference-paper-award/")
+    rows = awards.parse(saved, "ICRA", 2025)
+    assert [r["title"] for r in rows] == [
+        "First Useful Robot Paper",
+        "Second Useful Robot Paper",
+    ]
+    assert not awards.parse(saved, "ICRA", 2026)
+    retrospective = document(
+        html.replace(
+            "IEEE ICRA Best Conference Paper Award",
+            "IEEE International Conference on Robotics and Automation Most Influential Paper Award",
+        ),
+        awards.RAS_RETROSPECTIVE,
+    )
+    assert all(
+        r["kind"] == "test-of-time" for r in awards.parse(retrospective, "ICRA", 2025)
+    )
+
+
+def test_iros_official_sponsor_prize_is_scoped_to_year_and_paper():
+    html = """<main><h1>Institute Awards</h1><p>“An Unrelated Institute Prize”</p>
+    <h2>Past Winners of the IEEE IROS Best Paper Award</h2>
+    <h3>Winners of the Best Paper Award 2025</h3><p>〖Winners〗Alice and Bob</p>
+    <p>〖Winning Paper〗A Useful Rescue Robotics Paper</p><p>〖Selection Committee Chairperson〗Charlie</p>
+    <h3>Winners of the Best Paper Award 2024</h3><p>〖Winning Paper〗An Older Rescue Robotics Paper</p></main>"""
+    rows = awards.parse(document(html, awards.IROS_RESCUE), "IROS", 2025)
+    assert [r["title"] for r in rows] == ["A Useful Rescue Robotics Paper"]
+    assert "Safety, Security, and Rescue Robotics" in rows[0]["name"]
+    assert not awards.parse(document(html, awards.IROS_RESCUE), "IROS", 2026)
+    assert awards.trusted(awards.IROS_RESCUE)
+    assert not awards.trusted("https://www.rescuesystem.org/en/other/")
+    assert not awards.trusted(awards.IROS_RESCUE + "?redirect=elsewhere")
+
+
+def test_collect_archive_fallback_and_more_than_three_prizes(database, monkeypatch):
+    import httpx
+
+    spec = next(
+        s
+        for s in awards.sources(2026, ["cs.RO"])
+        if s["venue"] == "ICRA" and s["year"] == 2025
+    )
+    archive_urls = [
+        awards.RAS_INDEX + f"ieee-icra-best-paper-award-{i}/" for i in range(5)
+    ]
+    requested = []
+
+    def fetch(url):
+        requested.append(url)
+        if url == spec["url"]:
+            raise httpx.ConnectError("Primary host unavailable")
+        if url == awards.RAS_INDEX:
+            return document(
+                "<main>"
+                + "".join(
+                    f'<a href="{u}">IEEE ICRA Best Paper Award category {i}</a>'
+                    for i, u in enumerate(archive_urls)
+                )
+                + "</main>",
+                url,
+            )
+        if url in archive_urls:
+            return document(
+                f"<main><h1>IEEE ICRA Best Paper Award category {archive_urls.index(url)}</h1><h2>Winners of this Award</h2><p>2025</p><p>“A Useful Robot Paper Number {archive_urls.index(url)}”</p></main>",
+                url,
+            )
+        return document("<main>No winners published</main>", url)
+
+    monkeypatch.setattr(awards, "fetch", fetch)
+    result = awards.collect(spec)
+    assert result["status"] == "verified winners"
+    assert result["winner_count"] == result["paper_count"] == 5
+    assert set(archive_urls) <= set(requested)
+    assert result["failures"][0]["url"] == spec["url"]
+    monkeypatch.setattr(
+        awards, "fetch", lambda _: pytest.fail("Catalogue must not fetch")
+    )
+    catalogue = awards.catalogue(dt.datetime(2026, 10, 4))
+    assert catalogue["winner_count"] == 5
+    assert len(catalogue["sources"]) == 16
+
+
+def test_upcoming_official_edition_distinguished_from_network_failure(
+    database, monkeypatch
+):
+    spec = next(
+        s
+        for s in awards.sources(2026, ["cs.RO"])
+        if s["venue"] == "CoRL" and s["year"] == 2026
+    )
+    saved = document(
+        "<title>CoRL 2026</title><main><h1>CoRL 2026</h1><p>November 9–12, 2026</p></main>",
+        spec["url"],
+    )
+    assert awards.upcoming_date(saved, 2026, dt.date(2026, 10, 4)) == "2026-11-09"
+    assert awards.upcoming_date(saved, 2026, dt.date(2026, 11, 10)) is None
+    assert awards.upcoming_date(saved, 2025, dt.date(2025, 10, 4)) is None
+    monkeypatch.setattr(awards, "fetch", lambda _: saved)
+    monkeypatch.setattr(awards, "upcoming_date", lambda *a: "2026-11-09")
+    result = awards.collect(spec)
+    assert result["status"] == "not announced" and not result["papers"]
+
+    def failed(_):
+        raise ValueError("Certificate validation failed")
+
+    monkeypatch.setattr(awards, "fetch", failed)
+    with pytest.raises(ValueError, match="No official award page"):
+        awards.collect(spec)
+    receipt = next(
+        r
+        for r in awards.catalogue(dt.datetime(2026, 10, 4))["sources"]
+        if r["source"] == spec
+    )
+    assert receipt["status"] == "unavailable" and receipt["failures"]
+
+
+def test_award_catalogue_api_reads_only_stored_receipts(client, monkeypatch):
+    monkeypatch.setattr(
+        awards, "fetch", lambda _: pytest.fail("GET must not access external sites")
+    )
+    before = db.all("SELECT id FROM jobs")
+    response = client.get("/api/conference-awards")
+    assert response.status_code == 200
+    assert len(response.json()["sources"]) == 16
+    assert all(r["status"] == "not checked" for r in response.json()["sources"])
+    assert db.all("SELECT id FROM jobs") == before
+
+
+def test_same_prize_on_blog_and_virtual_table_does_not_inflate_counts(
+    database, monkeypatch
+):
+    spec = {
+        "venue": "ICML",
+        "year": 2026,
+        "url": "https://blog.icml.cc/category/icml-2026/",
+    }
+    blog = document(
+        """<main><h3>ICML 2026 Outstanding Paper Award</h3><p><a href="https://openreview.net/forum?id=one">A Useful Machine Learning Paper</a></p><h3>Outstanding Papers</h3><p><a href="https://openreview.net/forum?id=one">A Useful Machine Learning Paper</a></p></main>""",
+        spec["url"],
+    )
+    table = document(
+        """<main><table><tr><td>Outstanding Paper Award</td><td><a href="/virtual/2026/poster/1">A Useful Machine Learning Paper</a></td></tr></table></main>""",
+        "https://icml.cc/virtual/2026/awards_detail",
+    )
+    monkeypatch.setattr(
+        awards, "fetch", lambda url: blog if url == spec["url"] else table
+    )
+    result = awards.collect(spec)
+    assert result["winner_count"] == result["paper_count"] == 1
+    assert result["papers"][0]["official_url"] == spec["url"]
+    assert len(result["documents"]) == 2
+
+
+def test_official_fetch_uses_browser_headers_and_still_verifies_tls(
+    database, monkeypatch
+):
+    import httpx
+
+    arguments = []
+
+    class Client:
+        def __init__(self, **kwargs):
+            arguments.append(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def get(self, target):
+            return httpx.Response(
+                200,
+                text="<main>Official awards</main>",
+                request=httpx.Request("GET", target),
+            )
+
+    monkeypatch.setattr(awards.httpx, "Client", Client)
+    result = awards.fetch("https://2025.ieee-icra.org/program/awards-and-finalists/")
+    assert result["sha256"]
+    assert arguments[0]["headers"] == awards.BROWSER_HEADERS
+    assert arguments[0].get("verify", True) is True
+
+
+@pytest.mark.parametrize("with_link", [True, False])
+def test_ras_interview_explicit_award_and_full_paper_identity(monkeypatch, with_link):
+    intro = "Authors received the ICRA 2026 Best Conference Paper Award for RobotIdea, a robot learning framework."
+    link = '<a href="https://arxiv.org/abs/2601.00001">Paper</a>' if with_link else ""
+    saved = document(
+        f"<h1>Interview about RobotIdea</h1><p>{intro}</p>{link}",
+        "https://www.ieee-ras.org/robotidea-interview/",
+    )
+    requests = []
+
+    def fetch(url, params):
+        requests.append(params)
+        return b"paper metadata"
+
+    monkeypatch.setattr(papers, "fetch", fetch)
+    monkeypatch.setattr(
+        papers,
+        "entries",
+        lambda _: [
+            {"title": "RobotIdea: Learning to Manipulate", "source_id": "2601.00001"}
+        ],
+    )
+    rows = awards.announcement_winners(saved, "ICRA", 2026)
+    assert [r["title"] for r in rows] == ["RobotIdea: Learning to Manipulate"]
+    assert (
+        rows[0]["official_url"] == saved["url"]
+        and rows[0]["source_sha256"] == saved["sha256"]
+    )
+    assert requests == (
+        [{"id_list": "2601.00001"}]
+        if with_link
+        else [{"search_query": 'ti:"RobotIdea"', "max_results": 10}]
+    )
+    assert not awards.announcement_winners(saved, "ICRA", 2025)
+    assert not awards.announcement_winners(
+        saved | {"html": saved["html"].replace("received", "might receive")},
+        "ICRA",
+        2026,
+    )
+    assert not awards.announcement_winners(
+        saved | {"url": "https://an-author.example/interview"}, "ICRA", 2026
+    )
+
+
+def test_ras_interview_double_prize_and_ambiguous_paper_rejected(monkeypatch):
+    saved = document(
+        "<h1>Interview about RobotIdea</h1><p>The RobotIdea research project achieved a double at ICRA 2026, winning both the Best Conference Paper Award and the Best Paper Award on Robot Manipulation and Locomotion.</p>",
+        "https://www.ieee-ras.org/robotidea-interview/",
+    )
+    monkeypatch.setattr(papers, "fetch", lambda *a, **k: b"metadata")
+    paper = {"title": "RobotIdea: Learning to Manipulate", "source_id": "2601.00001"}
+    monkeypatch.setattr(papers, "entries", lambda _: [paper])
+    rows = awards.announcement_winners(saved, "ICRA", 2026)
+    assert len(rows) == 2
+    assert (
+        rows[1]["name"]
+        == "IEEE ICRA Best Paper Award on Robot Manipulation and Locomotion"
+    )
+    monkeypatch.setattr(
+        papers, "entries", lambda _: [paper, paper | {"source_id": "2602.00001"}]
+    )
+    with pytest.raises(ValueError, match="unambiguously"):
+        awards.announcement_winners(saved, "ICRA", 2026)
+
+
+def test_ras_feature_index_discovers_dated_interviews_without_award_in_heading(
+    database, monkeypatch
+):
+    spec = {"venue": "ICRA", "year": 2026, "url": awards.RAS_FEATURES}
+    article_url = "https://www.ieee-ras.org/robotidea-interview/"
+    requested = []
+
+    def fetch(url):
+        requested.append(url)
+        if url == awards.RAS_FEATURES:
+            return document(
+                f'<div class="e-loop-item"><h2><a href="{article_url}">Interview about RobotIdea</a></h2><p>5 August 2026</p></div><div class="e-loop-item"><h2><a href="https://www.ieee-ras.org/old-interview/">An older interview</a></h2><p>5 August 2024</p></div>',
+                url,
+            )
+        return document(
+            "<h1>Interview about RobotIdea</h1><p>Authors received the ICRA 2026 Best Conference Paper Award for RobotIdea.</p>",
+            url,
+        )
+
+    monkeypatch.setattr(awards, "fetch", fetch)
+    monkeypatch.setattr(papers, "fetch", lambda *a, **k: b"metadata")
+    monkeypatch.setattr(
+        papers,
+        "entries",
+        lambda _: [
+            {"title": "RobotIdea: Learning to Manipulate", "source_id": "2601.00001"}
+        ],
+    )
+    result = awards.collect(spec)
+    assert requested == [awards.RAS_FEATURES, article_url]
+    assert result["winner_count"] == 1
+
+
+def test_program_navigation_can_link_a_separate_test_of_time_page(
+    database, monkeypatch
+):
+    spec = {
+        "venue": "RSS",
+        "year": 2025,
+        "url": "https://roboticsconference.org/2025/program/awards/",
+    }
+    retrospective = "https://roboticsconference.org/2025/program/testoftimeaward/"
+
+    def fetch(url):
+        if url == spec["url"]:
+            return document(
+                f'<nav><a href="{retrospective}">Test of Time Award</a></nav><main>No main prize winners here</main>',
+                url,
+            )
+        return document(
+            "<main><h1>Test of Time Award</h1><p>The 2025 Test of Time Award goes to:</p><h2>2025 Award Recipient</h2><p>“A Useful Older Robotics Paper”</p></main>",
+            url,
+        )
+
+    monkeypatch.setattr(awards, "fetch", fetch)
+    rows = awards.collect(spec)["papers"]
+    assert [r["title"] for r in rows] == ["A Useful Older Robotics Paper"]
+    assert rows[0]["kind"] == "test-of-time"
 
 
 def test_aaai_archive_is_partitioned_by_edition():

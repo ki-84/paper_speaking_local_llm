@@ -2537,6 +2537,28 @@ function ClipButton({
     </button>
   );
 }
+const awardStatusLabels:Record<string,string>={"verified winners":"受賞確認済み","not announced":"開催前・受賞未発表","finalists only":"最終候補のみ","no confirmed winners":"受賞者未確認",unavailable:"取得できず","not checked":"未確認"};
+
+function ConferenceAwards({version,onError}:{version:number;onError:(s:string)=>void}) {
+  const [catalogue,setCatalogue]=useState<any>(null);
+  useEffect(()=>{let live=true;api<any>("/conference-awards").then(r=>{if(live)setCatalogue(r);}).catch(e=>{if(live)onError(e.message);});return()=>{live=false;};},[version]);
+  if(!catalogue)return null;
+  return <details className="conference-awards" aria-label="学会別の受賞論文"><summary>学会別の受賞論文 · {catalogue.winner_count}件の受賞情報 / {catalogue.paper_count}本</summary>
+    <p className="subtle">現在・前年の開催分を公式情報で確認します。同じ論文の複数受賞は別に数えます。本文の取得・確認は動画の選定時に行います。</p>
+    <div className="award-coverage-grid">{catalogue.sources.map((r:any)=>{
+      const s=r.source;
+      return <article key={`${s.venue}-${s.year}`} aria-label={`${s.venue} ${s.year}の受賞情報`}>
+        <h3><a href={s.url} target="_blank" rel="noreferrer">{s.venue} {s.year}</a></h3>
+        <p className="award-coverage-status">{awardStatusLabels[r.status]||r.status} · 受賞情報 {r.winner_count}件 / 論文 {r.paper_count}本</p>
+        {r.checked_at&&<p className="subtle">確認: {new Date(r.checked_at*1000).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}（日本時間）</p>}
+        {r.conference_start&&<p className="subtle">開催開始: {r.conference_start}</p>}
+        {r.papers.length>0&&<details><summary>受賞論文を表示（{r.paper_count}本）</summary><ul>{r.papers.map((p:any,i:number)=><li key={`${p.title}-${p.name}-${i}`}><strong>{p.title}</strong><br/><a href={p.official_url} target="_blank" rel="noreferrer">{p.name}</a>{p.kind==='test-of-time'&&<span> · 長年の影響を評価する賞</span>}</li>)}</ul></details>}
+        {r.failures?.length>0&&<details className="award-fetch-failures"><summary>{r.papers.length?'一部の取得先に問題':'取得先の問題'}（{r.failures.length}件）</summary><ul>{r.failures.map((f:any,i:number)=><li key={i}><a href={f.url} target="_blank" rel="noreferrer">{f.url}</a><p>{f.reason}</p></li>)}</ul></details>}
+      </article>;
+    })}</div>
+  </details>;
+}
+
 function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onError:(s:string)=>void;refresh:()=>void;openLesson:(id:string)=>void}) {
   const [runs,setRuns]=useState<any[]>([]),[busy,setBusy]=useState(false),[expanded,setExpanded]=useState(false);
   useEffect(()=>{let live=true;api<any[]>("/nightly-video-runs").then(r=>{if(live)setRuns(r);}).catch(e=>{if(live)onError(e.message);});return()=>{live=false;};},[version]);
@@ -2545,6 +2567,7 @@ function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onEr
   const control=async(action:string)=>{try{await post(`/jobs/${activeJob.id}/${action}`);refresh();}catch(e){onError((e as Error).message);}};
   const labels:Record<string,string>={searching:"論文を探索中",reading:"本文を確認中",building:"動画を作成中",ready:"2本が完成",skipped:"今夜は見送り",paused:"一時停止",failed:"作成時の問題",cancelled:"停止済み"};
   return <section className="nightly-panel" aria-label="昨夜の動画"><div className="story-heading"><div><div className="eyebrow">OVERNIGHT · LOCAL AI</div><h2>昨夜の動画</h2><p>最近の学会の受賞論文を中心に、解説・詳解と英語練習に。</p></div><button className="secondary" disabled={busy} onClick={start}>{busy?"開始中…":"今すぐ論文を選んで作る"}</button></div>
+  <ConferenceAwards version={version} onError={onError}/>
   {run?<><div className="actions"><Badge state={run.state}>{labels[run.state]||run.state}</Badge><span>{run.day} · 日本時間{run.data.manual&&' · 手動実行'}</span>{['queued','running'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('pause')}>一時停止</button>}{['paused','failed','cancelled'].includes(activeJob?.state)&&<button className="secondary" onClick={()=>control('resume')}>続きから再開</button>}</div>{run.state==='ready'&&<p>完成した動画を残して、別の論文で追加作成できます。</p>}
   <h3>{activeRun.data.selected?.title||activeJob?.stage||run.data.reason}</h3>{run.continuing_run&&<p>継続中: {run.continuing_run.day}の動画</p>}{activeRun.data.selected?.assessment?.why_ja&&<p>{activeRun.data.selected.assessment.why_ja}</p>}
   {activeRun.data.selected?.awards?.map((a:any)=><p key={`${a.venue}-${a.year}-${a.name}`}><a href={a.official_url} target="_blank" rel="noreferrer">{a.venue} {a.year} · {a.name}</a> · 公式受賞情報確認済み{a.kind==='test-of-time'&&<> · 長年の影響を評価する賞{activeRun.data.selected.published&&<> · 論文発表 {activeRun.data.selected.published.slice(0,4)}年 / 受賞 {a.year}年</>}</>}</p>)}
@@ -2552,7 +2575,7 @@ function NightlyVideos({version,onError,refresh,openLesson}:{version:number;onEr
   {run.data.selected?.attention&&<p className="subtle">注目情報: <a href={run.data.selected.attention.source_url} target="_blank" rel="noreferrer">Hugging Face Daily Papers</a> · {new Date(run.data.selected.attention.retrieved_at*1000).toLocaleString()}</p>}
   {run.data.reason&&<p>{run.data.reason}</p>}{run.data.waiting_reason&&(run.state==='building'||run.continuing_run)&&<p>{run.data.waiting_reason}</p>}{activeJob&&<progress max={1} value={run.project?.job?.progress||activeJob.progress||0}/>}
   {run.project&&<><NightlyFilmCards project={run.project} openLesson={openLesson}/><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・動画・サムネイルを見る'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
-  <details><summary>選定・作成の記録</summary>{run.data.award_sources?.map((r:any,i:number)=><p key={`award-${i}`}><a href={r.source.url} target="_blank" rel="noreferrer">{r.source.venue} {r.source.year}</a>: {r.status==='verified winners'?'受賞確認':r.status==='unavailable'?'取得できず':'受賞を確認できず'}</p>)}{run.data.review_summary?.map((r:any)=><p key={r.paper_id}>{r.title} — {r.assessment.why_ja}</p>)}{Object.entries(run.data.timings||{}).filter(([,v])=>typeof v==='number').map(([k,v])=><p key={k}>{k}: {Math.round(Number(v)/60)}分</p>)}{run.data.warnings?.map((w:any,i:number)=><p key={i}>{w.unit}: {w.reason}</p>)}</details>
+  <details><summary>選定・作成の記録</summary>{run.data.award_sources?.map((r:any,i:number)=><p key={`award-${i}`}><a href={r.source.url} target="_blank" rel="noreferrer">{r.source.venue} {r.source.year}</a>: {awardStatusLabels[r.status]||'受賞を確認できず'}</p>)}{run.data.review_summary?.map((r:any)=><p key={r.paper_id}>{r.title} — {r.assessment.why_ja}</p>)}{Object.entries(run.data.timings||{}).filter(([,v])=>typeof v==='number').map(([k,v])=><p key={k}>{k}: {Math.round(Number(v)/60)}分</p>)}{run.data.warnings?.map((w:any,i:number)=><p key={i}>{w.unit}: {w.reason}</p>)}</details>
   {runs.length>1&&<details><summary>過去の夜間運転</summary>{runs.slice(1).map(r=><div key={r.id}><p>{r.day} · {labels[r.state]} · {r.data.selected?.title||r.data.reason}</p>{r.project&&<NightlyFilmCards project={r.project} openLesson={openLesson}/>}</div>)}</details>}</>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}
   </section>;
 }

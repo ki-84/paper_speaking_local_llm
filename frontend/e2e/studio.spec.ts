@@ -272,6 +272,27 @@ test("nightly selection shows the verified conference award source", async ({pag
   await expect(panel.getByText(/公式受賞情報確認済み/)).toBeVisible();
 });
 
+test("conference awards show counts, official winners and acquisition gaps", async ({page}) => {
+  const icra='https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-conference-paper-award/';
+  await page.route('**/api/conference-awards',route=>route.fulfill({json:{winner_count:2,paper_count:1,sources:[
+    {source:{venue:'ICRA',year:2025,url:icra},status:'verified winners',winner_count:2,paper_count:1,checked_at:1791016700,papers:[{title:'A Useful Robot Paper',name:'Best Conference Paper Award',official_url:icra},{title:'A Useful Robot Paper',name:'Best Student Paper Award',official_url:icra}],failures:[]},
+    {source:{venue:'CoRL',year:2026,url:'https://www.corl.org/'},status:'not announced',conference_start:'2026-11-09',winner_count:0,paper_count:0,papers:[],failures:[]},
+    {source:{venue:'IROS',year:2025,url:'https://iros25.org/'},status:'unavailable',winner_count:0,paper_count:0,papers:[],failures:[{url:'https://iros25.org/',reason:'Certificate validation failed'}]},
+  ]}}));
+  await page.getByRole('button',{name:'My library',exact:true}).click();
+  const panel=page.getByRole('group',{name:'学会別の受賞論文'});
+  await panel.locator(':scope > summary').click();
+  await expect(panel.locator(':scope > summary')).toContainText('2件の受賞情報 / 1本');
+  const winner=panel.getByRole('article',{name:'ICRA 2025の受賞情報'});
+  await expect(winner.getByText('受賞確認済み · 受賞情報 2件 / 論文 1本')).toBeVisible();
+  await winner.getByText('受賞論文を表示（1本）').click();
+  await expect(winner.getByRole('link',{name:'Best Conference Paper Award',exact:true})).toHaveAttribute('href',icra);
+  await expect(winner.getByText('A Useful Robot Paper',{exact:true})).toHaveCount(2);
+  await expect(panel.getByText('開催前・受賞未発表 · 受賞情報 0件 / 論文 0本')).toBeVisible();
+  await panel.getByText('取得先の問題（1件）').click();
+  await expect(panel.getByText('Certificate validation failed')).toBeVisible();
+});
+
 test("Test of Time shows the publication year separately from the award year", async ({page}) => {
   const source='https://neurips.cc/virtual/2025/awards_detail';
   await page.route('**/api/nightly-video-runs', route=>route.fulfill({json:[{id:'classic-run',day:'2026-10-04',state:'ready',job:null,data:{selected:{title:'An enduring learning method',published:'2015-06-01T00:00:00Z',awards:[{venue:'NeurIPS',year:2025,name:'Test of Time Award',kind:'test-of-time',official_url:source}]},timings:{}}}]}));

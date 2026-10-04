@@ -179,3 +179,24 @@ PYTHONPATH=backend .venv/bin/python scripts/story_acceptance.py a7297770703e45fb
 
 - [CVPR 2026公式論文ページ](https://openaccess.thecvf.com/content/CVPR2026/html/Xiang_Native_and_Compact_Structured_Latents_for_3D_Generation_CVPR_2026_paper.html)
 - [CVPR 2026受賞発表](https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers)：Best Student Paper。
+
+## 数式の意味を絵から理解する（2026-10-05）
+
+新しい `youtube-storyboard-3-concept-math` / `story-film-6-concept-math` では、詳解編の数式に `concept-before-symbols-1` を適用する。最初は記号のない大きな概念図を表示し、次に同じ図へ変数の意味と数式を添える。図・凡例・式の変数は同じ色を使い、入力、固定するもの、変更するもの、結果を区別する。
+
+ローカルLLMは本文から式、図の種類、変数の意味、話す順番を構造化する。描画は固定の「固定経路＋補正」「小さな表現への変換と復元」「重み付きの和」「点と幾何条件の距離」「その他の量の関係」を使う。固定図の英日見出しもその実際の役割に固定し、LLMの元の見出し案は記録に残す。点を動かす絵を誤差グラフと呼んだり、scaledを必ず縮小することと訳したりしない。
+
+一つの関数を `E(v)` 全体で色付けすると、引数 `v` の色まで変わってしまう。凡例では関数名と引数を分け、和や内積の複合式は式の中に保持する。LoRAの既知の式には、原論文の行列の形に合わせた独立補正を適用する。Aは入力k次元をr次元へ、Bはr次元を出力d次元へ変換する。
+
+絵コンテだけでなく、実際の会話が概念図から式へ進むかを検査する。修正は既存の最大3回の仕組みを使う。ベストエフォートの会話で概念図が抜けた場合は、式の前に1.5秒の概念図を挟む。通常の会話には追加しない。音声のサンプルや字幕を削らず、沈黙中は既存の口パク制御で口を閉じる。式の意味を確認できない場合は、確認済みの関係図や原図へ簡略化し、理由を保存する。
+
+最初の検証では、実際のローカル `qwen-q8` からLoRAとNativeのQEFの面距離項の概念案を作り、4枚の1080p画像を描画した。QEFは2次元の説明例で、原論文の境界項と正則化項を含む全手法とは区別する。図中の点は、3つの幾何条件に対する最小二乗解を実際に計算したもの。別のNumPy計算で位置、勾配、誤差の減少を確認する。
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/math_concept_preview.py --local-ai
+.venv/bin/pytest -q tests/test_math_concepts.py tests/test_storyboards.py tests/test_story.py
+```
+
+画像、ローカル生成設定、補正理由、文字の配置検査は `data/evaluation/math-concepts/`、共有する検証概要は `evaluation/math_concept_acceptance.json`。表示用画像だけは `data/visuals/math-concept-previews/` にも保存し、既存のファイルAPIでLANから開ける。全5種類の実描画、原図→概念図→式→原図の拡大、後から追加されるLoRA計算例の6フレーム、音声の全サンプルの保持、修正を繰り返さないことを検査する。式や図の意味の確認を、見出しの機械検査だけで済ませない。
+
+この変更で完成済みMP4を再生成していない。新しい長編の音声付き実動画の確認もまだ行っていない。既存動画・音声・録音と停止中の旧教材を保持し、次回の新規動画生成から適用する。モデル推論はループバック以外を許可しない既存ガード、描画は全ネットワーク要求を遮断したChromiumと同梱KaTeX・ローカルフォントを使う。OS全体のネットワーク遮断とは区別する。

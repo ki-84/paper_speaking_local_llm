@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "../frontend/node_modules/playwright-core/index.mjs";
 import katex from "../frontend/node_modules/katex/dist/katex.mjs";
+import {renderMathConcept, mathConceptCSS} from "./math_concept_diagrams.mjs";
 
 const [input, output] = process.argv.slice(2);
 const scene = JSON.parse(await fs.readFile(input, "utf8"));
@@ -27,7 +28,12 @@ const nodes = spec.nodes || [];
 const mathematical = (spec.equations || []).length > 0;
 const zoom = (spec.zoom_regions||[])[Number(scene.focus||0)-Number(spec.zoom_start||999)];
 const showOriginal = !!spec.image_path && (!!zoom || !mathematical || Number(scene.focus||0)===0);
-const mathFocus = Math.max(0, Number(scene.focus||0)-(spec.image_path?1:0));
+const relativeMathFocus = Math.max(0, Number(scene.focus||0)-(spec.image_path?1:0));
+const pairedMath = Array.isArray(spec.concepts) && spec.concepts.length > 0;
+const mathFocus = pairedMath ? Math.floor(relativeMathFocus/2) : relativeMathFocus;
+const mathPhase = relativeMathFocus % 2 ? 'symbols' : 'intuition';
+if(pairedMath && spec.concepts.length !== spec.equations.length)throw new Error('Each equation needs its conceptual picture');
+const conceptMath = pairedMath && !showOriginal ? renderMathConcept(spec.concepts[mathFocus],spec.equations[mathFocus],mathPhase,katex) : '';
 const columns = Math.min(Math.max(1, nodes.length), 3);
 const nodeWidth = (1720 - (columns - 1) * 40) / columns;
 const compact = mathematical;
@@ -83,9 +89,9 @@ const content = scene.thumbnail
   ? `<div class="thumbnail"><p>AI PAPERS × REAL ENGLISH</p><h1 lang="ja">${esc(scene.title_ja)}</h1><h2>${esc(scene.title_en)}</h2><span>図解・英日字幕 / ${badge}</span></div>`
   : `<header><div><h1>${esc(scene.title_en)}</h1><p lang="ja">${esc(scene.title_ja)}</p></div><span>${badge}</span></header>
     <main id="diagram"><div class="badge">${spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
-    ${showOriginal ? original : pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
+    ${showOriginal ? original : conceptMath || pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
     <div class="caption"><div>${esc(spec.caption_en)}</div><div lang="ja">${esc(spec.caption_ja)}</div></div></main>`;
-const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}
+const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
 body{font-family:"Noto Sans CJK JP","Noto Sans",sans-serif;color:#edf4ef;background:#102d2c}
 header{height:144px;padding:22px 70px;background:#143b37;display:flex;align-items:center;justify-content:space-between;gap:30px}
@@ -140,6 +146,13 @@ try {
     Object.assign(highlight.style,{left:x*overview.clientWidth+'px',top:y*overview.clientHeight+'px',width:w*overview.clientWidth+'px',height:h*overview.clientHeight+'px'});
   });
   await page.evaluate(() => {
+    // Preserve all notation and meanings; reduce type only within a readable bound.
+    const formula=document.querySelector('.mapped-equation');
+    if(formula)for(let i=0;i<8;i++){
+      const child=formula.querySelector('.katex');
+      if(child.getBoundingClientRect().width<formula.clientWidth-34&&child.getBoundingClientRect().height<formula.clientHeight-12)break;
+      formula.style.fontSize=Math.max(20,parseFloat(getComputedStyle(formula).fontSize)-1)+'px';
+    }
     const equations=document.querySelector('.equations');
     if(equations && equations.getBoundingClientRect().height>335) {
       // Large worked matrices are revealed one at a time, keeping readable type.
@@ -154,7 +167,7 @@ try {
     }
   });
   const errors = await page.evaluate(() => {
-    const problems=[...document.querySelectorAll(".node h2,.node p,.caption,.equation,.thumbnail h1,header h1,.region-label,.source-overview p,.picture-panel h2,.picture-panel p")]
+    const problems=[...document.querySelectorAll(".node h2,.node p,.caption,.equation,.thumbnail h1,header h1,.region-label,.source-overview p,.picture-panel h2,.picture-panel p,.concept-parts h2,.concept-parts p,.symbol-key,.mapped-equation,.concept-note")]
       .filter(e => e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1).map(e => e.textContent);
     const caption=document.querySelector('.caption')?.getBoundingClientRect();
     for(const node of document.querySelectorAll('.node')) {
@@ -168,9 +181,28 @@ try {
     const region=document.querySelector('.region-label')?.getBoundingClientRect();
     if(region&&caption&&region.bottom>caption.top-10)problems.push('Region label overlaps caption');
     for(const panel of document.querySelectorAll('.picture-panel'))if(panel.querySelector('p').getBoundingClientRect().bottom>panel.getBoundingClientRect().bottom-8)problems.push('Picture label outside its panel');
+    const concept=document.querySelector('.math-concept');
+    if(concept){
+      const keys=document.querySelector('.symbol-keys')?.getBoundingClientRect(),formula=document.querySelector('.mapped-equation')?.getBoundingClientRect(),note=document.querySelector('.concept-note').getBoundingClientRect();
+      const parts=document.querySelector('.concept-parts').getBoundingClientRect();
+      if(keys&&parts.bottom>keys.top-4)problems.push('Concept labels overlap symbol meanings');
+      if(keys&&formula&&keys.bottom>formula.top-4)problems.push('Symbol meanings overlap equation');
+      if(formula&&formula.bottom>note.top-4)problems.push('Equation overlaps concept note');
+      if(caption&&note.bottom>caption.top-4)problems.push('Concept note overlaps caption');
+      for(const key of document.querySelectorAll('.symbol-key'))if([...key.children].some(c=>c.getBoundingClientRect().bottom>key.getBoundingClientRect().bottom-2))problems.push('Symbol meaning outside its key');
+    }
     return problems;
   });
   if (errors.length) throw new Error("Visual text overflow: " + errors.join(" | "));
   await page.screenshot({path:output});
+  if(pairedMath){
+    const layout=await page.evaluate(()=>{
+      const concept=document.querySelector('.math-concept'),formula=document.querySelector('.mapped-equation');
+      return {phase:concept?.dataset.phase||'original',template:concept?.dataset.template||null,visible_equations:formula?1:0,visible_symbol_keys:document.querySelectorAll('.symbol-key').length,
+        colored_formula_terms:[...document.querySelectorAll('.mapped-equation .katex-html [style*="color"]')].map(e=>({text:e.textContent,color:getComputedStyle(e).color})),
+        rendered_formula_text:formula?.querySelector('.katex-html')?.textContent||'',layout_errors:[]};
+    });
+    await fs.writeFile(output+'.layout.json',JSON.stringify(layout,null,2));
+  }
   if (scene.study_output) await page.locator("#diagram").screenshot({path:scene.study_output});
 } finally {await browser.close();}

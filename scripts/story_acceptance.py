@@ -9,7 +9,38 @@ from difflib import SequenceMatcher
 import imageio_ffmpeg
 import numpy as np
 import pymupdf
-from paperspeak import config, db, story, story_video, video
+from paperspeak import config, db, math_concepts, story, story_video, video
+
+
+def formula_selected(scene, utterance):
+    spec = scene["visual"]
+    if not spec.get("equations"):
+        return False
+    if spec.get("concepts"):
+        focuses = [utterance.get("visual_focus", 0)] + [
+            e.get("focus") for e in utterance.get("visual_events", [])
+        ]
+        return any(math_concepts.phase(spec, focus) == "symbols" for focus in focuses)
+    return not spec.get("image_path") or 0 < utterance.get(
+        "visual_focus", 0
+    ) < spec.get("zoom_start", 999)
+
+
+def concept_before_formula(manifest, speech):
+    for scene in manifest["scenes"]:
+        if not scene["visual"].get("concepts"):
+            continue
+        for index in range(len(scene["visual"]["equations"])):
+            formula = math_concepts.formula_focus(scene["visual"], index)
+            pictures = [s["scene"] for s in speech]
+            before, after = scene["render_paths"][formula - 1 : formula + 1]
+            if (
+                before not in pictures
+                or after not in pictures
+                or pictures.index(before) >= pictures.index(after)
+            ):
+                return False
+    return True
 
 
 def media_sync_check(mp4, speech, ass_path, timestamp, frame_path):
@@ -167,12 +198,7 @@ def inspect(ident, screenshots=False, sync=False):
             else data["acceptance"]["equation_scenes"] >= 3,
             "equations_actually_selected": mode == "overview"
             or sum(
-                bool(s["visual"].get("equations"))
-                and any(
-                    not s["visual"].get("image_path")
-                    or 0 < u.get("visual_focus", 0) < s["visual"].get("zoom_start", 999)
-                    for u in s["utterances"]
-                )
+                any(formula_selected(s, u) for u in s["utterances"])
                 for s in manifest["scenes"]
             )
             >= 3,
@@ -192,6 +218,7 @@ def inspect(ident, screenshots=False, sync=False):
             "burned_subtitles": data["acceptance"]["burned_subtitles"] == ["en", "ja"],
             "thumbnail_exists": config.safe_path(data["thumbnail"]).is_file(),
             "current_renderer": manifest["version"] == story_video.VERSION,
+            "concept_before_formula": concept_before_formula(manifest, speech),
         }
         paths = []
         sync_samples = []
@@ -268,13 +295,8 @@ def inspect(ident, screenshots=False, sync=False):
                     ].get("zoom_start", 999)
                     if (
                         zoom
-                        or (
-                            scene["visual"].get("equations")
-                            and (
-                                not scene["visual"].get("image_path")
-                                or 0 < focus < scene["visual"].get("zoom_start", 999)
-                            )
-                        )
+                        or formula_selected(scene, u)
+                        or math_concepts.phase(scene["visual"], focus) == "intuition"
                     ) and focus not in sampled:
                         sampled.add(focus)
                         kind = "zoom" if zoom else "math"

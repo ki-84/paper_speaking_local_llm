@@ -15,7 +15,17 @@ from difflib import SequenceMatcher
 
 from bs4 import BeautifulSoup
 
-from . import config, db, lessons, papers, publication, translation, video, voices
+from . import (
+    config,
+    db,
+    lessons,
+    math_concepts,
+    papers,
+    publication,
+    translation,
+    video,
+    voices,
+)
 from .quality import (
     critical_speech_change,
     english_only,
@@ -28,7 +38,7 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-storyboard-2"
+VERSION = "youtube-storyboard-3-concept-math"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 EDITORIAL_REVIEW_VERSION = "content-first-editorial-2"
 VISUAL_DIRECTION_VERSION = "original-first-clear-1"
@@ -197,7 +207,8 @@ def create(paper_id, *, profile=None, modes=None):
                 "records": [],
                 "warnings": [],
                 "modes": {},
-                "storyboard_policy": "visual-before-dialogue-1",
+                "storyboard_policy": "visual-before-dialogue-2-concept-math",
+                "math_concept_policy": math_concepts.VERSION,
             }
             # Reuse source reading, never the earlier dialogue or recordings.
             prior = db.row(
@@ -892,7 +903,8 @@ def ensure_worked_example_cues(scene):
     offset = int(bool(scene["visual"].get("original_asset_id")))
     for index, u in enumerate(scene["utterances"][:-4]):
         u["visual_focus"] = 0 if index == 0 else offset
-    for u, focus in zip(tail, (0, 1, 2, 2)):
+    focuses = (0, 3, 5, 5) if scene["visual"].get("concepts") else (0, 1, 2, 2)
+    for u, focus in zip(tail, focuses):
         u["visual_focus"] = focus + offset
 
 
@@ -992,6 +1004,9 @@ def validate_visual(spec, mode):
         raise ValueError(
             "Equation scenes have room for three formulas and three meaning labels."
         )
+    math_concepts.normalize_parts(spec)
+    math_concepts.normalize_symbols(spec)
+    math_concepts.validate(spec)
     return spec
 
 
@@ -1136,7 +1151,8 @@ def _script_prompt(project, mode, scene, index):
         )
         + "Use ONE simple recurring analogy chosen for this paper's actual mechanism. Explain where the analogy stops being accurate. Follow the outline; never borrow another paper's mechanism or examples. "
         "In the overview use NO equations, symbols or spoken algebra. In the deep dive explain necessary notation and each mathematical operation using words and examples. "
-        "No 'welcome back', recap of every earlier scene, language lesson or chapter title narration. A short topic introduction belongs only at the start of the film. "
+        + (math_concepts.BRIEF if mode == "deep_dive" else "")
+        + "No 'welcome back', recap of every earlier scene, language lesson or chapter title narration. A short topic introduction belongs only at the start of the film. "
         "Obey this scene's beat_goal first. Do not explain later scenes' mechanisms or evidence early: build curiosity, then deliver the planned reveal. "
         "Avoid stock lines like 'That's a perfect analogy', 'Great question', 'Exactly' and 'It feels counterintuitive'. Make the actual exchange do the work. "
         + (
@@ -1155,7 +1171,12 @@ def _script_prompt(project, mode, scene, index):
         '"visual":{"type":"flow|timeline|comparison|matrix|equation|example|original","original_asset_id":"optional supplied original asset ID, allowed in BOTH films","nodes":[{"en":"short label","ja":"日本語"}],'
         '"equations":[{"latex":"only in deep_dive, accurate supplied equation","en":"meaning","ja":"意味"}],'
         '"caption_en":"one line explaining the visual","caption_ja":"図の説明"}}. '
-        "Each visual_focus is the zero-based index of the diagram node/formula actually discussed by that paragraph. Match spoken terminology to displayed labels.\n"
+        + (
+            "For equations also supply " + math_concepts.SCHEMA + ". "
+            if mode == "deep_dive"
+            else ""
+        )
+        + "Each visual_focus is the zero-based index of the diagram node/formula actually discussed by that paragraph. Match spoken terminology to displayed labels.\n"
         + "PAPER: "
         + project["data"]["paper_title"]
         + award_context_prompt(project)
@@ -1491,7 +1512,9 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             max_tokens=5500,
             images=[
                 config.safe_path(path)
-                for path in scene.get("storyboard_preview", [])[:1]
+                for path in scene.get(
+                    "storyboard_review_images", scene.get("storyboard_preview", [])
+                )[: 2 if scene["visual"].get("concepts") else 1]
             ],
         )
         issues = result.get("issues")
@@ -2472,7 +2495,9 @@ def _script_step(project, runtime, mode):
                     from . import storyboards
 
                     r["visual"] = scene["storyboard"]["visual"]
-                    storyboards.bind_dialogue(scene["storyboard"], r["utterances"])
+                    storyboards.bind_dialogue(
+                        scene["storyboard"], r["utterances"], require_math_sequence=True
+                    )
                 return r
 
             result = bounded(
@@ -2485,7 +2510,13 @@ def _script_step(project, runtime, mode):
                 max_tokens=6500,
                 images=[
                     config.safe_path(path)
-                    for path in scene.get("storyboard_preview", [])[:1]
+                    for path in scene.get(
+                        "storyboard_review_images", scene.get("storyboard_preview", [])
+                    )[
+                        : 2
+                        if scene.get("storyboard", {}).get("visual", {}).get("concepts")
+                        else 1
+                    ]
                 ],
             )
             if result is not None:
@@ -2507,6 +2538,8 @@ def _script_step(project, runtime, mode):
         normalize_lora_conventions(project, scene)
         if mode == "deep_dive":
             ensure_lora_math_visual(project, scene)
+            if project["data"].get("math_concept_policy"):
+                math_concepts.ensure(scene, lora_paper=is_lora(project))
             ensure_worked_example_cues(scene)
         if not scene.get("visual_ready"):
             try:
@@ -2563,6 +2596,10 @@ def _script_step(project, runtime, mode):
             return
     if mode == "deep_dive" and not track.get("worked_example_checked"):
         ensure_lora_worked_example(project, track)
+        if project["data"].get("math_concept_policy"):
+            for scene in track["scenes"]:
+                math_concepts.ensure(scene, lora_paper=is_lora(project))
+                ensure_worked_example_cues(scene)
         if any(not s.get("visual_ready") for s in track["scenes"]):
             return
     _ensure_farewell(track)

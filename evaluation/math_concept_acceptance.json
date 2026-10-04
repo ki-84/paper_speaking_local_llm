@@ -1,0 +1,458 @@
+{
+  "policy": "concept-before-symbols-1",
+  "examples": [
+    {
+      "id": "lora",
+      "source_scope": "LoRA freezes the original weights W0 and learns the low-rank correction BA, scaled by alpha/r. W0 is d by k, A is r by k and B is d by r. A is the DOWN-projection (k to r); B is the UP-projection (r to d). The SAME input x enters both paths; their output contributions are added. Alpha controls correction scaling and r is the rank. The dots in a diagram are schematic, not real layer dimensions.",
+      "concept": {
+        "template": "parallel_paths",
+        "parts": [
+          {
+            "en": "Keep the original path",
+            "ja": "元の経路は固定"
+          },
+          {
+            "en": "Learn a small correction",
+            "ja": "小さな補正を学ぶ"
+          },
+          {
+            "en": "Add both contributions",
+            "ja": "二つの出力を足す"
+          }
+        ],
+        "symbols": [
+          {
+            "latex": "W_0",
+            "en": "Frozen weights",
+            "ja": "固定する重み",
+            "part": 0
+          },
+          {
+            "latex": "x",
+            "en": "Input features",
+            "ja": "入力の特徴",
+            "part": 0
+          },
+          {
+            "latex": "A",
+            "en": "Reduce directions",
+            "ja": "少ない方向へ",
+            "part": 1
+          },
+          {
+            "latex": "B",
+            "en": "Expand the correction",
+            "ja": "補正を元の大きさへ",
+            "part": 1
+          },
+          {
+            "latex": "\\alpha",
+            "en": "Correction strength",
+            "ja": "補正の強さ",
+            "part": 1
+          },
+          {
+            "latex": "r",
+            "en": "Number of directions",
+            "ja": "学習する方向の数",
+            "part": 1
+          },
+          {
+            "latex": "h",
+            "en": "Combined output",
+            "ja": "合わせた出力",
+            "part": 2
+          }
+        ],
+        "planned_parts": [
+          {
+            "en": "Frozen original path",
+            "ja": "凍結された元パス"
+          },
+          {
+            "en": "Scaled learned correction",
+            "ja": "縮小された学習補正"
+          },
+          {
+            "en": "Combined output",
+            "ja": "合成出力"
+          }
+        ]
+      },
+      "generation": {
+        "record_path": "evaluation/1791131617454936653.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "65be013de43ba178e3c8bd4fb91c008c6626348408dba052dc30c51d0ebfec9d",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1500,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      },
+      "files": [
+        {
+          "path": "evaluation/math-concepts/lora-0.png",
+          "sha256": "621ea24604a4a019aad68ea62f10fe8b0872e407dece9ed79b1ff031bb74683c",
+          "layout": {
+            "phase": "intuition",
+            "template": "parallel_paths",
+            "visible_equations": 0,
+            "visible_symbol_keys": 0,
+            "colored_formula_terms": [],
+            "rendered_formula_text": "",
+            "layout_errors": []
+          },
+          "public_path": "visuals/math-concept-previews/lora-0.png"
+        },
+        {
+          "path": "evaluation/math-concepts/lora-1.png",
+          "sha256": "ddfde2ce4ea25955b61eb76188860891c111213058bef16b0dc7e407bc056d13",
+          "layout": {
+            "phase": "symbols",
+            "template": "parallel_paths",
+            "visible_equations": 1,
+            "visible_symbol_keys": 7,
+            "colored_formula_terms": [
+              {
+                "text": "h",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "W0​",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "W",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "0",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "0",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "x",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "r",
+                "color": "rgb(194, 123, 36)"
+              },
+              {
+                "text": "α",
+                "color": "rgb(194, 123, 36)"
+              },
+              {
+                "text": "B",
+                "color": "rgb(194, 123, 36)"
+              },
+              {
+                "text": "A",
+                "color": "rgb(194, 123, 36)"
+              },
+              {
+                "text": "x",
+                "color": "rgb(37, 127, 158)"
+              }
+            ],
+            "rendered_formula_text": "h=W0​x+rα​BAx",
+            "layout_errors": []
+          },
+          "public_path": "visuals/math-concept-previews/lora-1.png"
+        }
+      ]
+    },
+    {
+      "id": "qef-plane",
+      "source_scope": "Native and Compact Structured Latents for 3D Generation, PDF p.4, Eq.2: the first QEF component sums squared distances from the dual vertex v to planes determined by surface samples qi and unit normals ni: d^2_Pi,i=(ni dot (v-qi))^2. The full method ALSO has boundary-edge and regularization terms; this picture illustrates ONLY the plane-distance component in TWO dimensions. Moving a candidate point reduces the sum of squared perpendicular distances. Dashed residuals are distances, not normals. Do not claim this is the full O-Voxel algorithm or its measured accuracy.",
+      "concept": {
+        "template": "fit_constraints",
+        "parts": [
+          {
+            "en": "Planes from surface samples",
+            "ja": "表面から得た面"
+          },
+          {
+            "en": "A candidate with large distances",
+            "ja": "距離が大きい仮の頂点"
+          },
+          {
+            "en": "Move toward a better fit",
+            "ja": "距離を減らす位置へ"
+          }
+        ],
+        "symbols": [
+          {
+            "latex": "v",
+            "en": "Candidate point",
+            "ja": "候補点",
+            "part": 1
+          },
+          {
+            "latex": "q_i",
+            "en": "Surface sample point",
+            "ja": "表面のサンプル点",
+            "part": 0
+          },
+          {
+            "latex": "n_i",
+            "en": "Unit normal vector",
+            "ja": "単位法線ベクトル",
+            "part": 0
+          },
+          {
+            "latex": "E_{\\mathrm{plane}}",
+            "en": "Total squared distance",
+            "ja": "二乗距離の合計",
+            "part": 2
+          }
+        ],
+        "planned_parts": [
+          {
+            "en": "Fixed surface planes",
+            "ja": "固定された面の法線"
+          },
+          {
+            "en": "Candidate point with error",
+            "ja": "誤差を持つ候補点"
+          },
+          {
+            "en": "Total squared distance",
+            "ja": "二乗距離の合計"
+          }
+        ]
+      },
+      "generation": {
+        "record_path": "evaluation/1791131648338764791.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "7e12b63cab1a1533b11c2543e65cd589399430fb4aa9300a95710c44dc4025f3",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1500,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      },
+      "files": [
+        {
+          "path": "evaluation/math-concepts/qef-plane-0.png",
+          "sha256": "68e239b049297fd2c78f8f2e4778a86c6c31eb3c784a37b970c9db363176354d",
+          "layout": {
+            "phase": "intuition",
+            "template": "fit_constraints",
+            "visible_equations": 0,
+            "visible_symbol_keys": 0,
+            "colored_formula_terms": [],
+            "rendered_formula_text": "",
+            "layout_errors": []
+          },
+          "public_path": "visuals/math-concept-previews/qef-plane-0.png"
+        },
+        {
+          "path": "evaluation/math-concepts/qef-plane-1.png",
+          "sha256": "e5e996bc0b7add26dd78a4726a3fba685e92646bdae8d12c053a828ca36c6121",
+          "layout": {
+            "phase": "symbols",
+            "template": "fit_constraints",
+            "visible_equations": 1,
+            "visible_symbol_keys": 4,
+            "colored_formula_terms": [
+              {
+                "text": "Eplane​",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "E",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "plane",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "plane",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "plane",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "plane",
+                "color": "rgb(119, 81, 168)"
+              },
+              {
+                "text": "v",
+                "color": "rgb(194, 123, 36)"
+              },
+              {
+                "text": "ni​",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "n",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "i",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "i",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "v",
+                "color": "rgb(194, 123, 36)"
+              },
+              {
+                "text": "qi​",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "q",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "i",
+                "color": "rgb(37, 127, 158)"
+              },
+              {
+                "text": "i",
+                "color": "rgb(37, 127, 158)"
+              }
+            ],
+            "rendered_formula_text": "Eplane​(v)=∑i​(ni​⋅(v−qi​))2",
+            "layout_errors": []
+          },
+          "public_path": "visuals/math-concept-previews/qef-plane-1.png"
+        }
+      ]
+    }
+  ],
+  "local_ai": true,
+  "creates_generation_jobs": false,
+  "source_checks": [
+    "LoRA symbol meanings normalized to the primary-paper convention: A reduces, B expands",
+    "lora: fixed bilingual headings matched to the actual geometry; original AI proposal retained",
+    "qef-plane: fixed bilingual headings matched to the actual geometry; original AI proposal retained"
+  ],
+  "repairs": [
+    {
+      "example": "qef-plane",
+      "attempt": 1,
+      "reason": "Shorten this symbol meaning to <=32 English and <=18 Japanese characters: 'Total squared plane distance error' / '面からの二乗距離誤差の合計'"
+    },
+    {
+      "example": "qef-plane",
+      "attempt": 2,
+      "reason": "Shorten this symbol meaning to <=32 English and <=18 Japanese characters: 'Total squared plane distance error' / '面からの二乗距離誤差の合計'"
+    }
+  ],
+  "symbol_simplifications": [
+    {
+      "example": "qef-plane",
+      "changes": [
+        {
+          "from": "E_{\\mathrm{plane}}(v)",
+          "to": "E_{\\mathrm{plane}}",
+          "reason": "Color the function name separately from its arguments"
+        }
+      ]
+    }
+  ],
+  "renderer_sha256": "1c2daf2f4bf02e48ac1a3a75a49094104187f6b352bbd983f02c71a998d12a44",
+  "checked_at": "2026-10-04T16:47:37.419406+00:00",
+  "status": "local_concept_images_and_focused_checks_passed",
+  "pipeline_version": "youtube-storyboard-3-concept-math",
+  "render_version": "story-film-6-concept-math",
+  "new_full_mp4_generated": false,
+  "existing_completed_films_regenerated": false,
+  "checks": {
+    "all_five_templates_rendered": true,
+    "intuition_has_no_equation": true,
+    "formula_shows_same_picture_and_matching_variable_colors": true,
+    "separate_numpy_least_squares_check": true,
+    "verified_original_overview_and_zoom_kept": true,
+    "late_lora_example_renders_all_six_frames": true,
+    "bounded_fallback_preserves_all_spoken_samples": true,
+    "source_normalization_is_idempotent": true,
+    "chromium_routes_blocked": true,
+    "python_inference_external_connections_blocked": true,
+    "os_wide_network_block_test": false,
+    "new_full_video_with_real_audio_test": false,
+    "symbols_label_actual_objects_in_diagram": true
+  },
+  "tests": {
+    "focused_command": ".venv/bin/pytest -q tests/test_math_concepts.py tests/test_storyboards.py tests/test_story.py",
+    "focused_count": 72,
+    "related_publication_awards_thumbnails_passed": 40,
+    "ruff": "passed",
+    "node_syntax": "passed",
+    "matrix_layout_issue": "Two-row matrices needed vertical centering; corrected and all six worked-example frames rendered"
+  },
+  "existing_overview": {
+    "export_id": "dba3f0805dec4e51a179e347e7afde49",
+    "sha256": "619d4b3a812d4b3c06528bae39b25d47624ced9730a08e8a13775695a464739f",
+    "unchanged": true
+  },
+  "operation": {
+    "nightly_video_enabled": true,
+    "nightly_video_hour": 2,
+    "nightly_video_minute": 0,
+    "discovery_enabled": false,
+    "youtube_auto_upload": false,
+    "jobs": [
+      {
+        "kind": "lesson",
+        "state": "paused",
+        "count": 3
+      }
+    ]
+  },
+  "service": {
+    "health": {
+      "status": "ok"
+    },
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 5090",
+      "total_mib": 32607,
+      "free_mib": 32094
+    },
+    "active_jobs": []
+  },
+  "lan": [
+    {
+      "path": "visuals/math-concept-previews/lora-0.png",
+      "status": 200,
+      "bytes": 131272,
+      "sha256_matches": true
+    },
+    {
+      "path": "visuals/math-concept-previews/lora-1.png",
+      "status": 200,
+      "bytes": 177345,
+      "sha256_matches": true
+    },
+    {
+      "path": "visuals/math-concept-previews/qef-plane-0.png",
+      "status": 200,
+      "bytes": 124651,
+      "sha256_matches": true
+    },
+    {
+      "path": "visuals/math-concept-previews/qef-plane-1.png",
+      "status": 200,
+      "bytes": 160338,
+      "sha256_matches": true
+    }
+  ]
+}

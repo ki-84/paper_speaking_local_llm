@@ -10,9 +10,9 @@ import wave
 
 import imageio_ffmpeg
 
-from . import config, db, publication, video, video_overlay
+from . import config, db, math_concepts, publication, video, video_overlay
 
-VERSION = "story-film-5-storyboard-captions"
+VERSION = "story-film-6-concept-math"
 RELEASE_VERSION = "verified-video-packaging-1"
 
 
@@ -129,14 +129,18 @@ def render_scene(project, mode, index):
                     zoom_regions.append(region)
     elif any(u.get("visual_focus_region") for u in scene["utterances"]):
         raise ValueError("A verified region cue needs a checked original figure")
-    focus_count = max(
-        1,
-        len(scene["visual"].get("nodes", [])),
-        len(scene["visual"].get("equations", []))
-        + (1 if original and scene["visual"].get("equations") else 0),
+    focus_count = (
+        math_concepts.focus_count(scene["visual"])
+        if scene["visual"].get("concepts")
+        else max(
+            1,
+            len(scene["visual"].get("nodes", [])),
+            len(scene["visual"].get("equations", []))
+            + (1 if original and scene["visual"].get("equations") else 0),
+        )
     )
     scene["visual"].update(zoom_regions=zoom_regions, zoom_start=focus_count)
-    renderer_hash = video.file_digest(config.ROOT / "scripts/render_story_slide.mjs")
+    renderer_hash = renderer_digest()
     key = video.digest(
         [
             VERSION,
@@ -264,7 +268,12 @@ def render_scene(project, mode, index):
                 re.I,
             )
         ):
-            focus = min(1, len(paths) - 1)
+            focus = min(
+                math_concepts.formula_focus(scene["visual"])
+                if scene["visual"].get("concepts")
+                else 1,
+                len(paths) - 1,
+            )
             u["visual_focus_method"] = "explicit mathematical explanation"
         if ui in zoom_cues:
             focus = focus_count + zoom_cues[ui]
@@ -286,11 +295,23 @@ def _render(input_path, output_path):
             if not partial.is_file() or partial.stat().st_size < 5000:
                 raise ValueError("An empty story scene was rendered")
             partial.replace(output_path)
+            layout = partial.with_name(partial.name + ".layout.json")
+            if layout.is_file():
+                layout.replace(output_path.with_name(output_path.name + ".layout.json"))
             return
         except (subprocess.SubprocessError, ValueError):
             partial.unlink(missing_ok=True)
             if attempt == 2:
                 raise
+
+
+def renderer_digest():
+    return video.digest(
+        {
+            name: video.file_digest(config.ROOT / "scripts" / name)
+            for name in ("render_story_slide.mjs", "math_concept_diagrams.mjs")
+        }
+    )
 
 
 def enqueue(project, mode, *, preview=False):
@@ -305,9 +326,8 @@ def enqueue(project, mode, *, preview=False):
         "project_id": project["id"],
         "mode": mode,
         "preview": preview,
-        "renderer_sha256": video.file_digest(
-            config.ROOT / "scripts/render_story_slide.mjs"
-        ),
+        "renderer_sha256": renderer_digest(),
+        "math_concept_policy": project["data"].get("math_concept_policy"),
         "caption_renderer_sha256": video.file_digest(
             config.ROOT / "backend/paperspeak/video_overlay.py"
         ),
@@ -393,6 +413,7 @@ def timeline(manifest, root):
     frame = 0
     for index, scene in enumerate(manifest["scenes"]):
         starts.append((frame / 24000, scene["title_ja"]))
+        seen_pictures = set()
         for ui, u in enumerate(scene["utterances"]):
             focus = u.get(
                 "visual_focus",
@@ -413,7 +434,34 @@ def timeline(manifest, root):
                     speech.append(pause)
                     captions.append(pause)
                     frame += frames
+            # A bounded script fallback must still let viewers see the meaning
+            # before notation. Normal picture-first dialogue adds no silence.
             total = video._duration_frames(config.safe_path(u["audio"]))
+            requested = [focus] + [
+                e.get("focus")
+                for e in u.get("visual_events", [])
+                if 0 < round(e["start"] * 24000) < total
+            ]
+            anticipated = set(seen_pictures)
+            for target in requested:
+                phase = math_concepts.phase(scene["visual"], target)
+                if phase == "intuition":
+                    anticipated.add(scene["render_paths"][target])
+                elif phase == "symbols":
+                    concept_image = scene["render_paths"][target - 1]
+                    if concept_image not in anticipated:
+                        lead = {
+                            "audio": silence_file(root, 36000),
+                            "frames": 36000,
+                            "silence": True,
+                            "scene": concept_image,
+                            "concept_leadin": True,
+                        }
+                        speech.append(lead)
+                        captions.append(lead)
+                        frame += lead["frames"]
+                        anticipated.add(concept_image)
+                        seen_pictures.add(concept_image)
             events = [(0, image)]
             for event in u.get("visual_events", []):
                 when = round(event["start"] * 24000)
@@ -443,6 +491,7 @@ def timeline(manifest, root):
                         )
                     audio = str(clip.relative_to(config.DATA))
                 speech.append({"audio": audio, "frames": end - begin, "scene": picture})
+                seen_pictures.add(picture)
             ranges = u.get("caption_ranges", u["sentence_ranges"])
             used = 0
             for si, (text, start, end) in enumerate(ranges):

@@ -54,8 +54,12 @@ if (spec.image_path) {
   const bytes = await fs.readFile(filename);
   original = `<img class="original" src="data:image/png;base64,${bytes.toString("base64")}">`;
   if(zoom){
-    if(!Array.isArray(zoom.box)||zoom.box.length!==4||zoom.box.some(n=>!Number.isFinite(n)||n<0||n>1)||zoom.box[2]<=0||zoom.box[3]<=0)throw new Error('Invalid verified region');
-    original=`<div class="original-window" data-box="${esc(JSON.stringify(zoom.box))}">${original}</div><div class="region-label">${esc(zoom.label_en)} / ${esc(zoom.label_ja)}</div>`;
+    if(!Array.isArray(zoom.box)||zoom.box.length!==4||zoom.box.some(n=>!Number.isFinite(n)||n<0||n>1)||zoom.box[2]<=0||zoom.box[3]<=0||zoom.box[0]+zoom.box[2]>1.001||zoom.box[1]+zoom.box[3]>1.001)throw new Error('Invalid verified region');
+    const source=spec.original_source||{};
+    // Keep the whole source in view so a zoom never loses its location/context.
+    original=`<div class="original-window" data-box="${esc(JSON.stringify(zoom.box))}">${original}</div>
+      <aside class="source-overview"><div class="source-image">${original}<span class="source-highlight"></span></div><p>${esc(source.label||'Original figure')} ${source.page?`· p.${esc(source.page)}`:''}<br>Zoom location · 拡大位置</p></aside>
+      <div class="region-label"><div>${esc(zoom.label_en)}</div><div lang="ja">${esc(zoom.label_ja)}</div></div>`;
   }
 }
 const badge = scene.mode === "overview" ? "THE IDEA · 解説編" : "UNDER THE HOOD · 詳解編";
@@ -84,7 +88,10 @@ header span{font-size:20px;color:#f4b950;flex:none}main{position:relative;height
 .equation p{font-size:20px;text-align:center;margin:5px 0}.equation p span{margin-left:18px;color:#557966}
 .original{position:absolute;top:60px;left:100px;width:1720px;height:490px;object-fit:contain}
 .original-window{position:absolute;top:60px;left:100px;width:1720px;height:455px;overflow:hidden;background:white;border-radius:12px}
-.region-label{position:absolute;top:526px;left:100px;right:100px;text-align:center;font-size:22px;color:#466f5b}
+.source-overview{position:absolute;top:70px;right:100px;width:270px;background:white;border:2px solid #aac2ae;border-radius:10px;padding:8px}
+.source-image{position:relative;width:250px}.source-image .original{position:static;display:block;width:250px;height:auto}.source-highlight{position:absolute;border:3px solid #d78418;background:#f3b34822}
+.source-overview p{font-size:18px;line-height:1.4;text-align:center;margin:8px 0 0;color:#466f5b}
+.region-label{position:absolute;top:521px;left:100px;right:100px;text-align:center;font-size:20px;line-height:1.3;color:#466f5b}
 .matrix{font-size:27px;font-family:monospace;margin-top:8px}
 .captions{height:270px;background:#122e2c;position:relative;border-top:${Number(characters.layout.footer_border)}px solid #d99550}
 .avatar{position:absolute;top:10px;width:225px;height:245px;text-align:center;z-index:2}.avatar.left{left:34px}.avatar.right{right:34px}
@@ -104,11 +111,15 @@ try {
     const img=box.querySelector('img');await img.decode();
     const [x,y,w,h]=JSON.parse(box.dataset.box),pad=.0075;
     const left=Math.max(0,x-pad),top=Math.max(0,y-pad),right=Math.min(1,x+w+pad),bottom=Math.min(1,y+h+pad);
-    const scale=Math.min(box.clientWidth/(img.naturalWidth*(right-left)),box.clientHeight/(img.naturalHeight*(bottom-top)));
+    const availableWidth=1400;
+    const scale=Math.min(availableWidth/(img.naturalWidth*(right-left)),box.clientHeight/(img.naturalHeight*(bottom-top)));
     const width=img.naturalWidth*scale,height=img.naturalHeight*scale;
     const croppedWidth=width*(right-left),croppedHeight=height*(bottom-top);
-    Object.assign(box.style,{width:croppedWidth+'px',height:croppedHeight+'px',left:100+(1720-croppedWidth)/2+'px',top:60+(455-croppedHeight)/2+'px'});
+    Object.assign(box.style,{width:croppedWidth+'px',height:croppedHeight+'px',left:100+(availableWidth-croppedWidth)/2+'px',top:60+(455-croppedHeight)/2+'px'});
     Object.assign(img.style,{width:width+'px',height:height+'px',left:-width*left+'px',top:-height*top+'px',objectFit:'fill'});
+    const overview=document.querySelector('.source-image img');await overview.decode();
+    const highlight=document.querySelector('.source-highlight');
+    Object.assign(highlight.style,{left:x*overview.clientWidth+'px',top:y*overview.clientHeight+'px',width:w*overview.clientWidth+'px',height:h*overview.clientHeight+'px'});
   });
   await page.evaluate(() => {
     const equations=document.querySelector('.equations');
@@ -125,7 +136,7 @@ try {
     }
   });
   const errors = await page.evaluate(() => {
-    const problems=[...document.querySelectorAll(".node h2,.node p,.caption,.equation,.thumbnail h1,header h1")]
+    const problems=[...document.querySelectorAll(".node h2,.node p,.caption,.equation,.thumbnail h1,header h1,.region-label,.source-overview p")]
       .filter(e => e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1).map(e => e.textContent);
     const caption=document.querySelector('.caption')?.getBoundingClientRect();
     for(const node of document.querySelectorAll('.node')) {
@@ -136,6 +147,8 @@ try {
     const equations=document.querySelector('.equations')?.getBoundingClientRect();
     const firstNode=document.querySelector('.node')?.getBoundingClientRect();
     if(equations&&firstNode&&equations.bottom>firstNode.top-10)problems.push('Equations overlap meaning labels');
+    const region=document.querySelector('.region-label')?.getBoundingClientRect();
+    if(region&&caption&&region.bottom>caption.top-10)problems.push('Region label overlaps caption');
     return problems;
   });
   if (errors.length) throw new Error("Visual text overflow: " + errors.join(" | "));

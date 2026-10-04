@@ -5,14 +5,14 @@ from __future__ import annotations
 import hashlib
 import re
 import time
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from bs4 import BeautifulSoup
 
 from . import awards, config, db
 
 VERSION = "paper-venue-edition-awards-2"
-LOOKUP_VERSION = "official-records-4-refresh"
+LOOKUP_VERSION = "official-records-5-cvf-links"
 DESCRIPTION_VERSION = "paper-awards-no-urls-2"
 EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
 ALIASES = {
@@ -155,6 +155,49 @@ def parse_page(saved, paper):
     return None
 
 
+def official_record_urls(paper):
+    """Find records even when an award page lost its proceedings link.
+
+    The award edition is only a search hint. A candidate URL is never evidence
+    until its own bibliographic record has matched the paper's exact title.
+    """
+    data = paper["data"]
+    urls = [data.get("publication_url", ""), data.get("proceedings_url", "")]
+    prizes = awards.verified(data | {"title": paper["title"]})
+    retrospective = {
+        (a.get("venue"), a.get("year"), a.get("name"))
+        for a in data.get("awards", [])
+        if a.get("kind") == "test-of-time"
+    }
+    urls.extend(a.get("paper_url", "") for a in prizes)
+    authors = data.get("authors") or []
+    author = authors[0] if authors else ""
+    if isinstance(author, dict):
+        author = author.get("name", "")
+    if isinstance(author, str) and author.split():
+        surname = re.sub(r"[^\w-]", "", author.split()[-1])
+        slug = re.sub(r"[^\w]+", "_", paper["title"]).strip("_")
+        for prize in prizes:
+            if (
+                prize["venue"] not in {"CVPR", "ICCV"}
+                or prize.get("kind") == "test-of-time"
+                or (prize["venue"], prize["year"], prize["name"]) in retrospective
+                or re.search(r"test.of.time|longuet", prize["name"], re.I)
+            ):
+                continue
+            edition = f"{prize['venue']}{prize['year']}"
+            urls.append(
+                "https://openaccess.thecvf.com/content/"
+                + edition
+                + "/html/"
+                + quote(
+                    f"{surname}_{slug}_{prize['venue']}_{prize['year']}_paper.html",
+                    safe="_",
+                )
+            )
+    return list(dict.fromkeys(u for u in urls if u and awards.trusted(u)))[:3]
+
+
 def resolve(paper):
     existing = paper["data"].get("publication")
     if (
@@ -164,10 +207,7 @@ def resolve(paper):
     ):
         return existing
     # A Test of Time year is deliberately never used as publication evidence.
-    for prize in awards.verified(paper["data"] | {"title": paper["title"]}):
-        url = prize.get("paper_url", "")
-        if not url or not awards.trusted(url):
-            continue
+    for url in official_record_urls(paper):
         try:
             result = parse_page(awards.fetch(url), paper)
             if result:
@@ -243,7 +283,7 @@ def ensure(project):
         paper["title"],
         paper["data"].get("journal_ref"),
         paper["data"].get("pdf_path"),
-        [a.get("paper_url") for a in prizes],
+        official_record_urls(paper),
     ]
     path = paper["data"].get("pdf_path")
     if path:
@@ -294,6 +334,8 @@ def award_identity(project):
         japanese = {
             "Outstanding Paper Award": "優秀論文賞",
             "Best Paper Award": "最優秀論文賞",
+            "Best Student Paper": "最優秀学生論文賞",
+            "Best Student Paper Award": "最優秀学生論文賞",
             "Test of Time Award": "Test of Time賞",
             "Outstanding Systems Paper in Memory of Seth Teller Award": "優秀システム論文賞",
         }.get(name, name)

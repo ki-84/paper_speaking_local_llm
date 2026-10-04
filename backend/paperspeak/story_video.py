@@ -12,7 +12,7 @@ import imageio_ffmpeg
 
 from . import config, db, publication, video, video_overlay
 
-VERSION = "story-film-2"
+VERSION = "story-film-3-original-panels"
 RELEASE_VERSION = "verified-video-packaging-1"
 
 
@@ -28,6 +28,10 @@ def render_scene(project, mode, index):
     track = project["data"]["modes"][mode]
     scene = track["scenes"][index]
     original = None
+    if (
+        scene["visual"].get("type") == "original" or scene["visual"].get("image_path")
+    ) and not scene["visual"].get("original_asset_id"):
+        raise ValueError("Only a checked original figure from this paper may be used")
     if scene["visual"].get("original_asset_id"):
         original = db.one(
             "SELECT * FROM visual_assets WHERE id=? AND paper_id=? AND kind='original'",
@@ -49,32 +53,42 @@ def render_scene(project, mode, index):
                 if ancestor
                 else None
             )
-        if (
-            mode == "overview"
-            or not original
-            or not original["data"].get("review", {}).get("passed")
-        ):
+        if not original or not original["data"].get("review", {}).get("passed"):
             raise ValueError(
-                "Only a checked original figure may be used in the deep dive"
+                "Only a checked original figure from this paper may be used"
             )
         scene["visual"].update(
             type="original",
             image_path=original["data"]["image_path"],
             original_asset_id=original["id"],
+            original_source={
+                "label": original["data"].get("label", "Paper figure"),
+                "page": original["data"].get("page"),
+            },
         )
     zoom_cues, zoom_regions = {}, []
     if original:
         regions = original["data"].get("regions", [])
         for ui, u in enumerate(scene["utterances"]):
-            if re.search(r"heat[ -]?map", u["text"], re.I):
+            region = None
+            region_id = u.get("visual_focus_region")
+            if region_id:
+                region = next((r for r in regions if r.get("id") == region_id), None)
+                if region is None:
+                    raise ValueError(
+                        "Unknown verified original figure region: " + str(region_id)
+                    )
+            elif re.search(r"heat[ -]?map", u["text"], re.I):
                 region = next(
                     (r for r in regions if "zoom" in r.get("label_en", "").lower()),
                     None,
                 )
-                if region:
-                    if region not in zoom_regions:
-                        zoom_regions.append(region)
-                    zoom_cues[ui] = zoom_regions.index(region)
+            if region:
+                if region not in zoom_regions:
+                    zoom_regions.append(region)
+                zoom_cues[ui] = zoom_regions.index(region)
+    elif any(u.get("visual_focus_region") for u in scene["utterances"]):
+        raise ValueError("A verified region cue needs a checked original figure")
     focus_count = max(
         1,
         len(scene["visual"].get("nodes", [])),
@@ -214,7 +228,7 @@ def render_scene(project, mode, index):
             u["visual_focus_method"] = "explicit mathematical explanation"
         if ui in zoom_cues:
             focus = focus_count + zoom_cues[ui]
-            u["visual_focus_method"] = "explicit heat-map cue, verified source region"
+            u["visual_focus_method"] = "explicit panel cue, verified source region"
         u["visual_focus"] = focus
 
 

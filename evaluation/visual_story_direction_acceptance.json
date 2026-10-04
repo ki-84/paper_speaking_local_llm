@@ -1,0 +1,174 @@
+{
+  "date": "2026-10-04",
+  "scope": "Publication/poster correction, overview original figures, region zoom, finite visual repairs, static direction study; no new film generation",
+  "project_id": "19327e87122e4289bcc7e200a4e4f012",
+  "publication": {
+    "status": "verified",
+    "paper_title": "Native and Compact Structured Latents for 3D Generation",
+    "venue": "CVPR",
+    "year": 2026,
+    "label": "CVPR 2026",
+    "source_url": "https://openaccess.thecvf.com/content/CVPR2026/html/Xiang_Native_and_Compact_Structured_Latents_for_3D_Generation_CVPR_2026_paper.html",
+    "source_text": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+    "checked_at": 1791116055.8603888,
+    "source_sha256": "5183e1a59699a6aa0a710c73b4f85f91c351dabd7782afe8c1864e579d972d15",
+    "source_kind": "official-proceedings"
+  },
+  "checks": {
+    "official_publication_displayed": true,
+    "thumbnail_downloads": true,
+    "mp4_range_downloads": true,
+    "copy_matches_download_metadata": true,
+    "url_free_descriptions": true,
+    "no_jobs_started_or_resumed": true,
+    "no_browser_exceptions": true
+  },
+  "exports": [
+    {
+      "id": "dfea89cae0b342218ce8dd895cbe2c8a",
+      "kind": "deep_dive",
+      "title": "【詳細解説】Native and Compact Structured Latents for 3D Generation｜CVPR 2026",
+      "conference": "CVPR 2026",
+      "awards": [
+        {
+          "title": "Native and Compact Structured Latents for 3D Generation",
+          "venue": "CVPR",
+          "year": 2026,
+          "name": "Best Student Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+          "paper_url": "",
+          "retrieved_at": 1791101642.028947,
+          "source_sha256": "55e4cf8842f03c08f2d8ea4cd946ef16d98608271c5ade63ccbecb1331898994",
+          "area": "ai",
+          "source_name": "CVPR 2026 Best Student Paper",
+          "name_ja": "最優秀学生論文賞",
+          "label": "CVPR 2026 最優秀学生論文賞"
+        }
+      ],
+      "thumbnail": "thumbnails/265e5425c7aea7684be76f82f5cc116a/thumbnail-0.png",
+      "thumbnail_download": 200,
+      "mp4_range_download": 206
+    },
+    {
+      "id": "4b856aadcafd4a1f94ef033e27fb7630",
+      "kind": "overview",
+      "title": "【概要解説】Native and Compact Structured Latents for 3D Generation｜CVPR 2026",
+      "conference": "CVPR 2026",
+      "awards": [
+        {
+          "title": "Native and Compact Structured Latents for 3D Generation",
+          "venue": "CVPR",
+          "year": 2026,
+          "name": "Best Student Paper",
+          "kind": "research-paper",
+          "status": "winner",
+          "verified": true,
+          "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+          "paper_url": "",
+          "retrieved_at": 1791101642.028947,
+          "source_sha256": "55e4cf8842f03c08f2d8ea4cd946ef16d98608271c5ade63ccbecb1331898994",
+          "area": "ai",
+          "source_name": "CVPR 2026 Best Student Paper",
+          "name_ja": "最優秀学生論文賞",
+          "label": "CVPR 2026 最優秀学生論文賞"
+        }
+      ],
+      "thumbnail": "thumbnails/1960ffb1f56890314619b979901d89c6/thumbnail-2.png",
+      "thumbnail_download": 200,
+      "mp4_range_download": 206
+    }
+  ],
+  "tests": {
+    "publication_packaging_story_suite": {
+      "passed": 80
+    },
+    "additional_render_safety_checks": {
+      "passed": 8,
+      "deselected": 40
+    },
+    "ruff": "passed",
+    "node_syntax": "passed"
+  },
+  "static_visual_preview": {
+    "status": "passed",
+    "purpose": "Static visual-direction study, not a regenerated video or a viewer-comprehension evaluation",
+    "project_id": "19327e87122e4289bcc7e200a4e4f012",
+    "paper": "Native and Compact Structured Latents for 3D Generation",
+    "publication": {
+      "status": "verified",
+      "paper_title": "Native and Compact Structured Latents for 3D Generation",
+      "venue": "CVPR",
+      "year": 2026,
+      "label": "CVPR 2026",
+      "source_url": "https://openaccess.thecvf.com/content/CVPR2026/html/Xiang_Native_and_Compact_Structured_Latents_for_3D_Generation_CVPR_2026_paper.html",
+      "source_text": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+      "checked_at": 1791116055.8603888,
+      "source_sha256": "5183e1a59699a6aa0a710c73b4f85f91c351dabd7782afe8c1864e579d972d15",
+      "source_kind": "official-proceedings"
+    },
+    "source_asset_id": "original-2504a31188380bab87835f63",
+    "source_sha256": "25c65617aa0f9564abd1e4e3d3f2a6db0e189b8619c4c2a26c39d6e77922fb35",
+    "source_page": 1,
+    "verified_regions": [
+      {
+        "id": "recon",
+        "label_en": "Reconstruction panel (1536³ asset, latents to mesh, enclosed structures row)",
+        "label_ja": "再構築パネル（1536³アセット、ラテンント→メッシュ、閉じた構造の行）",
+        "box": [
+          0.02,
+          0.05,
+          0.33,
+          0.62
+        ]
+      },
+      {
+        "id": "gen",
+        "label_en": "Generation panel (PBR-textured asset, Base Color/Metallic/Roughness/Alpha)",
+        "label_ja": "生成パネル（PBRテクスチャ付きアセット、Base Color/Metallic/Roughness/Alpha）",
+        "box": [
+          0.36,
+          0.05,
+          0.41,
+          0.62
+        ]
+      }
+    ],
+    "original_pixels_preserved": true,
+    "cloud_inference_used": false,
+    "external_requests_during_render": "blocked by local Chromium renderer",
+    "production_jobs_started": false,
+    "film_or_audio_changed": false,
+    "before": "evaluation/visual-clarity-19327e87122e4289bcc7e200a4e4f012/before.png",
+    "outputs": [
+      {
+        "focus": 0,
+        "png": "evaluation/visual-clarity-19327e87122e4289bcc7e200a4e4f012/original-0.png",
+        "sha256": "2fba153e6c1bcc73f5630e574b40d4c396532b1bf9ef546b52575fe41501a693"
+      },
+      {
+        "focus": 1,
+        "png": "evaluation/visual-clarity-19327e87122e4289bcc7e200a4e4f012/original-1.png",
+        "sha256": "f6c4a49ccafb38ba056d634100fe4805c215cc1b9c974b39c311437a4965bb31"
+      },
+      {
+        "focus": 2,
+        "png": "evaluation/visual-clarity-19327e87122e4289bcc7e200a4e4f012/original-2.png",
+        "sha256": "f8992edc5dfe743e11f563aa19e5f69a63fb8cda74bbed81a281f1aa8476d384"
+      }
+    ]
+  },
+  "film_bytes_unchanged": true,
+  "service": "paperspeak.service active",
+  "jobs_started": false,
+  "not_implemented": [
+    "independent persisted storyboard stage",
+    "new mechanism-specific drawing templates",
+    "visual comprehension review of rendered frames",
+    "new audio/video scripts",
+    "regenerated MP4 content"
+  ],
+  "viewer_comprehension_or_humor_improvement_measured": false
+}

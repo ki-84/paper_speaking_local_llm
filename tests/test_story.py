@@ -1005,6 +1005,140 @@ def test_new_paper_original_review_exhaustion_omits_crop_and_continues(
     assert "Omit this crop" in p["data"]["warnings"][-1]["action"]
 
 
+def test_one_checked_original_does_not_skip_remaining_figures(database, monkeypatch):
+    from paperspeak import visuals
+
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    db.execute(
+        "INSERT INTO sources VALUES (?,?,?,?)",
+        ("primary", p["paper_id"], "text", db.dumps({"text": "Source excerpt"})),
+    )
+    image = database / "papers" / "source.png"
+    image.write_bytes(b"source")
+    for ident, passed in [("first", True), ("second", False)]:
+        db.execute(
+            "INSERT INTO visual_assets VALUES (?,?,?,?,?,?)",
+            (
+                ident,
+                p["paper_id"],
+                None,
+                "original",
+                db.dumps(
+                    {
+                        "image_path": "papers/source.png",
+                        "label": ident,
+                        "review": {"passed": passed},
+                    }
+                ),
+                time.time(),
+            ),
+        )
+    p["data"]["figure_candidates"] = ["first", "second"]
+    seen = []
+    monkeypatch.setattr(
+        visuals, "review_asset", lambda asset, *_: seen.append(asset["id"]) or True
+    )
+    story._sources_step(p, object())
+    assert not p["data"].get("originals_checked")
+    assert p["data"]["figure_index"] == 1
+    story._sources_step(p, object())
+    assert seen == ["second"]
+    assert p["data"]["figure_index"] == 2
+
+
+def test_overview_original_and_explicit_panel_are_available_in_script_and_renderer(
+    database,
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    t = p["data"]["modes"]["overview"]
+    s = scene_data(database)
+    t["scenes"] = [s]
+    t["packaging"] = {}
+    story_video.render_scene(p, "overview", 0)
+    image = db.one("SELECT * FROM visual_assets WHERE id=?", (s["asset_id"],))["data"][
+        "image_path"
+    ]
+    data = {
+        "image_path": image,
+        "label": "Figure 1",
+        "page": 1,
+        "review": {"passed": True},
+        "regions": [
+            {
+                "id": "left",
+                "label_en": "Look at the left panel",
+                "label_ja": "左のパネルに注目",
+                "box": [0.03, 0.06, 0.5, 0.65],
+            }
+        ],
+    }
+    db.execute(
+        "INSERT INTO visual_assets VALUES (?,?,?,?,?,?)",
+        (
+            "checked-original",
+            p["paper_id"],
+            None,
+            "original",
+            db.dumps(data),
+            time.time(),
+        ),
+    )
+    prompt = story._script_prompt(p, "overview", s, 0)
+    assert "checked-original" in prompt and '"id": "left"' in prompt
+    assert "deep dive only" not in prompt
+    s["visual"].update(type="original", image_path=image)
+    with pytest.raises(ValueError, match="Only a checked original figure"):
+        story_video.render_scene(p, "overview", 0)
+    s["visual"].update(type="original", original_asset_id="checked-original")
+    s["utterances"].append(
+        s["utterances"][0] | {"id": "panel", "visual_focus_region": "left"}
+    )
+    story_video.render_scene(p, "overview", 0)
+    assert s["utterances"][1]["visual_focus"] == s["visual"]["zoom_start"]
+    assert s["visual"]["original_source"] == {"label": "Figure 1", "page": 1}
+    assert video.file_digest(
+        config.safe_path(s["render_paths"][0])
+    ) != video.file_digest(config.safe_path(s["render_paths"][-1]))
+    assert all(
+        db.one("SELECT kind FROM visual_assets WHERE id=?", (a["asset_id"],))["kind"]
+        == "original"
+        for a in s["focus_assets"]
+    )
+    s["utterances"][1]["visual_focus_region"] = "invented-region"
+    with pytest.raises(ValueError, match="Unknown verified original figure region"):
+        story_video.render_scene(p, "overview", 0)
+    data["review"]["passed"] = False
+    db.execute(
+        "UPDATE visual_assets SET data=? WHERE id=?",
+        (db.dumps(data), "checked-original"),
+    )
+    with pytest.raises(ValueError, match="Only a checked original figure"):
+        story_video.render_scene(p, "overview", 0)
+
+
+def test_simplified_visual_fallback_clears_stale_panel_cues_and_finishes(
+    database, monkeypatch
+):
+    p = db.one(
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper())["project_id"],),
+    )
+    s = scene_data(database)
+    s["utterances"][0]["visual_focus_region"] = "missing-source-panel"
+    p["data"]["modes"]["overview"]["scenes"] = [s]
+    monkeypatch.setattr(story, "_review_scene", lambda *_: True)
+    story._script_step(p, object(), "overview")
+    assert s["visual_ready"]
+    assert "visual_focus_region" not in s["utterances"][0]
+    assert s["omissions"][-1]["reason"] == "visual renderer fallback"
+
+
 def test_fallback_titles_are_distinct_and_generic_plan_does_not_invent_lora(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",

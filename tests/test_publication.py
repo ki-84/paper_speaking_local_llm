@@ -57,6 +57,76 @@ def test_official_paper_title_must_match_before_using_venue():
     )
 
 
+def test_cvf_award_without_paper_link_discovers_and_checks_proceedings(
+    database, monkeypatch
+):
+    prize = {
+        "title": PAPER,
+        "venue": "CVPR",
+        "year": 2026,
+        "name": "CVPR 2026 Best Student Paper",
+        "kind": "research-paper",
+        "verified": True,
+        "status": "winner",
+        "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+        "source_sha256": "a" * 64,
+        "paper_url": "",
+    }
+    row = paper(database, awards=[prize], authors=["First Researcher"])
+    calls = []
+
+    def fetch(url):
+        calls.append(url)
+        return document(
+            book="Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+            year=2026,
+        ) | {"url": url}
+
+    monkeypatch.setattr(awards, "fetch", fetch)
+    result = publication.resolve(row)
+    assert result["label"] == "CVPR 2026"
+    assert calls == [
+        "https://openaccess.thecvf.com/content/CVPR2026/html/Researcher_Asynchronous_Methods_for_Deep_Reinforcement_Learning_CVPR_2026_paper.html"
+    ]
+    monkeypatch.setattr(awards, "fetch", lambda url: document("A different paper"))
+    assert publication.resolve(row)["status"] == "unconfirmed"
+    monkeypatch.setattr(
+        awards, "fetch", lambda url: (_ for _ in ()).throw(OSError("offline"))
+    )
+    assert publication.resolve(row)["status"] == "unconfirmed"
+
+
+@pytest.mark.parametrize(
+    "kind,name",
+    [
+        ("test-of-time", "Best Paper"),
+        ("research-paper", "Longuet-Higgins Prize"),
+        ("research-paper", "Test of Time Award"),
+    ],
+)
+def test_cvf_retrospective_year_is_not_even_a_proceedings_lookup_hint(
+    database, monkeypatch, kind, name
+):
+    prize = {
+        "title": PAPER,
+        "venue": "CVPR",
+        "year": 2026,
+        "name": name,
+        "kind": kind,
+        "verified": True,
+        "status": "winner",
+        "official_url": "https://cvpr.thecvf.com/Conferences/2026/News/Best_Papers",
+        "source_sha256": "a" * 64,
+    }
+    row = paper(database, awards=[prize], authors=["First Researcher"])
+    monkeypatch.setattr(
+        awards,
+        "fetch",
+        lambda url: pytest.fail("Later award is not publication evidence"),
+    )
+    assert publication.resolve(row)["status"] == "unconfirmed"
+
+
 def test_conference_year_takes_priority_over_review_upload_date():
     doc = document()
     doc["html"] = (

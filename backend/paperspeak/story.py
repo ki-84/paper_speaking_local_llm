@@ -31,6 +31,18 @@ FORMAT = "paper-story-1"
 VERSION = "youtube-dual-1"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 EDITORIAL_REVIEW_VERSION = "content-first-editorial-1"
+VISUAL_DIRECTION_VERSION = "original-first-clear-1"
+VISUAL_DIRECTION_BRIEF = (
+    "Direct the scene visually before drafting the spoken exchange: one viewer question, one visible contrast, then its explanation. "
+    "Use a relevant checked ORIGINAL PAPER FIGURE in either film when it shows the actual object, mechanism or result better than a diagram. "
+    "Original figures are allowed in the overview; avoid discussing their algebra and use a checked non-mathematical panel when needed. "
+    "Introduce what the viewer is looking at before technical terms. Start with the whole picture, then explicitly select a supplied verified region ID in visual_focus_region to enlarge the panel being discussed. Never invent crop coordinates or region IDs. "
+    "Keep one concrete object or use case through the explanation; do not jump among unrelated metaphors. Name what changes and what stays the same. "
+    "Use flow arrows only for actual data flow or ordered operations, never for a list of benchmarks, claims, or advantages. For independent comparisons use comparison. "
+    "Avoid six jargon-filled boxes masquerading as a visual explanation. Prefer at most three short bilingual labels for the visible distinction; split complex reasoning into successive turns. "
+    "Aiden notices a visible detail or makes a plausible mistaken prediction; Maya responds with a short dry joke AND the causal explanation. "
+    "The correction must teach something observable in the figure. Do not invent an earlier method's failure for a punchline. Establish where the analogy stops being accurate. "
+)
 DURATION_POLICY = {
     "version": "content-first-1",
     "priority": ["engagement", "clarity", "supported_explanation"],
@@ -496,6 +508,10 @@ def original_catalogue(project):
                     "caption": d.get("caption_en", "")[:700],
                     "page": d.get("page"),
                     "source_ids": d.get("source_ids", []),
+                    "regions": [
+                        {k: r[k] for k in ("id", "label_en", "label_ja") if k in r}
+                        for r in d.get("regions", [])
+                    ],
                 },
             )
     return list(unique.values())
@@ -1056,6 +1072,7 @@ def _script_prompt(project, mode, scene, index):
     return (
         f"Write scene {index + 1} of ONE continuous {mode} film, not a standalone chapter. "
         + CONTENT_BRIEF
+        + VISUAL_DIRECTION_BRIEF
         + "Use as many meaningful exchanges as this scene needs. Keep each spoken paragraph within 135 words for reliable local speech synthesis; split a longer explanation into natural conversational turns. This is a per-paragraph technical limit, not a scene length target. "
         "Aiden is a curious audience proxy, NOT a second lecturer. He must not deliver long technical explanations before Maya answers. "
         "Use meaningful questions, examples, causal explanations and insights; no filler acknowledgments. Allow a brief warm goodbye only at the end of the final scene. "
@@ -1087,8 +1104,8 @@ def _script_prompt(project, mode, scene, index):
             else "Do not summarize the whole paper or say goodbye in this intermediate scene. "
         )
         + 'Return {"summary":"what this scene adds", "utterances":[{"speaker":"host|guide","text":"natural spoken paragraph",'
-        '"kind":"paper|background|example|question|humor","source_ids":["ID"],"visual_focus":0}],'
-        '"visual":{"type":"flow|timeline|comparison|matrix|equation|example|original","original_asset_id":"optional supplied original asset ID, deep dive only","nodes":[{"en":"short label","ja":"日本語"}],'
+        '"kind":"paper|background|example|question|humor","source_ids":["ID"],"visual_focus":0,"visual_focus_region":"optional supplied verified region ID; omit for the whole figure"}],'
+        '"visual":{"type":"flow|timeline|comparison|matrix|equation|example|original","original_asset_id":"optional supplied original asset ID, allowed in BOTH films","nodes":[{"en":"short label","ja":"日本語"}],'
         '"equations":[{"latex":"only in deep_dive, accurate supplied equation","en":"meaning","ja":"意味"}],'
         '"caption_en":"one line explaining the visual","caption_ja":"図の説明"}}. '
         "Each visual_focus is the zero-based index of the diagram node/formula actually discussed by that paragraph. Match spoken terminology to displayed labels.\n"
@@ -1114,8 +1131,8 @@ def _script_prompt(project, mode, scene, index):
         )
         + "\nEVIDENCE: "
         + json.dumps(context_for(project, scene))
-        + "\nAVAILABLE ORIGINAL FIGURES (deep dive only): "
-        + json.dumps(original_catalogue(project) if mode == "deep_dive" else [])
+        + "\nAVAILABLE CHECKED ORIGINAL FIGURES (both films): "
+        + json.dumps(original_catalogue(project))
     )
 
 
@@ -1424,10 +1441,9 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             else "best_effort",
         )
         if result.get("visual_issues"):
-            scene["visual"] = simple_visual(scene)
-            scene.setdefault("omissions", []).append(
-                {"reason": "visual simplified", "issues": result["visual_issues"]}
-            )
+            # Repair the actual explanation instead of immediately replacing a
+            # useful figure with a generic one-box title card.
+            scene["visual_repair_issues"] = result["visual_issues"]
     except (PracticePreempted, GPUUnavailable):
         raise
     except Exception as exc:
@@ -1483,61 +1499,61 @@ def _sources_step(project, runtime):
             return
         data["reading_includes_structured"] = True
     if not data.get("originals_checked"):
-        if original_catalogue(project):
-            data["originals_checked"] = True
-        else:
-            from . import figure_extract, visuals
+        from . import figure_extract, visuals
 
-            if "figure_candidates" not in data:
-                try:
-                    # Extract all candidates; inspect a small set of early explanatory figures.
-                    rows = figure_extract.extract(project["paper_id"])
-                    data["figure_candidates"] = [
-                        a["id"]
-                        for a in rows
-                        if not a["data"].get("label", "").lower().startswith("table")
-                    ][:6]
-                except (OSError, ValueError) as exc:
-                    data["figure_candidates"] = []
-                    data["warnings"].append(
-                        {
-                            "reason": "Original figure extraction: " + str(exc)[:200],
-                            "action": "Continue with source-grounded teaching diagrams",
-                        }
-                    )
+        if "figure_candidates" not in data:
+            try:
+                # One passing figure must not skip all the remaining candidates.
+                rows = figure_extract.extract(project["paper_id"])
+                data["figure_candidates"] = [
+                    a["id"]
+                    for a in rows
+                    if not a["data"].get("label", "").lower().startswith("table")
+                ][:6]
+            except (OSError, ValueError) as exc:
+                data["figure_candidates"] = []
+                data["warnings"].append(
+                    {
+                        "reason": "Original figure extraction: " + str(exc)[:200],
+                        "action": "Continue with source-grounded teaching diagrams",
+                    }
+                )
+            return
+        index = data.get("figure_index", 0)
+        if index < len(data["figure_candidates"]):
+            asset = db.one(
+                "SELECT * FROM visual_assets WHERE id=?",
+                (data["figure_candidates"][index],),
+            )
+            if asset["data"].get("review", {}).get("passed"):
+                data["figure_index"] = index + 1
                 return
-            index = data.get("figure_index", 0)
-            if index < len(data["figure_candidates"]):
-                asset = db.one(
-                    "SELECT * FROM visual_assets WHERE id=?",
-                    (data["figure_candidates"][index],),
+            unit = data.setdefault("figure_checks", {}).setdefault(
+                asset["id"], {"attempts": 0}
+            )
+            if unit["attempts"] >= 3:
+                data["warnings"].append(
+                    {
+                        "reason": "Could not verify original "
+                        + asset["data"].get("label", "figure"),
+                        "action": "Omit this crop; use a checked original or simple teaching diagram",
+                    }
                 )
-                unit = data.setdefault("figure_checks", {}).setdefault(
-                    asset["id"], {"attempts": 0}
+                data["figure_index"] = index + 1
+                return
+            try:
+                passed = visuals.review_asset(
+                    asset, {"data": {"model": data["model"]}}, runtime
                 )
-                if unit["attempts"] >= 3:
-                    data["warnings"].append(
-                        {
-                            "reason": "Could not verify original "
-                            + asset["data"].get("label", "figure"),
-                            "action": "Omit this crop; use a checked original or simple teaching diagram",
-                        }
-                    )
+                unit["attempts"] += 1
+                if passed:
                     data["figure_index"] = index + 1
-                    return
-                try:
-                    passed = visuals.review_asset(
-                        asset, {"data": {"model": data["model"]}}, runtime
-                    )
-                    unit["attempts"] += 1
-                    if passed:
-                        data["figure_index"] = index + 1
-                except (PracticePreempted, GPUUnavailable):
-                    raise
-                except Exception as exc:
-                    unit.update(attempts=unit["attempts"] + 1, error=str(exc)[:300])
-                return
-            data["originals_checked"] = True
+            except (PracticePreempted, GPUUnavailable):
+                raise
+            except Exception as exc:
+                unit.update(attempts=unit["attempts"] + 1, error=str(exc)[:300])
+            return
+        data["originals_checked"] = True
     if not data["evidence"]:
         data["evidence"] = collect_evidence(project)
         if not data["evidence"]:
@@ -1850,6 +1866,7 @@ def _plan_step(project, runtime):
         prompt = (
             f"Design ONE {mode} documentary conversation in {preset['scenes']} connected narrative scenes. These are story beats, not equal time slots. "
             + CONTENT_BRIEF
+            + VISUAL_DIRECTION_BRIEF
             + "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
             + (
                 "NO equations. Structure: short topic introduction leading into a surprising practical hook, historical problem, prior attempts and their tradeoffs, the new idea, concrete example, evidence and limits, payoff. "
@@ -1862,7 +1879,7 @@ def _plan_step(project, runtime):
             "Create THREE different hook/title/thumbnail approaches. Avoid numeric promises in titles and hooks; explain qualified numbers only in the relevant evidence scene. Select the best by how accurately it promises a specific interesting insight. "
             "Titles should invite curiosity and indicate bilingual English learning; avoid hype unsupported by the evidence. "
             'Return {"central_question":"...","recurring_analogy":"...","hook_candidates":[{"title_ja":"...","title_en":"...","hook":"opening exchange idea","thumbnail_ja":"short text"}],'
-            '"selected_hook":0,"scenes":[{"title":"English title","title_ja":"日本語","focus":"new insight","claim_ids":["C1"],"visual_type":"flow|timeline|comparison|equation|matrix|example"}]}.\n'
+            '"selected_hook":0,"scenes":[{"title":"English title","title_ja":"日本語","focus":"new insight","claim_ids":["C1"],"visual_type":"flow|timeline|comparison|equation|matrix|example|original"}]}.\n'
             + "MANDATORY ORDERED STORY BEATS (exactly one scene per beat): "
             + json.dumps(story_beats(project, mode))
             + "\nPAPER: "
@@ -1870,6 +1887,8 @@ def _plan_step(project, runtime):
             + award_context_prompt(project)
             + "\nEVIDENCE: "
             + json.dumps(plan_evidence(project, mode))
+            + "\nAVAILABLE CHECKED ORIGINAL FIGURES (both films): "
+            + json.dumps(original_catalogue(project))
         )
 
         def valid(r):
@@ -2292,19 +2311,28 @@ def _script_step(project, runtime, mode):
         if not scene.get("visual_ready"):
             try:
                 validate_visual(scene["visual"], mode)
+                if scene.get("visual_repair_issues"):
+                    raise ValueError(
+                        "Review: " + db.dumps(scene["visual_repair_issues"])
+                    )
             except (ValueError, TypeError) as exc:
                 result = bounded(
                     project,
                     runtime,
                     f"visual:{mode}:{index}",
                     "Correct only the structured visual, keeping accurate formulas and the scene meaning. "
-                    "Use at most six nodes; equation scenes have at most THREE formulas and THREE nodes. Every short label needs en and ja. "
+                    + VISUAL_DIRECTION_BRIEF
+                    + "Use at most six nodes; equation scenes have at most THREE formulas and THREE nodes. Every short label needs en and ja. "
                     'Types: flow, timeline, comparison, matrix, equation, example, original. Return {"visual":{...}}.\n'
                     + json.dumps(scene["visual"])
                     + "\nERROR: "
                     + str(exc)
                     + "\nEVIDENCE: "
-                    + json.dumps(context_for(project, scene)),
+                    + json.dumps(context_for(project, scene))
+                    + "\nSPOKEN EXPLANATION: "
+                    + json.dumps(scene["utterances"])
+                    + "\nAVAILABLE CHECKED ORIGINAL FIGURES: "
+                    + json.dumps(original_catalogue(project)),
                     lambda r: validate_visual(r["visual"], mode),
                     lambda _: simple_visual(scene),
                     max_tokens=2500,
@@ -2312,6 +2340,8 @@ def _script_step(project, runtime, mode):
                 if result is None:
                     return
                 scene["visual"] = result
+                scene.pop("visual_repair_issues", None)
+            scene["visual_direction_version"] = VISUAL_DIRECTION_VERSION
             from . import story_video
 
             try:
@@ -2323,6 +2353,10 @@ def _script_step(project, runtime, mode):
                     {"reason": "visual renderer fallback", "error": str(exc)[:400]}
                 )
                 scene["visual"] = simple_visual(scene)
+                # A simplified diagram has no source panels. Stale zoom IDs
+                # would make the fallback fail again and strand the job.
+                for u in scene["utterances"]:
+                    u.pop("visual_focus_region", None)
                 story_video.render_scene(project, mode, index)
             scene["visual_ready"] = True
             materialize_scene(project, mode, index)

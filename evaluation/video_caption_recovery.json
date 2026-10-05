@@ -1,0 +1,137 @@
+{
+  "project_id": "5ab31ae3b01845898f773be0dc918fd5",
+  "nightly_run_id": "1b0903e7be7e44bf8a6d3b3f2531c854",
+  "paper_id": "d99c1d19fa2747cba0400cd5d1005c83",
+  "reused_scenes": 9,
+  "changed_scene": 9,
+  "overview_export_id": "3b04c5c6cbfe4a888c8e0b7744fcc3ac",
+  "overview_sha256": "eaf05eb5176419b12370f18f15e595bbc7cd8790fda6e1391da792eeb27fdb1f",
+  "superseded_export_id": "31e634653d3543ae864df5cc69415dec",
+  "generation": {
+    "record_path": "evaluation/1791241785305628113.json",
+    "model": "qwen-q8",
+    "prompt_sha256": "23ab9cb2dcc1c94b6d2224148b438319ba6f53f4e646da261c78640b4e10dd3b",
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "max_tokens": 2000,
+    "chat_template_kwargs": {
+      "enable_thinking": false,
+      "preserve_thinking": false
+    }
+  },
+  "new_utterances": 6,
+  "started": 1791241929.8720667,
+  "completed_at": "2026-10-05T23:26:59.304662+00:00",
+  "states": {
+    "project": "ready",
+    "export": "ready",
+    "nightly": "ready"
+  },
+  "new_export": {
+    "mp4": "videos/41bf53ef0cc8461aa61598284cf63042/1fea8974dce8/【詳細解説】Hierarchical Acoustic-Semantic Modeling - Modality Separation and Semantic Coherenc…｜学会未確認.mp4",
+    "title": "【詳細解説】Hierarchical Acoustic-Semantic Modeling - Modality Separation and Semantic Coherenc…｜学会未確認",
+    "media_duration": 1259.22,
+    "bytes": 62165112,
+    "thumbnail": "thumbnails/b4ac4f38840b41f6b802a7c200ebb101/thumbnail-0.png",
+    "sha256": "02f805fd8167d95d94b3cd357345df965f449fa5ed3fd7f22198dddee59fa0e9",
+    "id": "c3775eb6c01d42f0978e96c07f7f13bc",
+    "render_version": "story-film-7-adaptive-captions"
+  },
+  "checks": {
+    "overview_mp4_unchanged": true,
+    "clean_speaker_turns": true,
+    "all_last_scene_asr_wer_zero": true,
+    "old_scene_and_voice_history_kept": true,
+    "practice_last_sentence_http": 200,
+    "japanese_source_bound_cache": true,
+    "old_superseded_job_not_resumed": true,
+    "unchanged_audio_scenes": 9
+  },
+  "media_samples": [
+    {
+      "time": 12.0,
+      "rgb_mean_error": 0.24,
+      "audio_correlation": 0.99973,
+      "audio_offset_ms": 21.333,
+      "passed": true,
+      "frame": "evaluation/lychee-caption-recovery/opening.png",
+      "label": "opening"
+    },
+    {
+      "time": 1175.74,
+      "rgb_mean_error": 0.235,
+      "audio_correlation": 0.99954,
+      "audio_offset_ms": 21.333,
+      "passed": true,
+      "frame": "evaluation/lychee-caption-recovery/closing_recap.png",
+      "label": "closing_recap"
+    },
+    {
+      "time": 1257.22,
+      "rgb_mean_error": 0.215,
+      "audio_correlation": 0.99969,
+      "audio_offset_ms": 21.333,
+      "passed": true,
+      "frame": "evaluation/lychee-caption-recovery/farewell.png",
+      "label": "farewell"
+    }
+  ],
+  "lan": [
+    {
+      "artifact": "deep_mp4",
+      "status": 206,
+      "content_type": "video/mp4",
+      "bytes_received": 1024
+    },
+    {
+      "artifact": "deep_thumbnail",
+      "status": 200,
+      "content_type": "image/png",
+      "bytes_received": 275648
+    },
+    {
+      "artifact": "overview_thumbnail",
+      "status": 200,
+      "content_type": "image/png",
+      "bytes_received": 376147
+    }
+  ],
+  "tests": {
+    "main_regression": 116,
+    "control_followup": 30,
+    "ruff": "passed"
+  },
+  "operation": {
+    "nightly_video_enabled": true,
+    "nightly_video_hour": 2,
+    "nightly_video_minute": 0,
+    "discovery_enabled": false,
+    "youtube_auto_upload": false,
+    "old_lesson_jobs": [
+      {
+        "state": "completed",
+        "count": 1
+      },
+      {
+        "state": "failed",
+        "count": 1
+      },
+      {
+        "state": "paused",
+        "count": 3
+      }
+    ]
+  },
+  "service_after_restart": {
+    "health": {
+      "status": "ok"
+    },
+    "active_jobs": [],
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 5090",
+      "total_mib": 32607,
+      "free_mib": 32094
+    }
+  }
+}

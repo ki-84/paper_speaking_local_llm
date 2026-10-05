@@ -70,3 +70,19 @@ systemctl --user status paperspeak
 サービスの応答とワーカーの稼働に加えて、探索が完了した日、教材の完成数、失敗ジョブを記録します。応答の成功だけでは自動教材化の全工程を合格にしません。開発中の故障注入・再起動を含む記録は `data/evaluation/soak-history/` に残し、リリース後の観測と分けます。
 
 モデル全ファイルの再検査は `.venv/bin/python scripts/verify_assets.py`。比較の根拠は `evaluation/model_decision.json` に保存しています。
+
+## 動画の字幕で停止した場合
+
+`story-film-7-adaptive-captions` は、英日字幕が下部の表示域に収まらない場合に、文の区切りを優先して複数の字幕画面へ分割します。文字の省略や25px未満への縮小はしません。取得済みの単語時刻があれば表示の切り替えに利用し、音声、図の時刻、話者の口パクの時間は維持します。
+
+脚本と編集結果は、一つの発話に `Maya:` / `Aiden:` の台本を混ぜないことを検査します。編集で発話内容が変わった場合は、その発話の古い音声と字幕の完了状態を外し、古い音声を履歴へ保存します。日本語字幕のキャッシュにも元の英語を保存し、行番号が同じでも英語が違えば再翻訳します。
+
+夜間処理の **Try again** は、その夜間ジョブと未完了の動画プロジェクトを保存済み工程から再開します。修正版で置き換えた書き出しジョブは `checkpoint.superseded` を記録し、再開時にも重複して動かしません。完成済みの別動画や停止中の旧教材は再開対象にしません。
+
+字幕・話者・履歴・復旧の確認には次を使います。
+
+```bash
+.venv/bin/pytest -q tests/test_caption_recovery.py tests/test_video.py tests/test_story.py tests/test_storyboards.py tests/test_math_concepts.py tests/test_nightly.py
+```
+
+2026-10-06の復旧では、HASM / Lychee-FDの詳解編の末尾をローカル `qwen-q8` で6発話へ修正した。残り9場面の音声と図、および完成済みの概要編MP4を再利用し、詳解編を20分59秒・62.17 MBで完成させた。末尾6発話はASR照合WER 0、冒頭・まとめ・別れの3時点で実動画の図・字幕・音声の同期を確認した。LANの動画範囲ダウンロードと両サムネイルの取得も確認した。検証概要は `evaluation/video_caption_recovery.json`。

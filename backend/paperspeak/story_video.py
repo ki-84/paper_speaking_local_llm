@@ -12,7 +12,7 @@ import imageio_ffmpeg
 
 from . import config, db, math_concepts, publication, video, video_overlay
 
-VERSION = "story-film-6-concept-math"
+VERSION = "story-film-7-adaptive-captions"
 RELEASE_VERSION = "verified-video-packaging-1"
 
 
@@ -331,6 +331,10 @@ def enqueue(project, mode, *, preview=False):
         "caption_renderer_sha256": video.file_digest(
             config.ROOT / "backend/paperspeak/video_overlay.py"
         ),
+        "caption_assembly_sha256": video.file_digest(
+            config.ROOT / "backend/paperspeak/video.py"
+        ),
+        "caption_policy": video_overlay.CAPTION_POLICY,
         "title": portable_title(track["packaging"]["title"]),
         "packaging": track["packaging"],
         "characters": video_overlay.character_manifest(),
@@ -512,6 +516,16 @@ def timeline(manifest, root):
                         "speaker": u["speaker"],
                         "audio": str(path.relative_to(config.DATA)),
                         "frames": n,
+                        "word_timestamps": [
+                            w
+                            | {
+                                "start": max(0, w["start"] - used / 24000),
+                                "end": min(n / 24000, w["end"] - used / 24000),
+                            }
+                            for w in u.get("audio_check", {}).get("timestamps", [])
+                            if w["start"] < (used + n) / 24000
+                            and w["end"] > used / 24000
+                        ],
                     }
                 )
                 used += n

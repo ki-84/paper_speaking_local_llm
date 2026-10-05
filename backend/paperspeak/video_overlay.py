@@ -19,6 +19,7 @@ CAPTION_TOP = 835
 CAPTION_HEIGHT = 225
 EN_SIZES = (45, 43, 41, 39, 37, 35, 33, 31, 29, 27, 25)
 JA_SIZES = (37, 35, 33, 31, 29, 27, 25)
+CAPTION_POLICY = "adaptive-bilingual-pages-1"
 
 
 def character_manifest():
@@ -132,6 +133,60 @@ def layout_captions(english: str, japanese: str) -> dict:
     _, en_size, ja_size, en, ja, en_height = max(candidates)
     return {"english": en, "japanese": ja, "en_size": en_size, "ja_size": ja_size,
             "en_top": CAPTION_TOP, "ja_top": CAPTION_TOP + en_height + 12}
+
+
+def _bisect_caption(text: str, japanese: bool) -> tuple[str, str]:
+    if len(text) < 2:
+        return text, ""
+    midpoint = len(text) / 2
+    if japanese:
+        clauses = [m.end() for m in re.finditer(r"[。、！？,;:.!?]", text)]
+        boundaries = [
+            i
+            for i in range(1, len(text))
+            if not (
+                (
+                    0x30A0 <= ord(text[i - 1]) <= 0x30FF
+                    and 0x30A0 <= ord(text[i]) <= 0x30FF
+                )
+                or (
+                    text[i - 1].isascii()
+                    and text[i].isascii()
+                    and text[i - 1].isalnum()
+                    and text[i].isalnum()
+                )
+            )
+        ]
+    else:
+        clauses = [m.end() for m in re.finditer(r"[,;:.!?]\s+", text)]
+        boundaries = [m.end() for m in re.finditer(r"\s+", text)]
+    natural = [i for i in clauses if len(text) * 0.3 <= i <= len(text) * 0.7]
+    choices = natural or [i for i in boundaries if 0 < i < len(text)]
+    cut = (
+        min(choices, key=lambda i: abs(i - midpoint))
+        if choices
+        else max(1, int(midpoint))
+    )
+    return text[:cut], text[cut:]
+
+
+def caption_pages(english: str, japanese: str) -> list[dict]:
+    """Split overflow by clauses; keep every character and readable font bounds."""
+    pending = [(english, japanese)]
+    pages = []
+    while pending:
+        en, ja = pending.pop()
+        try:
+            layout = layout_captions(en, ja)
+        except ValueError:
+            en_a, en_b = _bisect_caption(en, False)
+            ja_a, ja_b = _bisect_caption(ja, True)
+            if (en_a, ja_a) == (en, ja):
+                raise
+            pending.extend([(en_b, ja_b), (en_a, ja_a)])
+        else:
+            pages.append({"english": en, "japanese": ja, "layout": layout})
+    return pages
 
 
 def mouth_states(path: Path, expected_frames: int) -> list[tuple[int, int, int]]:

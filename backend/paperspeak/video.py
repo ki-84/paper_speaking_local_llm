@@ -234,25 +234,62 @@ def _captions(turns, *, animate=False):
         end = round(cumulative / 24)
         if turn.get("silence"):
             continue
-        index += 1
-        layout = video_overlay.layout_captions(turn["english"], turn["japanese"])
-        for lang, key in (("en", "english"), ("ja", "japanese")):
-            wrapped = "\n".join(layout["english" if lang == "en" else "japanese"])
-            lines[lang].append(f"{index}\n{_srt_time(start)} --> {_srt_time(end)}\n{wrapped}\n")
-            top = layout["en_top" if lang == "en" else "ja_top"]
-            size = layout["en_size" if lang == "en" else "ja_size"]
-            events.append(f"Dialogue: 10,{_ass_time(start)},{_ass_time(end)},{'English' if lang == 'en' else 'Japanese'},,0,0,0,,"
-                          f"{{\\an8\\pos(960,{top})\\fs{size}\\q2}}{_ass_text(wrapped)}")
+        pages = video_overlay.caption_pages(turn["english"], turn["japanese"])
+        weights = [max(1, len(p["english"].strip())) for p in pages]
+        cuts = [0]
+        if len(pages) > 1 and turn.get("word_timestamps"):
+            from .story import aligned_ranges
+
+            ranges = aligned_ranges(
+                [p["english"] for p in pages],
+                turn["word_timestamps"],
+                turn["frames"] / 24000,
+            )
+            cuts.extend(round(r[2] * 24000) for r in ranges[:-1])
+        else:
+            cuts.extend(
+                round(turn["frames"] * sum(weights[:i]) / sum(weights))
+                for i in range(1, len(pages))
+            )
+        cuts.append(turn["frames"])
+        for page_index, page in enumerate(pages):
+            index += 1
+            page_start = round((start_frame + cuts[page_index]) / 24)
+            page_end = round((start_frame + cuts[page_index + 1]) / 24)
+            layout = page["layout"]
+            for lang, key in (("en", "english"), ("ja", "japanese")):
+                wrapped = "\n".join(layout[key])
+                lines[lang].append(
+                    f"{index}\n{_srt_time(page_start)} --> {_srt_time(page_end)}\n{wrapped}\n"
+                )
+                top = layout["en_top" if lang == "en" else "ja_top"]
+                size = layout["en_size" if lang == "en" else "ja_size"]
+                events.append(
+                    f"Dialogue: 10,{_ass_time(page_start)},{_ass_time(page_end)},{'English' if lang == 'en' else 'Japanese'},,0,0,0,,"
+                    f"{{\\an8\\pos(960,{top})\\fs{size}\\q2}}{_ass_text(wrapped)}"
+                )
         if animate:
             role = turn["speaker"]
             if role not in {"host", "guide"}:
                 raise ValueError("Video animation has an unknown speaking role.")
-            events.extend(video_overlay.highlight_events(role, start, end, character_config))
-            events.extend(video_overlay.mouth_events(role, config.safe_path(turn["audio"]),
-                                                      turn["frames"], start_frame, character_config))
+            events.extend(
+                video_overlay.highlight_events(role, start, end, character_config)
+            )
+            events.extend(
+                video_overlay.mouth_events(
+                    role,
+                    config.safe_path(turn["audio"]),
+                    turn["frames"],
+                    start_frame,
+                    character_config,
+                )
+            )
     if animate:
-        events.extend(video_overlay.blink_events(round(cumulative / 24), character_config))
-    ass = """[Script Info]
+        events.extend(
+            video_overlay.blink_events(round(cumulative / 24), character_config)
+        )
+    ass = (
+        """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1920
 PlayResY: 1080
@@ -267,8 +304,15 @@ Style: Pixel,Noto Sans,20,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,10
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-""" + "\n".join(events) + "\n"
-    return {lang: "\n".join(content) + "\n" for lang, content in lines.items()}, ass, cumulative / 24000
+"""
+        + "\n".join(events)
+        + "\n"
+    )
+    return (
+        {lang: "\n".join(content) + "\n" for lang, content in lines.items()},
+        ass,
+        cumulative / 24000,
+    )
 
 
 def _quote(path):

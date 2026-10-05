@@ -945,6 +945,10 @@ def validate_script(result, mode, known):
             or not english_only(u["text"])
         ):
             raise ValueError("Use host/guide and English speech.")
+        if re.search(r"(?:^|\n|\\n)\s*(?:Maya|Aiden|host|guide)\s*:", u["text"], re.I):
+            raise ValueError(
+                "One speaker per utterance: put dialogue in separate host/guide objects, without speaker labels in spoken text"
+            )
         if (
             not isinstance(u.get("source_ids", []), list)
             or not set(u.get("source_ids", [])) <= known
@@ -1413,6 +1417,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             else ""
         )
         + "Propose only necessary LOCAL corrections. Preserve accurate, useful passages and the scientific reasoning; the length may change to improve clarity or remove repetition. "
+        "Each replacement contains ONLY the spoken words of that one utterance's existing speaker. Never embed Maya:/Aiden: labels, another speaker's reply, or escaped newline scripts. "
         "Flag actual contradictions or unsupported specifics, not a missing date, a stylistic preference, or a valid paraphrase. Do not add a date or a numerical claim unless explicitly needed by the scene. "
         "Use the exact utterance ID, never its position. Keep each reason under 180 characters; do not include deliberation, speculation or an internal monologue. "
         'Return {"issues":[{"utterance_id":"exact ID","reason":"specific issue","replacement":"corrected full paragraph",'
@@ -1547,6 +1552,31 @@ def _review_scene(project, runtime, mode, scene, index, kind):
                 or previous.get("kind") != u.get("kind")
             ):
                 effective.append(issue)
+                if not _same_text(previous["text"], u["text"]):
+                    if previous.get("audio"):
+                        u.setdefault("audio_history", []).append(
+                            {
+                                k: previous[k]
+                                for k in ("audio", "duration", "tts_settings")
+                                if k in previous
+                            }
+                        )
+                    for field in (
+                        "audio",
+                        "duration",
+                        "tts_settings",
+                        "audio_check",
+                        "aligned",
+                        "sentence_ranges",
+                        "caption_ranges",
+                        "voice_candidates",
+                        "audio_retries",
+                        "tempo_applied",
+                        "visual_events",
+                    ):
+                        u.pop(field, None)
+                    scene.pop("subtitles_ready", None)
+                    scene.pop("clips_ready", None)
                 scene["utterances"][i] = u
         result["ignored_noop_corrections"] = len(issues) - len(effective)
         result["issues"] = effective
@@ -2852,6 +2882,9 @@ def _subtitle_step(project, runtime, mode, index):
         for si, (s, _, _) in enumerate(u.get("caption_ranges", u["sentence_ranges"]))
     ]
     saved = scene.setdefault("subtitle_items", {})
+    for row in rows:
+        if row["id"] in saved and saved[row["id"]].get("english") != row["english"]:
+            saved.pop(row["id"])
     pending = [r for r in rows if r["id"] not in saved][:8]
     if not pending:
         scene["subtitles_ready"] = True
@@ -2871,6 +2904,7 @@ def _subtitle_step(project, runtime, mode, index):
                 if not translation.numeric_values(source) - translation.numeric_values(
                     item["japanese"]
                 ):
+                    item["english"] = source
                     saved[item["id"]] = item
         pending = [r for r in pending if r["id"] not in saved][:1]
         if not pending:
@@ -2894,6 +2928,7 @@ def _subtitle_step(project, runtime, mode, index):
                 raise ValueError(
                     "The Japanese subtitle omitted or changed a written quantity"
                 )
+            v["english"] = source
         return lookup
 
     result = bounded(

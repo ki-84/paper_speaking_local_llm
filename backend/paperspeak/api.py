@@ -703,7 +703,14 @@ def control_job(ident: str, action: Literal["pause", "resume", "retry", "cancel"
         raise HTTPException(409, "This job is already running.")
     cp = job["checkpoint"]
     cp.pop("_failures", None)
-    db.patch_job(ident, state=state, checkpoint=cp, error=None, available=0)
+    db.patch_job(
+        ident,
+        state=state,
+        checkpoint=cp,
+        error=None,
+        available=0,
+        **({"stage": "Resuming saved work"} if state == "queued" else {}),
+    )
     if job["kind"] == "video_project":
         nightly.control_project(job["target"], state)
         db.event("video_project", {"id": job["target"]})

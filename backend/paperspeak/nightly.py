@@ -43,8 +43,17 @@ def control_project(project_id, state):
         )
     for child in children:
         cp = child["checkpoint"]
+        if cp.get("superseded"):
+            continue
         cp.pop("_failures", None)
-        db.patch_job(child["id"], state=state, checkpoint=cp, error=None, available=0)
+        db.patch_job(
+            child["id"],
+            state=state,
+            checkpoint=cp,
+            error=None,
+            available=0,
+            **({"stage": "Resuming saved work"} if state == "queued" else {}),
+        )
     db.execute(
         "UPDATE thumbnail_sets SET state=? WHERE project_id=? AND state!='ready'",
         ("building" if state == "queued" else state, project_id),
@@ -75,7 +84,12 @@ def control_run(ident, state):
             cp = root["checkpoint"]
             cp.pop("_failures", None)
             db.patch_job(
-                root["id"], state=state, checkpoint=cp, error=None, available=0
+                root["id"],
+                state=state,
+                checkpoint=cp,
+                error=None,
+                available=0,
+                **({"stage": "Resuming saved work"} if state == "queued" else {}),
             )
         control_project(run["project_id"], state)
         if state == "queued":

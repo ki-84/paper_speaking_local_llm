@@ -128,9 +128,9 @@ def get(ident):
         "SELECT id,state,stage,progress,error FROM jobs WHERE kind='nightly_video' AND target=? ORDER BY created DESC LIMIT 1",
         (ident,),
     )
-    # A skipped date still exposes the previous run that is using the GPU.
+    # A waiting date still exposes the previous run that is using the GPU.
     # Otherwise a midnight rollover hides its finished overview and controls.
-    if run["state"] == "skipped" and run["data"].get("waiting_reason"):
+    if run["state"] in {"waiting", "skipped"} and run["data"].get("waiting_reason"):
         previous = db.one(
             "SELECT * FROM nightly_video_runs WHERE id=?",
             (run["data"]["waiting_reason"],),
@@ -210,7 +210,7 @@ def start(*, now=None, manual=False):
     with db.connection() as c:
         c.execute("BEGIN IMMEDIATE")
         old = c.execute(
-            "SELECT id,state FROM nightly_video_runs WHERE day=? AND coalesce(json_extract(data,'$.manual_repeat'),0)=0",
+            "SELECT * FROM nightly_video_runs WHERE day=? AND coalesce(json_extract(data,'$.manual_repeat'),0)=0",
             (day,),
         ).fetchone()
         active = c.execute(
@@ -218,9 +218,32 @@ def start(*, now=None, manual=False):
         ).fetchone()
         if manual and active:
             return active["id"]
-        if old and (not manual or old["state"] in ACTIVE):
+        old_data = json.loads(old["data"]) if old else {}
+        deferred = bool(
+            old
+            and old["state"] in {"waiting", "skipped"}
+            and old_data.get("waiting_reason")
+        )
+        if deferred and active:
+            return old["id"]
+        if old and not deferred and (not manual or old["state"] in ACTIVE):
             return old["id"]
         ident, stamp = db.uid(), time.time()
+        # Only today's deferred slot is caught up. Older dates do not create a backlog.
+        for previous in c.execute(
+            "SELECT id,data FROM nightly_video_runs WHERE day<? AND state='waiting' AND project_id IS NULL",
+            (day,),
+        ).fetchall():
+            previous_data = json.loads(previous["data"])
+            previous_data.update(
+                phase="complete",
+                finished=stamp,
+                reason="前日分が翌日まで続いたため、この日の追加作成は見送りました。最新の日の分で再開します。",
+            )
+            c.execute(
+                "UPDATE nightly_video_runs SET state='skipped',data=?,updated=? WHERE id=?",
+                (db.dumps(previous_data), stamp, previous["id"]),
+            )
         data = {
             "phase": "attention",
             "started": stamp,
@@ -246,21 +269,36 @@ def start(*, now=None, manual=False):
             "award_sources": [],
             "timings": {},
         }
-        if active:
-            state = "skipped"
+        if deferred:
+            ident = old["id"]
+            data = old_data
             data.update(
-                phase="complete",
-                finished=stamp,
-                reason="前日の動画が未完了のため、新しい作成を追加しません。",
+                phase="attention",
+                resumed_at=stamp,
+                waited_seconds=max(0, stamp - data.get("started", old["created"])),
+            )
+            for field in ("finished", "reason", "waiting_reason"):
+                data.pop(field, None)
+            state = "searching"
+        elif active:
+            state = "waiting"
+            data.update(
+                reason="前日の動画が未完了のため待機しています。完成後に今日の分を自動で開始します。",
                 waiting_reason=active["id"],
             )
         else:
             state = "searching"
-        c.execute(
-            "INSERT INTO nightly_video_runs VALUES (?,?,?,?,?,?,?)",
-            (ident, day, state, None, db.dumps(data), stamp, stamp),
-        )
-        if state != "skipped":
+        if deferred:
+            c.execute(
+                "UPDATE nightly_video_runs SET state=?,data=?,updated=? WHERE id=?",
+                (state, db.dumps(data), stamp, ident),
+            )
+        else:
+            c.execute(
+                "INSERT INTO nightly_video_runs VALUES (?,?,?,?,?,?,?)",
+                (ident, day, state, None, db.dumps(data), stamp, stamp),
+            )
+        if state == "searching":
             db.queue_job(c, "nightly_video", ident, priority=12)
     db.event("nightly_video", {"id": ident})
     return ident

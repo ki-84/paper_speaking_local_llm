@@ -1,0 +1,64 @@
+{
+  "checked_at": "2026-10-06T08:43:41.198602+09:00",
+  "run_id": "fd7a89136bba4a7d92a002ebfef6c1f8",
+  "day": "2026-10-06",
+  "previous_state": "skipped",
+  "state": "searching",
+  "phase": "award_repair",
+  "resumed_at": 1791243700.2744927,
+  "selection_policy": "awards-first",
+  "job": {
+    "id": "44c60988f6b344628b79756643e6c7ef",
+    "kind": "nightly_video",
+    "state": "running",
+    "stage": "ローカルAIが受賞ページを調査 · ICML 2026",
+    "progress": 0.06,
+    "error": null,
+    "updated": 1791243818.2837713
+  },
+  "settings": {
+    "nightly_video_enabled": true,
+    "nightly_video_hour": 2,
+    "nightly_video_minute": 0,
+    "discovery_enabled": false,
+    "youtube_auto_upload": false
+  },
+  "old_lesson_jobs": [
+    {
+      "id": "d951f20572014ca2bb43cd6ec4bc332b",
+      "state": "paused"
+    },
+    {
+      "id": "af8db257f7a44ddcb7a4012719919767",
+      "state": "paused"
+    },
+    {
+      "id": "712b3b2d646046658fee3d6ec4f7a7d0",
+      "state": "paused"
+    }
+  ],
+  "checks": {
+    "same_scheduled_slot": true,
+    "one_job_for_that_slot": true,
+    "worker_processing": true,
+    "prior_videos_ready": true,
+    "frontend_typescript": "passed",
+    "frontend_build": "passed",
+    "python_tests": 35,
+    "browser_tests": 3
+  },
+  "lan": {
+    "http_status": 200,
+    "latest_id": "fd7a89136bba4a7d92a002ebfef6c1f8",
+    "latest_state": "searching",
+    "stage": "ローカルAIが受賞ページを調査 · ICML 2026"
+  },
+  "current_job": {
+    "id": "44c60988f6b344628b79756643e6c7ef",
+    "state": "running",
+    "stage": "ローカルAIが受賞ページを調査 · ICRA 2026",
+    "progress": 0.06,
+    "error": null,
+    "updated": 1791243963.6799583
+  }
+}

@@ -323,6 +323,22 @@ test("nightly selection shows the verified conference award source", async ({pag
   await expect(panel.getByText(/robot learning.*新しい学習法を探します。.*3候補/)).toBeVisible();
 });
 
+test("nightly backlog waiting is distinct from a skipped day and shows catch-up", async ({page}) => {
+  let run:any={id:'today',day:'2026-10-06',state:'waiting',job:null,data:{reason:'前日分の完成後に今日の分を自動で開始します。',waiting_reason:'Deep dive is continuing'},continuing_run:{id:'previous',day:'2026-10-05',data:{selected:{title:'The previous paper'}},job:{id:'previous-job',state:'queued',stage:'Deep dive is continuing',progress:.9}}};
+  await page.route('**/api/nightly-video-runs',route=>route.fulfill({json:[run]}));
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const panel=page.getByRole('region',{name:'自動選定と動画作成'});
+  await expect(panel.getByText('前日分の完成待ち',{exact:true})).toBeVisible();
+  await expect(panel.getByText('この日は見送り',{exact:true})).toHaveCount(0);
+  await expect(panel.getByText('継続中: 2026-10-05の動画',{exact:true})).toBeVisible();
+  await expect(panel.getByRole('button',{name:'一時停止',exact:true})).toBeVisible();
+  run={id:'today',day:'2026-10-06',state:'searching',data:{phase:'attention'},job:{id:'today-job',state:'queued',stage:'Collecting attention',progress:0}};
+  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await expect(panel.getByText('論文を探索中',{exact:true})).toBeVisible();
+  await expect(panel.getByText('前日分の完成待ち',{exact:true})).toHaveCount(0);
+});
+
 test("conference awards show counts, official winners and acquisition gaps", async ({page}) => {
   const icra='https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-conference-paper-award/';
   await page.route('**/api/conference-awards',route=>route.fulfill({json:{winner_count:2,paper_count:1,sources:[

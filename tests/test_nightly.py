@@ -127,7 +127,7 @@ def test_carry_over_and_paused_old_lessons_are_independent(database):
         "UPDATE nightly_video_runs SET state='paused' WHERE id=?", (first["id"],)
     )
     second = nightly.get(nightly.start(now=NOW + dt.timedelta(days=1)))
-    assert second["state"] == "skipped"
+    assert second["state"] == "waiting"
     assert second["job"] is None
     assert "未完了" in second["data"]["reason"]
     assert db.one("SELECT state FROM jobs WHERE id=?", (old,))["state"] == "paused"
@@ -142,12 +142,111 @@ def test_next_day_keeps_continuing_project_and_controls_visible(database):
     nightly.save(first)
     db.patch_job(root["job_id"], stage="Deep dive is continuing")
     second = nightly.get(nightly.start(now=NOW + dt.timedelta(days=1)))
-    assert second["state"] == "skipped"
+    assert second["state"] == "waiting"
     assert second["job"] is None
     assert second["project"]["id"] == root["project_id"]
     assert second["continuing_run"]["id"] == first["id"]
     assert second["continuing_run"]["job"]["state"] == "queued"
     assert second["data"]["waiting_reason"] == "Deep dive is continuing"
+
+
+def test_waiting_day_resumes_its_existing_slot_once_previous_day_finishes(database):
+    db.set_setting("nightly_video_enabled", True)
+    first = raw_run()
+    today = NOW + dt.timedelta(days=1)
+    waiting = nightly.get(nightly.start(now=today))
+    assert waiting["state"] == "waiting" and waiting["job"] is None
+    db.execute("UPDATE nightly_video_runs SET state='ready' WHERE id=?", (first["id"],))
+    db.execute("UPDATE jobs SET state='completed' WHERE target=?", (first["id"],))
+    nightly.schedule(today + dt.timedelta(hours=6))
+    current = nightly.get(waiting["id"])
+    assert current["state"] == "searching" and current["data"]["phase"] == "attention"
+    assert current["job"]["state"] == "queued"
+    assert not current["data"].get("reason")
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        ids = list(pool.map(lambda _: nightly.start(now=today), range(10)))
+    assert set(ids) == {waiting["id"]}
+    assert (
+        len(
+            db.all(
+                "SELECT id FROM jobs WHERE kind='nightly_video' AND target=?",
+                (waiting["id"],),
+            )
+        )
+        == 1
+    )
+
+
+def test_legacy_backlog_skip_is_recovered_without_creating_a_second_day_record(
+    database,
+):
+    first = raw_run()
+    today = NOW + dt.timedelta(days=1)
+    waiting = nightly.start(now=today)
+    old = db.one("SELECT * FROM nightly_video_runs WHERE id=?", (waiting,))
+    old["data"].update(phase="complete", finished=time.time())
+    db.execute(
+        "UPDATE nightly_video_runs SET state='skipped',data=? WHERE id=?",
+        (db.dumps(old["data"]), waiting),
+    )
+    db.execute("UPDATE nightly_video_runs SET state='ready' WHERE id=?", (first["id"],))
+    assert nightly.start(now=today, manual=True) == waiting
+    restored = db.one("SELECT * FROM nightly_video_runs WHERE id=?", (waiting,))
+    assert restored["state"] == "searching" and not restored["data"].get("finished")
+    assert restored["data"]["manual_repeat"] is False
+    assert (
+        len(
+            db.all(
+                "SELECT id FROM nightly_video_runs WHERE day=?",
+                (today.date().isoformat(),),
+            )
+        )
+        == 1
+    )
+
+
+def test_waiting_scheduler_honors_paused_previous_run_and_disabled_setting(database):
+    db.set_setting("nightly_video_enabled", True)
+    first = raw_run()
+    today = NOW + dt.timedelta(days=1)
+    db.execute(
+        "UPDATE nightly_video_runs SET state='paused' WHERE id=?", (first["id"],)
+    )
+    db.execute("UPDATE jobs SET state='paused' WHERE target=?", (first["id"],))
+    waiting = nightly.start(now=today)
+    nightly.schedule(today + dt.timedelta(hours=1))
+    assert nightly.get(waiting)["job"] is None
+    assert (
+        db.one("SELECT state FROM jobs WHERE target=?", (first["id"],))["state"]
+        == "paused"
+    )
+    db.execute("UPDATE nightly_video_runs SET state='ready' WHERE id=?", (first["id"],))
+    db.set_setting("nightly_video_enabled", False)
+    nightly.schedule(today + dt.timedelta(hours=2))
+    assert (
+        nightly.get(waiting)["state"] == "waiting"
+        and nightly.get(waiting)["job"] is None
+    )
+
+
+def test_no_suitable_paper_skip_does_not_restart_on_every_schedule_tick(database):
+    first = raw_run()
+    first["state"] = "skipped"
+    first["data"].update(phase="complete", reason="No suitable paper")
+    nightly.save(first)
+    assert nightly.start(now=NOW + dt.timedelta(hours=5)) == first["id"]
+    assert nightly.get(first["id"])["state"] == "skipped"
+
+
+def test_expired_waiting_dates_do_not_create_a_queue_of_missed_days(database):
+    first = raw_run()
+    yesterday = nightly.start(now=NOW + dt.timedelta(days=1))
+    db.execute("UPDATE nightly_video_runs SET state='ready' WHERE id=?", (first["id"],))
+    today = nightly.start(now=NOW + dt.timedelta(days=2))
+    assert today != yesterday
+    assert nightly.get(yesterday)["state"] == "skipped"
+    assert nightly.get(yesterday)["job"] is None
+    assert nightly.get(today)["state"] == "searching"
 
 
 def test_shortlist_filters_revisions_stale_future_and_keeps_domain_balance(database):

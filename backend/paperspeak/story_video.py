@@ -12,7 +12,7 @@ import imageio_ffmpeg
 
 from . import config, db, math_concepts, publication, video, video_overlay
 
-VERSION = "story-film-7-adaptive-captions"
+VERSION = "story-film-8-purposeful-pictures"
 RELEASE_VERSION = "verified-video-packaging-1"
 
 
@@ -309,7 +309,11 @@ def renderer_digest():
     return video.digest(
         {
             name: video.file_digest(config.ROOT / "scripts" / name)
-            for name in ("render_story_slide.mjs", "math_concept_diagrams.mjs")
+            for name in (
+                "render_story_slide.mjs",
+                "math_concept_diagrams.mjs",
+                "story_picture_templates.mjs",
+            )
         }
     )
 
@@ -560,6 +564,8 @@ def spoken_duration(scenes):
 
 def _diagram_events(spec, start, duration):
     """A moving signal illustrates directed flow; no movement on measured charts."""
+    if spec.get("template"):
+        return []
     if (
         spec["type"] not in {"flow", "timeline", "matrix"}
         or len(spec.get("nodes", [])) < 2

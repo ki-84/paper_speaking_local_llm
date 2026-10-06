@@ -5,14 +5,14 @@ from __future__ import annotations
 import copy
 import re
 
-from . import config, db, math_concepts, story, story_video
+from . import config, db, math_concepts, story, story_pictures, story_video
 from .runtime import GPUUnavailable, PracticePreempted
 
-VERSION = "visual-before-dialogue-2-concept-math"
-TEMPLATES = {"surface_cells"}
+VERSION = "visual-before-dialogue-3-purposeful-pictures"
+TEMPLATES = set(story_pictures.TEMPLATES)
 
 
-def validate(board, project, mode):
+def validate(board, project, mode, scene=None):
     if not isinstance(board, dict) or any(
         not isinstance(board.get(k), str) or not board[k].strip()
         for k in ("question", "takeaway", "humor")
@@ -24,6 +24,16 @@ def validate(board, project, mode):
     if project.get("data", {}).get("paper_title") and story.is_lora(project):
         math_concepts.normalize_lora_symbols(spec)
     math_concepts.validate(spec, required=mode == "deep_dive")
+    story_pictures.validate(spec, project)
+    if (
+        scene
+        and mode == "deep_dive"
+        and scene.get("visual_type") in {"equation", "matrix"}
+        and not spec.get("equations")
+    ):
+        raise ValueError(
+            "Keep the planned mathematical explanation; do not replace its equation with an unrelated photograph"
+        )
     if (
         mode == "deep_dive"
         and spec["type"] in {"equation", "matrix"}
@@ -36,7 +46,7 @@ def validate(board, project, mode):
         raise ValueError("Choose a supported fixed diagram template")
     if spec.get("template") and spec["type"] != "example":
         raise ValueError(
-            "The surface-cell sketch is a conceptual example, not measured evidence"
+            "A fixed teaching sketch is a conceptual example, not measured evidence"
         )
     if spec.get("template") == "surface_cells" and len(spec["nodes"]) != 3:
         raise ValueError("The surface-cell sketch needs exactly three panels")
@@ -94,20 +104,50 @@ def fallback(project, scene):
         ]
         board["fallback"] = True
         return board
+    if scene.get("visual_type") in {"equation", "matrix"}:
+        lookup = story.source_lookup(project)
+        refs = {
+            sid
+            for c in story.context_for(project, scene)["claims"]
+            for sid in c["source_ids"]
+        }
+        candidates = [
+            s for sid, s in lookup.items() if sid in refs and s["kind"] == "equation"
+        ]
+        if candidates:
+            source = candidates[0]
+            latex = re.sub(r",?\s*\(\d+\)\s*$", "", source["data"]["text"]).replace(
+                r"\bm", r"\boldsymbol"
+            )
+            spec = story_pictures.teaching_spec(scene, project)
+            spec.pop("template", None)
+            spec.update(
+                type="equation",
+                equations=[
+                    {
+                        "latex": latex,
+                        "en": "Relation from the cited paper",
+                        "ja": "原論文にある関係",
+                    }
+                ],
+                caption_en="Connect the quantities before using the equation",
+                caption_ja="量の意味を確認してから式でつなぐ",
+            )
+            spec["concepts"] = [math_concepts.fallback(spec["equations"][0])]
+            return {
+                "question": scene["focus"],
+                "takeaway": scene["focus"],
+                "humor": "Aiden asks what a symbol actually refers to, and Maya maps it to the pictured quantity.",
+                "visual": spec,
+                "beats": [
+                    {"notice": "See the quantities", "focus": 0},
+                    {"notice": "Connect them to the source relation", "focus": 1},
+                ],
+                "fallback": True,
+                "equation_source_id": source["id"],
+            }
     originals = story.original_catalogue(project)
-    terms = set(
-        re.findall(r"[a-z]{4,}", (scene["title"] + " " + scene["focus"]).lower())
-    )
-    chosen = (
-        max(
-            originals,
-            key=lambda a: len(
-                terms & set(re.findall(r"[a-z]{4,}", a["caption"].lower()))
-            ),
-        )
-        if originals
-        else None
-    )
+    chosen = story_pictures.relevant_original(scene, originals)
     planned = next(
         (
             a
@@ -117,15 +157,19 @@ def fallback(project, scene):
         ),
         None,
     )
+    # A source explicitly selected for a scene is useful even when the scene
+    # calls it a 'concrete example' rather than repeating its caption words.
+    # The implicit fallback, however, must establish relevance first.
     chosen = planned or chosen
-    visual = story.simple_visual(scene)
+    visual = story_pictures.teaching_spec(scene, project)
     beats = [
         {
-            "notice": "Orient the viewer to the complete checked source figure",
+            "notice": "See the concrete quantities and the operation",
             "focus": 0,
         }
     ]
     if chosen:
+        visual = story.simple_visual(scene)
         visual.update(
             type="original",
             original_asset_id=chosen["asset_id"],
@@ -140,6 +184,30 @@ def fallback(project, scene):
             ),
             None,
         )
+        if not region:
+            # Keep uncertain cuts as complete originals, but do not leave a
+            # known readable panel unused after falling back to a full page.
+            words = set(
+                re.findall(
+                    r"[a-z]{4,}", (scene["title"] + " " + scene["focus"]).lower()
+                )
+            )
+            candidates = [
+                r
+                for r in chosen["regions"]
+                if not re.search(r"caption|legend", r.get("label_en", ""), re.I)
+            ]
+            region = max(
+                candidates,
+                key=lambda r: (
+                    len(
+                        words
+                        & set(re.findall(r"[a-z]{4,}", r.get("label_en", "").lower()))
+                    ),
+                    r.get("area", 0),
+                ),
+                default=None,
+            )
         if region:
             beats.append(
                 {
@@ -148,6 +216,10 @@ def fallback(project, scene):
                     "region": region["id"],
                 }
             )
+    else:
+        beats = [
+            {"notice": node["en"], "focus": i} for i, node in enumerate(visual["nodes"])
+        ]
     return {
         "question": scene["focus"],
         "takeaway": scene["focus"],
@@ -268,7 +340,7 @@ def step(project, runtime, mode, index):
                 "reason": state.get("error"),
                 "action": "Keep checked equations and simplify their conceptual pictures"
                 if scene["storyboard"]["visual"].get("concepts")
-                else "Use a complete checked original instead of an unclear invented diagram",
+                else "Use a relevant checked original or a fixed picture of this operation",
             }
         )
         return
@@ -276,9 +348,9 @@ def step(project, runtime, mode, index):
         prompt = (
             "Design the actual VISUAL STORYBOARD before a documentary scene is written. "
             + story.VISUAL_DIRECTION_BRIEF
+            + story_pictures.BRIEF
             + "A viewer should understand one new distinction by looking at this picture. Choose an ORIGINAL when it shows the object, mechanism or evidence. "
             "Original beats start with the whole figure, then a verified region; no new coordinates. Use a short visible detail as notice. "
-            "For the sparse-surface idea you may use example template surface_cells: a clearly hypothetical 2D surface sketch comparing a full grid, surface cells, and geometry/material attributes. It does NOT show learned latent compression, real measured outputs or a performance result. "
             "Avoid jargon cards. Plan a specific question, causal takeaway and one lightly witty misunderstanding that the visible picture can resolve. "
             + (
                 math_concepts.BRIEF
@@ -289,8 +361,8 @@ def step(project, runtime, mode, index):
                 else ""
             )
             + 'Return {"question":"viewer question","takeaway":"one insight","humor":"specific exchange idea","beats":[{"notice":"what to notice","focus":0,"region":"optional verified original region ID, omit for whole"}],'
-            '"visual":{"type":"original|comparison|flow|timeline|equation|example","original_asset_id":"optional checked ID","template":"optional surface_cells","nodes":[{"en":"short label","ja":"日本語"}],"caption_en":"one short sentence","caption_ja":"短い説明"}}. '
-            "For surface_cells supply exactly three nodes for the three panels. For equations preserve supplied notation. Use at most three labels unless essential.\n"
+            '"visual":{"type":"original|comparison|flow|timeline|equation|example","original_asset_id":"optional checked ID","template":"optional supported template","nodes":[{"en":"short label","ja":"日本語"}],"caption_en":"one short sentence","caption_ja":"短い説明"}}. '
+            "Fixed pictorial templates use type example. For equations preserve supplied notation. Use at most three labels unless essential.\n"
             + "MODE: "
             + mode
             + "\nSCENE: "
@@ -299,6 +371,16 @@ def step(project, runtime, mode, index):
             + db.dumps(story.context_for(project, scene))
             + "\nCHECKED ORIGINALS: "
             + db.dumps(story.original_catalogue(project))
+            + "\nVISUALS ALREADY USED IN THIS FILM (advance to a new distinction; do not recycle an unrelated figure): "
+            + db.dumps(
+                [
+                    {
+                        "title": s["title"],
+                        "visual": s.get("storyboard", {}).get("visual"),
+                    }
+                    for s in project["data"]["modes"][mode]["scenes"][:index]
+                ]
+            )
             + "\nPREVIOUS VISUAL ISSUE: "
             + str(state.get("error", ""))
         )
@@ -307,7 +389,7 @@ def step(project, runtime, mode, index):
             runtime,
             f"storyboard:{mode}:{index}",
             prompt,
-            lambda r: validate(r, project, mode),
+            lambda r: validate(r, project, mode, scene),
             lambda _: fallback(project, scene),
             max_tokens=2800,
         )

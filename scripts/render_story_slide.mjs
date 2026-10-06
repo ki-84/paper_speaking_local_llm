@@ -4,6 +4,7 @@ import path from "node:path";
 import { chromium } from "../frontend/node_modules/playwright-core/index.mjs";
 import katex from "../frontend/node_modules/katex/dist/katex.mjs";
 import {renderMathConcept, mathConceptCSS} from "./math_concept_diagrams.mjs";
+import {renderStoryPicture, storyPictureCSS} from "./story_picture_templates.mjs";
 
 const [input, output] = process.argv.slice(2);
 const scene = JSON.parse(await fs.readFile(input, "utf8"));
@@ -54,6 +55,7 @@ const equations = (spec.equations || []).slice(0, 3).map((eq,i) => {
   return `<div class="equation ${i===mathFocus?'active':''}">${rendered}<p>${esc(eq.en)} <span lang="ja">${esc(eq.ja)}</span></p></div>`;
 }).join("");
 let pictorial="";
+if(spec.template && spec.template!=='surface_cells')pictorial=renderStoryPicture(spec,scene.focus||0);
 if(spec.template==='surface_cells'){
   if(nodes.length!==3)throw new Error('The surface-cell sketch needs three panels');
   const grid=(sparse)=>{
@@ -88,10 +90,10 @@ const badge = scene.mode === "overview" ? "THE IDEA · 解説編" : "UNDER THE H
 const content = scene.thumbnail
   ? `<div class="thumbnail"><p>AI PAPERS × REAL ENGLISH</p><h1 lang="ja">${esc(scene.title_ja)}</h1><h2>${esc(scene.title_en)}</h2><span>図解・英日字幕 / ${badge}</span></div>`
   : `<header><div><h1>${esc(scene.title_en)}</h1><p lang="ja">${esc(scene.title_ja)}</p></div><span>${badge}</span></header>
-    <main id="diagram"><div class="badge">${spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
+    <main id="diagram"><div class="badge">${spec.template ? "Concept sketch · 模式図" : spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
     ${showOriginal ? original : conceptMath || pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
     <div class="caption"><div>${esc(spec.caption_en)}</div><div lang="ja">${esc(spec.caption_ja)}</div></div></main>`;
-const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}
+const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}${storyPictureCSS}
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
 body{font-family:"Noto Sans CJK JP","Noto Sans",sans-serif;color:#edf4ef;background:#102d2c}
 header{height:144px;padding:22px 70px;background:#143b37;display:flex;align-items:center;justify-content:space-between;gap:30px}
@@ -182,6 +184,12 @@ try {
     if(region&&caption&&region.bottom>caption.top-10)problems.push('Region label overlaps caption');
     for(const panel of document.querySelectorAll('.picture-panel'))if(panel.querySelector('p').getBoundingClientRect().bottom>panel.getBoundingClientRect().bottom-8)problems.push('Picture label outside its panel');
     const concept=document.querySelector('.math-concept');
+    const picture=document.querySelector('.semantic-picture');
+    if(picture){
+      for(const e of picture.querySelectorAll('h2,p'))if(e.scrollWidth>e.clientWidth+1)problems.push('Semantic label overflow');
+      if(caption&&picture.getBoundingClientRect().bottom>caption.top-4)problems.push('Semantic picture overlaps caption');
+      if(caption&&picture.lastElementChild.getBoundingClientRect().bottom>caption.top-4)problems.push('Picture labels overlap caption');
+    }
     if(concept){
       const keys=document.querySelector('.symbol-keys')?.getBoundingClientRect(),formula=document.querySelector('.mapped-equation')?.getBoundingClientRect(),note=document.querySelector('.concept-note').getBoundingClientRect();
       const parts=document.querySelector('.concept-parts').getBoundingClientRect();

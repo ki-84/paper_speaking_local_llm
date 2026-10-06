@@ -11,6 +11,9 @@ TEMPLATES = {
     "weighted_sum",
     "fit_constraints",
     "relationship",
+    "return_target",
+    "policy_tradeoff",
+    "moving_average",
 }
 PARTS = {
     "parallel_paths": [
@@ -38,10 +41,26 @@ PARTS = {
         ("The relationship", "量の関係"),
         ("What it tells us", "わかること"),
     ],
+    "return_target": [
+        ("Reward now", "今の報酬"),
+        ("Discounted future value", "割り引いた将来の価値"),
+        ("Combine into a learning target", "学習の目標値に合わせる"),
+    ],
+    "policy_tradeoff": [
+        ("Action diversity", "行動の多様さ"),
+        ("Predicted action value", "行動の予測価値"),
+        ("Balance the two goals", "二つの目的を両立する"),
+    ],
+    "moving_average": [
+        ("Previous target weights", "これまでの目標重み"),
+        ("Current learned weights", "現在の学習した重み"),
+        ("Slowly updated target", "ゆっくり更新する目標"),
+    ],
 }
 BRIEF = (
     "Never teach an equation as a formula card alone. First show what its quantities refer to and what changes in a concrete conceptual picture; then reveal the SAME picture with its symbols and equation. "
-    "Use parallel_paths for a fixed contribution plus a learned correction, bottleneck for encoding then reconstruction, weighted_sum for combining contributions, fit_constraints for fitting a point to geometric constraints, or relationship for other relations. "
+    "Use parallel_paths for a fixed contribution plus a learned correction, bottleneck for encoding then reconstruction, weighted_sum for combining contributions, fit_constraints for fitting a point to geometric constraints, return_target for immediate reward plus discounted future value, policy_tradeoff for entropy/action diversity versus predicted value, moving_average for a slowly blended target copy, or relationship for other relations. "
+    "return_target shows a reward token, future value on a later timeline, and their sum; policy_tradeoff shows diverse action branches, a critic's estimate, and a balance; moving_average shows a previous target and a current model contributing to a smoothed copy. Never use these pictures for an unrelated operation. "
     "These fixed drawings are schematic teaching illustrations, not measured results or literal matrix dimensions. Choose a template only when its operation agrees with the source. "
     "Match these FIXED picture parts and colors: parallel_paths = blue frozen original path, orange learned correction, purple combined output; bottleneck = blue input, orange compact representation, purple reconstruction; weighted_sum = blue first contribution, orange second contribution, purple weighted result; fit_constraints = blue fixed surface samples/normals, orange candidate point with large residuals, purple adjusted point with smaller total squared residuals. Do not relabel the third fitting panel as a graph of the loss; it shows the fitted point. "
     "For each equation provide three short bilingual parts and symbol meanings assigned to part 0, 1 or 2. Part labels must be short noun phrases: at most 44 English characters and 28 Japanese characters. Symbol meanings must be at most 32 English characters and 18 Japanese characters. Do not replace an unmodified original figure. Name what stays fixed, what is learned or moved, and the output. "
@@ -50,7 +69,7 @@ BRIEF = (
     "Explain the picture first, define the symbols in everyday language, then walk through the relation. Keep useful analogy boundaries and experimental conditions. "
 )
 SCHEMA = (
-    '"concepts":[{"template":"parallel_paths|bottleneck|weighted_sum|fit_constraints|relationship",'
+    '"concepts":[{"template":"parallel_paths|bottleneck|weighted_sum|fit_constraints|return_target|policy_tradeoff|moving_average|relationship",'
     '"parts":[{"en":"short meaning of first part","ja":"日本語"},{"en":"second meaning","ja":"日本語"},{"en":"third meaning","ja":"日本語"}],'
     '"symbols":[{"latex":"exact symbol from this equation","en":"meaning","ja":"意味","part":0}]}]'
 )

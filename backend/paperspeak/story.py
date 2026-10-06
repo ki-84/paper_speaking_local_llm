@@ -22,6 +22,7 @@ from . import (
     math_concepts,
     papers,
     publication,
+    story_pictures,
     translation,
     video,
     voices,
@@ -38,7 +39,7 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-storyboard-3-concept-math"
+VERSION = "youtube-storyboard-4-purposeful-pictures"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 EDITORIAL_REVIEW_VERSION = "content-first-editorial-2"
 VISUAL_DIRECTION_VERSION = "original-first-clear-1"
@@ -207,7 +208,8 @@ def create(paper_id, *, profile=None, modes=None):
                 "records": [],
                 "warnings": [],
                 "modes": {},
-                "storyboard_policy": "visual-before-dialogue-2-concept-math",
+                "storyboard_policy": "visual-before-dialogue-3-purposeful-pictures",
+                "picture_policy": story_pictures.VERSION,
                 "math_concept_policy": math_concepts.VERSION,
             }
             # Reuse source reading, never the earlier dialogue or recordings.
@@ -364,6 +366,7 @@ def get(ident):
                 "opening_policy",
                 "closing_policy",
                 "release_check",
+                "visual_audit",
             )
             if k in track
         }
@@ -493,18 +496,29 @@ def bounded(
                 if not isinstance(value, dict):
                     return 0
                 mode = key.split(":")[1]
+                resolve_claim_references(value, project)
+                known = set(source_lookup(project))
                 try:
-                    validate_script(value, mode, set(source_lookup(project)))
-                    return 100000
+                    turns = validate_script(value, mode, known)
+                    if len(turns) >= 2 and len({u["speaker"] for u in turns}) >= 2:
+                        return 100000 + sum(len(words(u["text"])) for u in turns)
                 except (ValueError, TypeError, AttributeError):
-                    return sum(
-                        isinstance(u, dict)
-                        and u.get("speaker") in {"host", "guide"}
-                        and isinstance(u.get("text"), str)
-                        and bool(u["text"].strip())
-                        and english_only(u["text"])
-                        for u in value.get("utterances", []) or []
-                    )
+                    pass
+                kept = []
+                for turn in value.get("utterances", []) or []:
+                    try:
+                        validate_script({"utterances": [turn]}, mode, known)
+                        kept.append(turn)
+                    except (ValueError, TypeError, AttributeError):
+                        pass
+                # A perfect single sentence must not displace a substantive
+                # draft that can be salvaged into a two-person explanation.
+                base = (
+                    50000
+                    if len(kept) >= 2 and len({u["speaker"] for u in kept}) >= 2
+                    else 0
+                )
+                return base + sum(len(words(u["text"])) for u in kept)
             return (
                 len(json.dumps(value, ensure_ascii=False))
                 if isinstance(value, dict)
@@ -544,6 +558,10 @@ def collect_evidence(project):
 
 
 def original_catalogue(project):
+    paper = db.one("SELECT data FROM papers WHERE id=?", (project["paper_id"],))
+    current = set(
+        (paper or {}).get("data", {}).get("figure_extraction", {}).get("ids", [])
+    )
     rows = db.all(
         "SELECT * FROM visual_assets WHERE paper_id=? AND kind='original' ORDER BY created DESC",
         (project["paper_id"],),
@@ -551,6 +569,8 @@ def original_catalogue(project):
     unique = {}
     for a in rows:
         d = a["data"]
+        if current and a["id"] not in current:
+            continue
         if d.get("story_spec"):
             continue  # a rendered lesson slide is not an original source
         if (
@@ -568,6 +588,10 @@ def original_catalogue(project):
                     "source_ids": d.get("source_ids", []),
                     "regions": [
                         {k: r[k] for k in ("id", "label_en", "label_ja") if k in r}
+                        | {
+                            "area": r.get("box", [0, 0, 0, 0])[2]
+                            * r.get("box", [0, 0, 0, 0])[3]
+                        }
                         for r in d.get("regions", [])
                     ],
                 },
@@ -973,6 +997,18 @@ def validate_script(result, mode, known):
     return utterances
 
 
+def resolve_claim_references(result, project):
+    """Models may use the supplied C IDs; expand those explicit aliases, never invent evidence."""
+    claims = {c["id"]: c["source_ids"] for c in project["data"].get("evidence", [])}
+    for u in result.get("utterances", []):
+        u["source_ids"] = list(
+            dict.fromkeys(
+                sid for ref in u.get("source_ids", []) for sid in claims.get(ref, [ref])
+            )
+        )
+    return result
+
+
 def validate_visual(spec, mode):
     if not isinstance(spec, dict) or spec.get("type") not in {
         "flow",
@@ -1011,6 +1047,7 @@ def validate_visual(spec, mode):
     math_concepts.normalize_parts(spec)
     math_concepts.normalize_symbols(spec)
     math_concepts.validate(spec)
+    story_pictures.validate(spec)
     return spec
 
 
@@ -1139,6 +1176,10 @@ def _script_prompt(project, mode, scene, index):
         f"Write scene {index + 1} of ONE continuous {mode} film, not a standalone chapter. "
         + CONTENT_BRIEF
         + VISUAL_DIRECTION_BRIEF
+        + story_pictures.BRIEF
+        + "Distinguish optimizer-update frequency, learning-rate step size, batch size and network capacity. Fewer updates do not automatically mean larger learning-rate steps. A larger network does not make the physical system heavier. A vehicle analogy is not experimental proof that a baseline is unstable or always inferior. "
+        "Humor should reveal one actual misunderstanding or recall a concrete opening detail, not repeatedly attach unrelated funny analogies. Attribute results to tested tasks. "
+        "When Aiden makes a wrong prediction, Maya must correct that particular prediction; do not say 'Exactly' and reinforce the mistake. Keep one concrete problem visible through the explanation. "
         + "Use as many meaningful exchanges as this scene needs. Keep each spoken paragraph within 135 words for reliable local speech synthesis; split a longer explanation into natural conversational turns. This is a per-paragraph technical limit, not a scene length target. "
         "Aiden is a curious audience proxy, NOT a second lecturer. He must not deliver long technical explanations before Maya answers. "
         "Use meaningful questions, examples, causal explanations and insights; no filler acknowledgments. Allow a brief warm goodbye only at the end of the final scene. "
@@ -1216,9 +1257,15 @@ def _script_prompt(project, mode, scene, index):
 def _fallback_script(project, mode, scene, candidate):
     known = set(source_lookup(project))
     if isinstance(candidate, dict):
+        resolve_claim_references(candidate, project)
         try:
+            valid_turns = validate_script(candidate, mode, known)
+            if len(valid_turns) < 2 or len({u["speaker"] for u in valid_turns}) < 2:
+                raise ValueError(
+                    "A single surviving sentence cannot replace a documentary scene"
+                )
             return {
-                "utterances": validate_script(candidate, mode, known),
+                "utterances": valid_turns,
                 "summary": candidate.get("summary", scene["focus"]),
                 "visual": candidate.get("visual", {}),
             }
@@ -1231,7 +1278,7 @@ def _fallback_script(project, mode, scene, candidate):
                     kept.append(u)
                 except (ValueError, TypeError):
                     pass
-            if kept:
+            if len(kept) >= 2 and len({u["speaker"] for u in kept}) >= 2:
                 return {
                     "utterances": kept,
                     "summary": scene["focus"],
@@ -1272,6 +1319,12 @@ def _same_text(a, b):
     return re.sub(r"\s+", " ", a).strip() == re.sub(r"\s+", " ", b).strip()
 
 
+def script_task_key(mode, index, scene):
+    key = f"script:{mode}:{index}"
+    revision = scene.get("script_revision", 0)
+    return key + (f":picture-{revision}" if revision else "")
+
+
 def _recover_repaired_turns(project, mode, scene, index, record):
     """Recover pre-speech drafts which the older limiter deleted AFTER repairing."""
     if any(u.get("audio") for u in scene["utterances"]):
@@ -1285,7 +1338,7 @@ def _recover_repaired_turns(project, mode, scene, index, record):
         return
     draft = (
         project["data"]["repairs"]
-        .get(f"script:{mode}:{index}", {})
+        .get(script_task_key(mode, index, scene), {})
         .get("candidate", {})
         .get("utterances", [])
     )
@@ -1544,6 +1597,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
                 k: issue[k] for k in ("source_ids", "kind") if k in issue
             }
             u["text"] = issue.get("replacement", "")
+            resolve_claim_references({"utterances": [u]}, project)
             validate_script({"utterances": [u]}, mode, known)
             previous = scene["utterances"][i]
             if (
@@ -1658,7 +1712,7 @@ def _sources_step(project, runtime):
                     a["id"]
                     for a in rows
                     if not a["data"].get("label", "").lower().startswith("table")
-                ][:6]
+                ][:12]
             except (OSError, ValueError) as exc:
                 data["figure_candidates"] = []
                 data["warnings"].append(
@@ -2068,6 +2122,53 @@ def plan_evidence(project, mode):
     return selected
 
 
+def attach_equation_sources(project):
+    """Preserve exact equations even if an earlier reading pass omitted them."""
+    evidence = project["data"]["evidence"]
+    sources = db.all("SELECT * FROM sources WHERE paper_id=?", (project["paper_id"],))
+    seen = set()
+    next_id = max(
+        (int(c["id"][1:]) for c in evidence if re.fullmatch(r"C\d+", c["id"])),
+        default=0,
+    )
+    for source in sources:
+        if source["kind"] != "equation":
+            continue
+        text = source["data"]["text"]
+        key = re.sub(r"\s+", "", text)
+        if key in seen:
+            continue
+        seen.add(key)
+        if any(
+            c.get("topic") == "equation" and source["id"] in c["source_ids"]
+            for c in evidence
+        ):
+            continue
+        match = re.search(r":H(\d+)$", source["id"])
+        neighbors = []
+        if match:
+            number = int(match[1])
+            neighbors = [
+                s["id"]
+                for s in sources
+                if s["kind"] in {"section", "text"}
+                and (n := re.search(r":H(\d+)$", s["id"]))
+                and abs(int(n[1]) - number) <= 3
+            ]
+        next_id += 1
+        evidence.append(
+            {
+                "id": f"C{next_id}",
+                "topic": "equation",
+                "claim": "The paper defines this mathematical relation in "
+                + source["data"].get("label", "its method")
+                + ". The accompanying source passages define its quantities.",
+                "equation_latex": text,
+                "source_ids": [source["id"], *neighbors],
+            }
+        )
+
+
 def validate_hooks(result):
     rows = result.get("hook_candidates", [])
     if len(rows) != 3 or any(
@@ -2104,6 +2205,9 @@ def validate_hooks(result):
 
 def _plan_step(project, runtime):
     data = project["data"]
+    if not data.get("exact_equations_attached"):
+        attach_equation_sources(project)
+        data["exact_equations_attached"] = True
     for mode, track in data["modes"].items():
         if track.get("outline"):
             continue
@@ -2112,6 +2216,9 @@ def _plan_step(project, runtime):
             f"Design ONE {mode} documentary conversation in {preset['scenes']} connected narrative scenes. These are story beats, not equal time slots. "
             + CONTENT_BRIEF
             + VISUAL_DIRECTION_BRIEF
+            + story_pictures.BRIEF
+            + "Give each scene a concrete visual question: what does the viewer see change, compare, or connect? "
+            "Advance that question across scenes, rather than changing a title over the same background. Reuse a figure when reading another verified panel, not to illustrate a different mechanism. "
             + "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
             + (
                 "NO equations. Structure: short topic introduction leading into a surprising practical hook, historical problem, prior attempts and their tradeoffs, the new idea, concrete example, evidence and limits, payoff. "
@@ -2124,7 +2231,7 @@ def _plan_step(project, runtime):
             "Create THREE different hook/title/thumbnail approaches. Avoid numeric promises in titles and hooks; explain qualified numbers only in the relevant evidence scene. Select the best by how accurately it promises a specific interesting insight. "
             "Titles should invite curiosity and indicate bilingual English learning; avoid hype unsupported by the evidence. "
             'Return {"central_question":"...","recurring_analogy":"...","hook_candidates":[{"title_ja":"...","title_en":"...","hook":"opening exchange idea","thumbnail_ja":"short text"}],'
-            '"selected_hook":0,"scenes":[{"title":"English title","title_ja":"日本語","focus":"new insight","claim_ids":["C1"],"visual_type":"flow|timeline|comparison|equation|matrix|example|original"}]}.\n'
+            '"selected_hook":0,"scenes":[{"title":"English title","title_ja":"日本語","focus":"new insight","claim_ids":["C1"],"visual_type":"flow|timeline|comparison|equation|matrix|example|original","visual_template":"optional supported template","visual_asset_id":"optional relevant checked original ID"}]}.\n'
             + "MANDATORY ORDERED STORY BEATS (exactly one scene per beat): "
             + json.dumps(story_beats(project, mode))
             + "\nPAPER: "
@@ -2520,7 +2627,15 @@ def _script_step(project, runtime, mode):
             known = set(source_lookup(project))
 
             def valid(r):
+                resolve_claim_references(r, project)
                 r["utterances"] = validate_script(r, mode, known)
+                if (
+                    len(r["utterances"]) < 2
+                    or len({u["speaker"] for u in r["utterances"]}) < 2
+                ):
+                    raise ValueError(
+                        "Write a substantive exchange between Maya and Aiden; do not return only one evidence sentence"
+                    )
                 if scene.get("storyboard"):
                     from . import storyboards
 
@@ -2533,7 +2648,7 @@ def _script_step(project, runtime, mode):
             result = bounded(
                 project,
                 runtime,
-                f"script:{mode}:{index}",
+                script_task_key(mode, index, scene),
                 _script_prompt(project, mode, scene, index),
                 valid,
                 lambda r: _fallback_script(project, mode, scene, r),
@@ -2597,7 +2712,8 @@ def _script_step(project, runtime, mode):
                     + "\nAVAILABLE CHECKED ORIGINAL FIGURES: "
                     + json.dumps(original_catalogue(project)),
                     lambda r: validate_visual(r["visual"], mode),
-                    lambda _: simple_visual(scene),
+                    lambda _: scene.get("storyboard", {}).get("visual")
+                    or story_pictures.teaching_spec(scene, project),
                     max_tokens=2500,
                 )
                 if result is None:
@@ -2607,6 +2723,19 @@ def _script_step(project, runtime, mode):
             scene["visual_direction_version"] = VISUAL_DIRECTION_VERSION
             from . import story_video
 
+            if not scene["visual"].get("original_asset_id") and any(
+                u.get("visual_focus_region") for u in scene["utterances"]
+            ):
+                # A stale panel pointer is metadata damage, not a reason to
+                # change an otherwise valid diagram and its saved speech.
+                for u in scene["utterances"]:
+                    u.pop("visual_focus_region", None)
+                scene.setdefault("omissions", []).append(
+                    {
+                        "reason": "visual renderer fallback",
+                        "error": "Removed source-panel pointers from a teaching diagram",
+                    }
+                )
             try:
                 story_video.render_scene(project, mode, index)
             except (PracticePreempted, GPUUnavailable):
@@ -2615,7 +2744,20 @@ def _script_step(project, runtime, mode):
                 scene.setdefault("omissions", []).append(
                     {"reason": "visual renderer fallback", "error": str(exc)[:400]}
                 )
-                scene["visual"] = simple_visual(scene)
+                if project["data"].get("picture_policy") and not scene.get(
+                    "renderer_dialogue_repair"
+                ):
+                    from . import storyboards
+
+                    scene["renderer_dialogue_repair"] = True
+                    scene["script_revision"] = scene.get("script_revision", 0) + 1
+                    scene["storyboard"] = storyboards.fallback(project, scene)
+                    scene["visual"] = scene["storyboard"]["visual"]
+                    scene.pop("utterances", None)
+                    scene.pop("reviews", None)
+                    scene["storyboard_ready"] = True
+                    return
+                scene["visual"] = story_pictures.teaching_spec(scene, project)
                 # A simplified diagram has no source panels. Stale zoom IDs
                 # would make the fallback fail again and strand the job.
                 for u in scene["utterances"]:
@@ -2632,7 +2774,20 @@ def _script_step(project, runtime, mode):
                 ensure_worked_example_cues(scene)
         if any(not s.get("visual_ready") for s in track["scenes"]):
             return
+    if project["data"].get(
+        "picture_policy"
+    ) and story_pictures.repair_repeated_background(project, mode):
+        return
     _ensure_farewell(track)
+    track["visual_audit"] = story_pictures.coverage(track)
+    if track["visual_audit"]["repeated_background"]:
+        project["data"]["warnings"].append(
+            {
+                "unit": f"visual-coverage:{mode}",
+                "reason": "One original supplies most scenes",
+                "action": "Keep the per-scene picture review and expose the repetition in the film audit",
+            }
+        )
     track["phase"] = "tts"
 
 

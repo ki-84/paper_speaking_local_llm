@@ -1,0 +1,73 @@
+{
+  "checked_at": "2026-10-06T09:21:39.460906+09:00",
+  "run_id": "fd7a89136bba4a7d92a002ebfef6c1f8",
+  "project_id": "a641225d9e9b439e8e6889e08da08977",
+  "paper": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+  "project_phase": "production",
+  "active_jobs": [
+    {
+      "id": "44c60988f6b344628b79756643e6c7ef",
+      "kind": "nightly_video",
+      "target": "fd7a89136bba4a7d92a002ebfef6c1f8",
+      "state": "queued",
+      "stage": "本文を読む · 3候補 · 7/7",
+      "progress": 0.44999999999999996,
+      "error": null
+    },
+    {
+      "id": "fb0887857aa4466ea3b7a1453647bbda",
+      "kind": "video_project",
+      "target": "a641225d9e9b439e8e6889e08da08977",
+      "state": "running",
+      "stage": "解説編 · Writing and editing the story",
+      "progress": 0.12000000000000001,
+      "error": null
+    }
+  ],
+  "checks": {
+    "same_project_after_restart": true,
+    "same_job_ids": true,
+    "saved_evidence_preserved": true,
+    "saved_diagram_files_preserved": 1,
+    "paused_old_lessons_preserved": 3,
+    "live_scheduler_errors": 0,
+    "live_pipeline_issues": 0,
+    "health_endpoint_http": 200,
+    "fault_injection_tests": 17,
+    "related_regression_tests": 149,
+    "actual_worker_sigkill_restart_test": "passed",
+    "readonly_health_endpoint": "passed",
+    "ruff": "passed"
+  },
+  "health": {
+    "pipeline-health": {
+      "checked_at": 1791246059.659257,
+      "repaired": [],
+      "issues": [],
+      "history": []
+    },
+    "scheduler-health": {
+      "checked_at": 1791246059.674912,
+      "errors": []
+    },
+    "worker-recovery": {
+      "checked_at": 1791245997.4239926,
+      "jobs": []
+    },
+    "worker": {
+      "pid": 932419,
+      "heartbeat": 1791246097.617666,
+      "model": "qwen-q8",
+      "job_id": "fb0887857aa4466ea3b7a1453647bbda",
+      "step_started": 1791246059.6836815
+    }
+  },
+  "policy": {
+    "periodic_check": "between worker steps, 60-second scheduling interval",
+    "same_dependency_failure": "Maintenance does not restart a failed controller unless its dependency changes; existing bounded unit repairs remain",
+    "automatic_controller_recoveries_max": 3,
+    "user_pause_cancel": "preserved in independent control record and dispatch guard",
+    "external_models": "not used",
+    "youtube_auto_upload": false
+  }
+}

@@ -17,6 +17,7 @@ from . import (
     lessons,
     local_network,
     papers,
+    pipeline_health,
     research,
     story,
     thumbnails,
@@ -32,6 +33,7 @@ def control_project(project_id, state):
     project = db.one("SELECT * FROM video_projects WHERE id=?", (project_id,))
     if not project:
         return
+    pipeline_health.control(project_id, state)
     children = db.all(
         "SELECT id,checkpoint FROM jobs WHERE kind='thumbnail' AND target IN (SELECT id FROM thumbnail_sets WHERE project_id=?) AND state IN ('queued','running','paused','failed','cancelled')",
         (project_id,),
@@ -46,6 +48,8 @@ def control_project(project_id, state):
         if cp.get("superseded"):
             continue
         cp.pop("_failures", None)
+        if state == "queued":
+            cp.pop("auto_recovery", None)
         db.patch_job(
             child["id"],
             state=state,
@@ -83,6 +87,8 @@ def control_run(ident, state):
         if root and root["state"] != "completed":
             cp = root["checkpoint"]
             cp.pop("_failures", None)
+            if state == "queued":
+                cp.pop("auto_recovery", None)
             db.patch_job(
                 root["id"],
                 state=state,

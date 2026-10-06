@@ -20,6 +20,7 @@ from . import (
     paper_search,
     papers,
     phoneme_probe,
+    pipeline_health,
     practice,
     recommendation_ja,
     revoice,
@@ -48,6 +49,22 @@ def import_step(job):
     return True
 
 
+def scheduled_tasks(tasks):
+    """A bad schedule must not terminate the worker or prevent other queues running."""
+    errors = []
+    for name, action in tasks:
+        try:
+            action()
+        except Exception as exc:
+            log.exception("Background check %s failed", name)
+            errors.append({"unit": name, "error": str(exc)[:700], "at": time.time()})
+    db.execute(
+        "INSERT INTO cursors VALUES ('scheduler-health',?) ON CONFLICT(key) DO UPDATE SET data=excluded.data",
+        (db.dumps({"checked_at": time.time(), "errors": errors}),),
+    )
+    return errors
+
+
 def run():
     db.init()
     owner = db.uid()
@@ -59,6 +76,7 @@ def run():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         raise SystemExit("A PaperSpeak worker is already running.")
+    pipeline_health.recover_interrupted(owner)
 
     def stop(*_):
         stopped.set()
@@ -70,38 +88,53 @@ def run():
 
     def heartbeat():
         while not stopped.wait(10):
-            db.execute(
-                "UPDATE jobs SET heartbeat=? WHERE owner=? AND state='running'",
-                (time.time(), owner),
-            )
-            db.execute(
-                "INSERT INTO cursors VALUES ('worker',?) ON CONFLICT(key) DO UPDATE SET data=excluded.data",
-                (
-                    db.dumps(
-                        {
-                            "pid": os.getpid(),
-                            "heartbeat": time.time(),
-                            "model": runtime.mode,
-                        }
+            try:
+                db.execute(
+                    "UPDATE jobs SET heartbeat=? WHERE owner=? AND state='running'",
+                    (time.time(), owner),
+                )
+                db.execute(
+                    "INSERT INTO cursors VALUES ('worker',?) ON CONFLICT(key) DO UPDATE SET data=excluded.data",
+                    (
+                        db.dumps(
+                            {
+                                "pid": os.getpid(),
+                                "heartbeat": time.time(),
+                                "model": runtime.mode,
+                                "job_id": getattr(runtime, "job_id", None),
+                                "step_started": getattr(runtime, "step_started", None),
+                            }
+                        ),
                     ),
-                ),
-            )
+                )
+            except Exception:
+                log.exception("Heartbeat write failed; retrying at the next heartbeat")
 
     thread = threading.Thread(target=heartbeat, daemon=True)
     thread.start()
-    translation.schedule_backfill()
-    recommendation_ja.schedule()
-    revoice.schedule()
-    video.schedule()
+    scheduled_tasks(
+        [
+            ("translation_backfill", translation.schedule_backfill),
+            ("recommendation_ja", recommendation_ja.schedule),
+            ("revoice", revoice.schedule),
+            ("video", video.schedule),
+            ("pipeline_health", pipeline_health.reconcile),
+        ]
+    )
     last_schedule = 0
     try:
         while not stopped.is_set():
             if time.time() - last_schedule > 60:
-                discovery.schedule()
-                nightly.schedule()
-                recommendation_ja.schedule()
-                revoice.schedule()
-                video.schedule()
+                scheduled_tasks(
+                    [
+                        ("discovery", discovery.schedule),
+                        ("nightly", nightly.schedule),
+                        ("recommendation_ja", recommendation_ja.schedule),
+                        ("revoice", revoice.schedule),
+                        ("video", video.schedule),
+                        ("pipeline_health", pipeline_health.reconcile),
+                    ]
+                )
                 last_schedule = time.time()
             job = db.claim(owner)
             if not job:
@@ -114,9 +147,19 @@ def run():
                 current = db.one("SELECT * FROM jobs WHERE id=?", (job["id"],))
                 if not current or current["state"] != "running" or stopped.is_set():
                     continue
+                stop_state = pipeline_health.stop_requested(current)
+                if stop_state:
+                    db.patch_job(
+                        job["id"],
+                        state=stop_state,
+                        owner=None,
+                        stage="User stop preserved",
+                    )
+                    continue
                 runtime.job_id = job["id"]
                 runtime.job_target = job["target"]
                 runtime.job_kind = job["kind"]
+                runtime.step_started = time.time()
                 if job["kind"] == "lesson":
                     done = lessons.lesson_step(job, runtime)
                 elif job["kind"] == "video_project":
@@ -231,6 +274,13 @@ def run():
                     if isinstance(e, QualityHold) or failures >= 3
                     else "queued"
                 )
+                if state == "failed" and job["kind"] in {
+                    "video_project",
+                    "nightly_video",
+                }:
+                    cp["failed_dependency"] = pipeline_health.failed_dependency(
+                        job["kind"], job["target"]
+                    )
                 db.patch_job(
                     job["id"],
                     state=state,
@@ -275,6 +325,7 @@ def run():
                 runtime.job_kind = None
                 runtime.job_id = None
                 runtime.job_target = None
+                runtime.step_started = None
                 fcntl.flock(step_lock, fcntl.LOCK_UN)
     finally:
         stopped.set()

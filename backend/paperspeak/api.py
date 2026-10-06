@@ -186,6 +186,15 @@ def status():
     }
 
 
+@app.get("/api/pipeline-health", dependencies=[Depends(auth)])
+def pipeline_health_status():
+    checks = {}
+    for key in ("pipeline-health", "scheduler-health", "worker-recovery", "worker"):
+        row = db.one("SELECT data FROM cursors WHERE key=?", (key,))
+        checks[key] = row["data"] if row else None
+    return checks
+
+
 @app.get("/api/papers", dependencies=[Depends(auth)])
 def list_papers():
     return db.all(
@@ -703,6 +712,8 @@ def control_job(ident: str, action: Literal["pause", "resume", "retry", "cancel"
         raise HTTPException(409, "This job is already running.")
     cp = job["checkpoint"]
     cp.pop("_failures", None)
+    if state == "queued":
+        cp.pop("auto_recovery", None)
     db.patch_job(
         ident,
         state=state,

@@ -29,6 +29,7 @@ from . import (
     thumbnails,
     translation,
     video,
+    video_review,
     youtube,
 )
 from .quality import QualityHold
@@ -118,6 +119,7 @@ def run():
             ("recommendation_ja", recommendation_ja.schedule),
             ("revoice", revoice.schedule),
             ("video", video.schedule),
+            ("video_review", video_review.schedule),
             ("pipeline_health", pipeline_health.reconcile),
         ]
     )
@@ -132,6 +134,7 @@ def run():
                         ("recommendation_ja", recommendation_ja.schedule),
                         ("revoice", revoice.schedule),
                         ("video", video.schedule),
+                        ("video_review", video_review.schedule),
                         ("pipeline_health", pipeline_health.reconcile),
                     ]
                 )
@@ -174,6 +177,9 @@ def run():
                 elif job["kind"] == "story_video":
                     with local_network.inference_only():
                         done = story_video.step(job, runtime)
+                elif job["kind"] == "video_review":
+                    with local_network.inference_only():
+                        done = video_review.step(job, runtime)
                 elif job["kind"] == "thumbnail":
                     with local_network.inference_only():
                         done = thumbnails.step(job, runtime)
@@ -295,6 +301,14 @@ def run():
                         (job["target"],),
                     )
                     db.event("attempt", {"id": job["target"]})
+                if state == "failed" and job["kind"] == "video_review":
+                    review = db.one(
+                        "SELECT * FROM video_reviews WHERE id=?", (job["target"],)
+                    )
+                    if review:
+                        review["state"] = "failed"
+                        review["data"]["error"] = str(e)[:1200]
+                        video_review.save(review)
                 if state == "failed" and job["kind"] == "thumbnail":
                     row = db.one(
                         "SELECT * FROM thumbnail_sets WHERE id=?", (job["target"],)

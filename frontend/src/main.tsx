@@ -2214,6 +2214,11 @@ function StoryProjectPanel({paperId,projectId,version,onError,refresh,openLesson
     {project && <>
       {project.job?.error && <p role="alert">{project.job.error}</p>}
       <progress max={1} value={project.job?.progress || 0}/>
+      {project.review && <div className="story-script"><h3>完成後の評価</h3>
+        <p>{project.review.state==='waiting'?'2本が完成した後、実動画・音声・脚本・出典を確認します。':project.review.state==='ready'?'時刻付きの評価レポートができました。':project.review.job?.stage || '完成した動画を評価しています。'}</p>
+        {project.review.report_html && <a className="secondary" href={fileUrl(project.review.report_html)} target="_blank" rel="noreferrer">評価レポートを読む</a>}
+        {project.review.job?.error && <p role="alert">{project.review.job.error}</p>}
+      </div>}
       <div className="story-film-grid">{Object.entries(project.data.modes || {}).map(([mode,entry])=> {
         const track=entry as any;
         const complete=track.videos?.find((v:any)=>v.kind===mode&&v.state==='ready');

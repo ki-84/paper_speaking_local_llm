@@ -69,6 +69,10 @@ def init():
           id TEXT PRIMARY KEY, paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
           input_digest TEXT NOT NULL UNIQUE, state TEXT NOT NULL, data TEXT NOT NULL,
           created REAL NOT NULL, updated REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS video_reviews (
+          id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
+          input_digest TEXT NOT NULL UNIQUE, state TEXT NOT NULL, data TEXT NOT NULL,
+          created REAL NOT NULL, updated REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS thumbnail_sets (
           id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES video_projects(id) ON DELETE CASCADE,
           mode TEXT NOT NULL, input_digest TEXT NOT NULL UNIQUE, state TEXT NOT NULL,

@@ -37,6 +37,7 @@ from . import (
     thumbnails,
     translation,
     video_library,
+    video_review,
     youtube,
 )
 from .runtime import gpu_info
@@ -324,6 +325,21 @@ def get_video_project(ident: str):
         return story.get(ident)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+@app.post("/api/video-projects/{ident}/reviews", dependencies=[Depends(auth)])
+def request_video_review(ident: str):
+    try:
+        return video_review.request(ident)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/video-projects/{ident}/reviews", dependencies=[Depends(auth)])
+def get_video_review(ident: str):
+    if not db.one("SELECT id FROM video_projects WHERE id=?", (ident,)):
+        raise HTTPException(404, "Video project not found")
+    return video_review.get(ident)
 
 
 @app.get("/api/conference-awards", dependencies=[Depends(auth)])

@@ -330,6 +330,20 @@ def get(ident):
     project = db.one("SELECT * FROM video_projects WHERE id=?", (ident,))
     if not project:
         raise ValueError("Video project not found")
+    from . import video_review
+
+    review = video_review.get(ident)
+    project["review"] = (
+        {
+            "id": review["id"],
+            "state": review["state"],
+            "report_html": review["data"].get("report_html"),
+            "summary": review["data"].get("summary"),
+            "job": review.get("job"),
+        }
+        if review
+        else None
+    )
     project["job"] = db.one(
         "SELECT id,state,stage,progress,error FROM jobs WHERE kind='video_project' AND target=? ORDER BY created DESC LIMIT 1",
         (ident,),

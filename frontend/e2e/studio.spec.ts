@@ -339,6 +339,48 @@ test("nightly backlog waiting is distinct from a skipped day and shows catch-up"
   await expect(panel.getByText('前日分の完成待ち',{exact:true})).toHaveCount(0);
 });
 
+test("pipeline monitor distinguishes long work, lost responses and a user pause", async ({page}) => {
+  const now=Date.now()/1000;
+  let job:any={id:'long-job',state:'running',stage:'Writing and editing',progress:.12};
+  let health:any={worker:{heartbeat:now,job_id:'long-job',step_started:now-3600},'pipeline-health':{issues:[],history:[]}};
+  let reads=0,mutations=0;
+  await page.route('**/api/pipeline-health',route=>{if(route.request().method()!=='GET')mutations++;reads++;return route.fulfill({json:health});});
+  await page.route('**/api/nightly-video-runs',route=>route.fulfill({json:[{id:'monitor-run',day:'2026-10-06',state:job.state==='paused'?'paused':'building',job,data:{selected:{title:'A long paper'}},project:{data:{modes:{}}}}]}));
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const monitor=page.getByRole('group',{name:'作成の稼働確認'});
+  await expect(monitor).toContainText('処理中 · サーバーから応答があります');
+  await expect(monitor).toContainText('サーバー最終応答');
+  health.worker.heartbeat=now-180;
+  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await expect(monitor).toContainText('サーバーの応答を再確認中');
+  health.worker.heartbeat=Date.now()/1000;
+  job={...job,state:'paused'};
+  await page.locator('nav').getByRole('button',{name:'英語練習',exact:true}).click();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await expect(monitor).toContainText('利用者による停止を保持しています');
+  expect(reads).toBeGreaterThanOrEqual(3);
+  expect(mutations).toBe(0);
+});
+
+test("pipeline monitor automatically refreshes after a lost connection without starting jobs", async ({page}) => {
+  let disconnected=true,reads=0;
+  await page.route('**/api/pipeline-health',route=>{
+    reads++;
+    return disconnected?route.abort('failed'):route.fulfill({json:{worker:{heartbeat:Date.now()/1000,job_id:'recover-job'},'pipeline-health':{issues:[],history:[{job_id:'recover-job'}]}}});
+  });
+  await page.route('**/api/nightly-video-runs',route=>route.fulfill({json:[{id:'recover-run',day:'2026-10-06',state:'searching',job:{id:'recover-job',state:'running',progress:0},data:{}}]}));
+  await page.clock.install();
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  const monitor=page.getByRole('group',{name:'作成の稼働確認'});
+  await expect(monitor).toContainText('接続を再確認中');
+  disconnected=false;
+  await page.clock.fastForward(16000);
+  await expect(monitor).toContainText('処理中 · サーバーから応答があります');
+  await expect(monitor).toContainText('自動復旧を1回確認しました');
+  expect(reads).toBeGreaterThan(1);
+});
+
 test("conference awards show counts, official winners and acquisition gaps", async ({page}) => {
   const icra='https://www.ieee-ras.org/awards-recognition/conference-awards/ieee-icra-best-conference-paper-award/';
   await page.route('**/api/conference-awards',route=>route.fulfill({json:{winner_count:2,paper_count:1,sources:[

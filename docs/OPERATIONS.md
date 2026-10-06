@@ -99,6 +99,8 @@ systemctl --user status paperspeak
 
 `GET /api/pipeline-health` は、最後の点検、復旧履歴、スケジューラのエラー、ワーカーの現在のジョブと工程開始時刻を返す。参照だけでは生成を開始しない。診断記録はSQLiteの `pipeline-health` / `scheduler-health` / `worker-recovery` カーソルと `data/logs/worker.log` に保存する。
 
+「動画を作る」画面にも稼働確認を表示する。サーバーの最終応答と保存した進捗の更新時刻を日本時間で示し、15秒ごとに診断を読み直す。診断通信が10秒で応答しなければ接続を再確認し、次の取得で表示を復旧する。この通信は参照のみで、ジョブの開始・再開を行わない。長いAI処理でも応答が続いていれば処理中として表示し、手動の一時停止・取消を優先して表示する。古い、関連しないジョブの問題を現在の動画の障害として表示しない。
+
 ```bash
 .venv/bin/pytest -q tests/test_pipeline_health.py tests/test_nightly.py tests/test_core.py tests/test_resilience.py tests/test_practice_priority.py tests/test_caption_recovery.py
 ```

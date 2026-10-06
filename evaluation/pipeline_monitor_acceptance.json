@@ -1,0 +1,39 @@
+{
+  "checked_at": "2026-10-06T09:32:10.851830+09:00",
+  "browser": {
+    "checked_at": "2026-10-06T00:31:11.996Z",
+    "url": "https://192.168.10.112:8443/",
+    "text": "処理中 · サーバーから応答があります\n\nサーバー最終応答 09:31:08（日本時間） · 保存した進捗の更新 09:30:22"
+  },
+  "tests": {
+    "playwright": 4,
+    "typescript": "passed",
+    "vite_build": "passed"
+  },
+  "checks": {
+    "live_lan_status_displayed": true,
+    "readonly_diagnostic_polling": true,
+    "long_step_kept_processing": true,
+    "lost_response_detected_and_reconnected": true,
+    "manual_pause_preserved": true,
+    "production_worker_was_not_restarted": true
+  },
+  "active_jobs": [
+    {
+      "id": "44c60988f6b344628b79756643e6c7ef",
+      "kind": "nightly_video",
+      "state": "queued",
+      "stage": "本文を読む · 3候補 · 7/7",
+      "error": null
+    },
+    {
+      "id": "fb0887857aa4466ea3b7a1453647bbda",
+      "kind": "video_project",
+      "state": "running",
+      "stage": "解説編 · Writing and editing the story",
+      "error": null
+    }
+  ],
+  "current_pipeline_issues": [],
+  "status_screenshot": "evaluation/pipeline-live-status.png"
+}

@@ -40,6 +40,7 @@ import {
 import "./style.css";
 import { VisualPanel } from "./VisualPanel";
 import { VideoLibrary } from "./VideoLibrary";
+import { PipelineStatus } from "./PipelineStatus";
 
 type Page = "library" | "create" | "practice" | "discover" | "review" | "settings" | "learn";
 function microphoneError(error: unknown, selectedMic = "") {
@@ -730,7 +731,7 @@ function SettingsPage({
         <label className="check-label"><input type="checkbox" checked={s.nightly_video_enabled} onChange={e=>update("nightly_video_enabled",e.target.checked)}/> 毎晩、注目論文から2本の動画と英語教材を作る</label>
         <label className="check-label"><input type="checkbox" checked={s.nightly_video_awards_first} onChange={e=>update("nightly_video_awards_first",e.target.checked)}/> 最近のAI・ロボティクス学会の優秀論文賞・Test of Time賞を優先する</label>
         <p>最新・前年の受賞を公式に確認した未動画化の論文を優先します。Test of Time賞は古い論文も対象とし、発表年と受賞年を区別します。適した受賞論文がなければ、新着論文から選びます。</p>
-        <p>朝の完成を目指し、長引いても続行します。前日の作成が残っている日は追加しません。</p>
+        <p>朝の完成を目指し、長引いても続行します。前日分が残っている間は待機し、完了後に今日の分を自動で開始します。</p>
         <div className="form-grid"><label>開始時刻 · 日本時間<input type="time" value={`${String(s.nightly_video_hour).padStart(2,"0")}:${String(s.nightly_video_minute).padStart(2,"0")}`} onChange={e=>{const [h,m]=e.target.value.split(":").map(Number);setSaved(false);setS({...s,nightly_video_hour:h,nightly_video_minute:m});}}/></label>
         <label>対象分野<select multiple value={s.nightly_video_categories} onChange={e=>update("nightly_video_categories",Array.from(e.target.selectedOptions,o=>o.value))}>{[["cs.AI","AI"],["cs.LG","機械学習"],["cs.CL","LLM・言語"],["cs.CV","画像・視覚"],["cs.RO","ロボティクス"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></div>
         <details className="workspace-details"><summary>モデルと診断</summary>
@@ -2121,6 +2122,7 @@ function NightlyVideos({version,onError,refresh,openLesson,viewVideos}:{version:
   {run.data.award_fallback_reason&&<p>{run.data.award_fallback_reason}</p>}
   {run.data.selected?.attention&&<p className="subtle">注目情報: <a href={run.data.selected.attention.source_url} target="_blank" rel="noreferrer">Hugging Face Daily Papers</a> · {new Date(run.data.selected.attention.retrieved_at*1000).toLocaleString()}</p>}
   {run.data.reason&&<p>{run.data.reason}</p>}{run.data.waiting_reason&&(run.state==='building'||run.continuing_run)&&<p>{run.data.waiting_reason}</p>}{activeJob&&<progress max={1} value={run.project?.job?.progress||activeJob.progress||0}/>}
+  <PipelineStatus run={run}/>
   {run.project&&<><NightlyFilmCards project={run.project} openLesson={openLesson} viewVideos={viewVideos}/><button className="text-button" onClick={()=>setExpanded(!expanded)}>{expanded?'詳細を閉じる':'脚本・プレビュー・サムネイル設定'}</button>{expanded&&<StoryProjectPanel paperId={run.project.paper_id} projectId={run.project.id} version={version} onError={onError} refresh={refresh} openLesson={openLesson}/>}</>}
   <details><summary>選定・作成の記録</summary>{run.data.award_sources?.map((r:any,i:number)=><p key={`award-${i}`}><a href={r.source.url} target="_blank" rel="noreferrer">{r.source.venue} {r.source.year}</a>: {awardStatusLabels[r.status]||'受賞を確認できず'}</p>)}{run.data.search_plans?.map((p:any,i:number)=><p key={`plan-${i}`}>ローカルAIの検索方針: {p.reason_ja}</p>)}{run.data.search_history?.map((q:any,i:number)=><p key={`query-${i}`}>{q.title||q.category} · {q.terms?.join(' / ')} · {q.reason_ja}{q.result_count!==undefined&&<> · {q.result_count}候補</>}{q.matched!==undefined&&<> · {q.matched?'題名一致':'一致する取得先なし'}</>}</p>)}{run.data.review_summary?.map((r:any)=><p key={r.paper_id}>{r.title} — {r.assessment.why_ja}</p>)}{Object.entries(run.data.timings||{}).filter(([,v])=>typeof v==='number').map(([k,v])=><p key={k}>{k}: {Math.round(Number(v)/60)}分</p>)}{run.data.warnings?.map((w:any,i:number)=><p key={i}>{w.unit}: {w.reason}</p>)}</details>
   {runs&&runs.length>1&&<details><summary>過去の夜間運転</summary><div className="run-history">{runs.slice(1).map(r=><div key={r.id}><span>{r.day}</span><Badge state={r.state}>{labels[r.state]||r.state}</Badge><strong>{r.data.selected?.title||r.data.reason||'選定中'}</strong>{r.project&&<button className="text-button" onClick={viewVideos}>完成動画を見る</button>}</div>)}</div></details>}</>:runs===null?<p role="status">作成状況を読み込み中…</p>:<p>まだ夜間運転の記録がありません。設定で開始時刻と分野を変更できます。</p>}

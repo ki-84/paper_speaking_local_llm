@@ -245,6 +245,17 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
         == original_project
     )
     assert video_review.request(p["id"])["review_id"] == requested["review_id"]
+    result["data"]["verified_assessment"] = {
+        "scope_ja": "実際のフレームと脚本を追加照合しました。",
+        "summary_ja": "無音中の切替を同期不良とする指摘を訂正。",
+        "findings": [],
+        "automatic_review_corrections_ja": "無音を新しい場面の発話として扱わない。",
+    }
+    video_review.publish_report(result)
+    corrected = config.safe_path(result["data"]["report_html"]).read_text()
+    assert "追加照合済み" in corrected
+    assert "<details><summary>初回ローカルAIレビュー" in corrected
+    assert "&lt;script&gt;" in corrected
 
 
 def test_review_request_and_status_api(client):
@@ -282,3 +293,34 @@ def test_declared_math_that_never_appears_in_film_is_reported(database):
     assert info["equation_scenes"] == 1
     assert info["scenes"][0]["symbolic_frames_in_timeline"] == 0
     assert info["scenes"][0]["technical_issues_ja"]
+
+
+def test_transition_pause_is_not_sampled_as_current_scene_content(
+    database, monkeypatch
+):
+    p = project(["overview"])
+    requested = video_review.request(p["id"])
+    export = finish_film(p)
+    monkeypatch.setattr(
+        video_review.story_video,
+        "timeline",
+        lambda *_: (
+            [
+                {"frames": 24000, "scene": "previous.jpg", "silence": True},
+                {"frames": 48000, "scene": "current.jpg"},
+            ],
+            [
+                {"frames": 24000, "silence": True},
+                {
+                    "frames": 48000,
+                    "audio": "audio/u-0.wav",
+                    "english": "Current explanation",
+                    "japanese": "今の説明",
+                },
+            ],
+            [(0, "Current scene")],
+            [],
+        ),
+    )
+    info = video_review.prepare_mode({"id": requested["review_id"]}, "overview", export)
+    assert all(at >= 1 for at in info["scenes"][0]["sample_times"])

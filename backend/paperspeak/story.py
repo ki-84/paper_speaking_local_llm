@@ -338,7 +338,8 @@ def get(ident):
             "id": review["id"],
             "state": review["state"],
             "report_html": review["data"].get("report_html"),
-            "summary": review["data"].get("summary"),
+            "summary": review["data"].get("verified_assessment")
+            or review["data"].get("summary"),
             "job": review.get("job"),
         }
         if review

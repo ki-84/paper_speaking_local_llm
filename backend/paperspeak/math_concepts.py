@@ -14,6 +14,8 @@ TEMPLATES = {
     "return_target",
     "policy_tradeoff",
     "moving_average",
+    "bellman_error",
+    "state_vector",
 }
 PARTS = {
     "parallel_paths": [
@@ -56,8 +58,20 @@ PARTS = {
         ("Current learned weights", "現在の学習した重み"),
         ("Slowly updated target", "ゆっくり更新する目標"),
     ],
+    "bellman_error": [
+        ("Value prediction", "価値の予測"),
+        ("Reward plus discounted next value", "報酬と割り引いた次の価値"),
+        ("Average the squared difference", "差を二乗して平均する"),
+    ],
+    "state_vector": [
+        ("Measured body signals", "身体から計測する信号"),
+        ("Command and previous action", "命令と前回の行動"),
+        ("Combine into an observation", "観測ベクトルにまとめる"),
+    ],
 }
 BRIEF = (
+    "Use bellman_error for a basic squared bootstrapped value loss: a value prediction, immediate reward plus discounted next value, and their squared difference averaged over samples. It is NOT the categorical cross-entropy objective of a distributional critic. "
+    "Use state_vector for physical measurements plus command/action history concatenated into one observation. It does not depict learning updates. "
     "Never teach an equation as a formula card alone. First show what its quantities refer to and what changes in a concrete conceptual picture; then reveal the SAME picture with its symbols and equation. "
     "Use parallel_paths for a fixed contribution plus a learned correction, bottleneck for encoding then reconstruction, weighted_sum for combining contributions, fit_constraints for fitting a point to geometric constraints, return_target for immediate reward plus discounted future value, policy_tradeoff for entropy/action diversity versus predicted value, moving_average for a slowly blended target copy, or relationship for other relations. "
     "return_target shows a reward token, future value on a later timeline, and their sum; policy_tradeoff shows diverse action branches, a critic's estimate, and a balance; moving_average shows a previous target and a current model contributing to a smoothed copy. Never use these pictures for an unrelated operation. "
@@ -69,7 +83,7 @@ BRIEF = (
     "Explain the picture first, define the symbols in everyday language, then walk through the relation. Keep useful analogy boundaries and experimental conditions. "
 )
 SCHEMA = (
-    '"concepts":[{"template":"parallel_paths|bottleneck|weighted_sum|fit_constraints|return_target|policy_tradeoff|moving_average|relationship",'
+    '"concepts":[{"template":"parallel_paths|bottleneck|weighted_sum|fit_constraints|return_target|policy_tradeoff|moving_average|bellman_error|state_vector|relationship",'
     '"parts":[{"en":"short meaning of first part","ja":"日本語"},{"en":"second meaning","ja":"日本語"},{"en":"third meaning","ja":"日本語"}],'
     '"symbols":[{"latex":"exact symbol from this equation","en":"meaning","ja":"意味","part":0}]}]'
 )
@@ -222,7 +236,65 @@ def _part(en, ja):
 
 
 def fallback(eq):
-    """A neutral relation sketch avoids guessing an unsupported operation."""
+    """Recognize an actual operation before choosing a neutral last resort."""
+    tex = re.sub(r"\s+", "", eq["latex"])
+    if (
+        "Q_" in tex
+        and r"\gamma" in tex
+        and "r+" in tex
+        and ("^{2}" in tex or "^2" in tex)
+    ):
+        q = re.search(r"Q_(?:\{\\[A-Za-z]+\}|\\[A-Za-z]+)", tex)
+        symbols = [
+            {
+                "latex": r"\gamma",
+                "en": "Future discount",
+                "ja": "将来の価値の割引",
+                "part": 1,
+            },
+            {"latex": "r", "en": "Reward now", "ja": "今の報酬", "part": 1},
+        ]
+        if q:
+            symbols.insert(
+                0,
+                {
+                    "latex": q[0],
+                    "en": "Value prediction",
+                    "ja": "価値の予測",
+                    "part": 0,
+                },
+            )
+        return {
+            "template": "bellman_error",
+            "parts": [{"en": en, "ja": ja} for en, ja in PARTS["bellman_error"]],
+            "symbols": symbols,
+            "fallback": True,
+        }
+    if r"\omega" in tex and r"\dot{q}" in tex and "a}" in tex:
+        symbols = []
+        for raw, en, ja, part in [
+            (r"\textbf{o}_{t}", "Observation vector", "観測ベクトル", 2),
+            (r"\boldsymbol{\omega}_{t}", "Angular velocity", "角速度", 0),
+            (r"\textbf{g}_{t}", "Gravity direction", "重力の方向", 0),
+            (r"\textbf{c}_{t}", "Velocity command", "速度の命令", 1),
+            (r"\boldsymbol{q}_{t}", "Joint angles", "関節の角度", 0),
+            (r"\boldsymbol{\dot{q}}_{t}", "Joint velocity", "関節の速度", 0),
+            (r"\textbf{a}_{t-1}", "Previous action", "前回の行動", 1),
+        ]:
+            options = [
+                raw,
+                raw.replace(r"\textbf", r"\mathbf"),
+                raw.replace(r"\boldsymbol", r"\bm"),
+            ]
+            found = next((s for s in options if s in tex), None)
+            if found:
+                symbols.append({"latex": found, "en": en, "ja": ja, "part": part})
+        return {
+            "template": "state_vector",
+            "parts": [{"en": en, "ja": ja} for en, ja in PARTS["state_vector"]],
+            "symbols": symbols,
+            "fallback": True,
+        }
     return {
         "template": "relationship",
         "parts": [

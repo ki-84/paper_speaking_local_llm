@@ -12,8 +12,13 @@ TEMPLATES = {
     "noise_trajectory": 2,
     "distribution_return": 3,
     "surface_cells": 3,
+    "worked_steps": None,
 }
 BRIEF = (
+    "worked_steps is a concrete sequence of two to six steps. Each node needs en/ja short headings, detail_en/detail_ja (the actual input, rule, decision or answer), and icon from file|folder|chat|rule|model|memory|robot|number. "
+    "Its active step is drawn LARGE, with a progress strip. Use this to reenact a paper example, show a changing rule/state/answer, or reveal a hypothetical calculation; do not supply generic Input/Processing/Output labels. "
+    "Give the concrete input and the operation/rule separate steps when they require different pictures. A copy-flow arrow shows where the file goes; numbered arguments show command order. Do not use the same flow picture while explaining a different ordering relation. Advance with an exact spoken phrase when one paragraph explains two steps. "
+    "For a visible relationship, each step can add objects:[{en:short concrete name,ja:日本語,icon:supported icon}] with two or three objects, and relation:flow|order|contrast. flow draws a directional arrow; order numbers the objects in command/operation order; contrast separates alternatives. Show actual named input/output objects instead of one decorative icon. "
     "Choose visuals from REAL renderer capabilities. signal_path draws input data packets, processing layers, output signals; robot_control draws a robot, observations, a policy and joint-action arrows; "
     "replay_memory draws recorded transitions in a replay drawer and a batch reused for learning; "
     "update_schedule draws data, model capacity and sparse vs dense optimizer-update ticks (not larger step sizes); "
@@ -31,6 +36,62 @@ BRIEF = (
 def validate(spec, project=None):
     template = spec.get("template")
     if not template:
+        return
+    if template == "worked_steps":
+        nodes = spec.get("nodes", [])
+        if not 2 <= len(nodes) <= 6:
+            raise ValueError("A concrete example needs two to six visible steps")
+        for node in nodes:
+            if not all(
+                isinstance(node.get(k), str) and node[k].strip() for k in ("en", "ja")
+            ):
+                raise ValueError("Example headings need both languages")
+            if node.get("icon") not in {
+                "file",
+                "folder",
+                "chat",
+                "rule",
+                "model",
+                "memory",
+                "robot",
+                "number",
+            }:
+                raise ValueError("Choose a supported visible example object")
+            for field, limit in (("detail_en", 150), ("detail_ja", 100)):
+                if (
+                    not isinstance(node.get(field), str)
+                    or not 1 <= len(node[field]) <= limit
+                ):
+                    raise ValueError(
+                        "Put this example's actual input or answer in short bilingual step details"
+                    )
+            if "objects" in node:
+                objects = node["objects"]
+                if (
+                    not isinstance(objects, list)
+                    or not 2 <= len(objects) <= 3
+                    or node.get("relation") not in {"flow", "order", "contrast"}
+                ):
+                    raise ValueError(
+                        "Draw two or three named objects with an explicit flow, order or contrast"
+                    )
+                for obj in objects:
+                    if obj.get("icon") not in {
+                        "file",
+                        "folder",
+                        "chat",
+                        "rule",
+                        "model",
+                        "memory",
+                        "robot",
+                        "number",
+                    } or not all(
+                        isinstance(obj.get(k), str) and 1 <= len(obj[k]) <= limit
+                        for k, limit in (("en", 35), ("ja", 25))
+                    ):
+                        raise ValueError(
+                            "Visible objects need short bilingual names and supported icons"
+                        )
         return
     if template not in TEMPLATES or len(spec.get("nodes", [])) != TEMPLATES[template]:
         raise ValueError(
@@ -318,6 +379,15 @@ def coverage(track):
             scene.get("visual", scene.get("storyboard", {}).get("visual", {})) or {}
         )
         original = visual.get("original_asset_id")
+        shot_specs = [
+            s["visual"] for s in (scene.get("storyboard") or {}).get("shots", [])
+        ]
+        if shot_specs:
+            for spec in shot_specs:
+                name = spec.get("original_asset_id")
+                if name:
+                    uses.setdefault(name, []).append(index)
+            original = None
         if original:
             uses.setdefault(original, []).append(index)
         family = (
@@ -342,6 +412,10 @@ def coverage(track):
                 (s.get("visual") or s.get("storyboard", {}).get("visual", {})).get(
                     "template"
                 )
+            )
+            or any(
+                v["visual"].get("template")
+                for v in (s.get("storyboard") or {}).get("shots", [])
             )
             for s in scenes
         ),

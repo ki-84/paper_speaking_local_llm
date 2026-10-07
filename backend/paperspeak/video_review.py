@@ -15,7 +15,7 @@ import imageio_ffmpeg
 import numpy as np
 import pymupdf
 
-from . import config, db, math_concepts, story, story_pictures, story_video, video
+from . import config, db, story, story_pictures, story_shots, story_video, video
 from .quality import speech_context, speech_match
 from .runtime import GPUUnavailable, PracticePreempted
 
@@ -233,7 +233,8 @@ def prepare_mode(review, mode, export):
             s
             for s in visible
             if s["image"] in paths
-            and math_concepts.phase(visual, paths.index(s["image"])) == "symbols"
+            and story_shots.phase(manifest["scenes"][index], paths.index(s["image"]))
+            == "symbols"
         ]
         if formulas:
             s = formulas[0]
@@ -284,7 +285,12 @@ def prepare_mode(review, mode, export):
         "audio_samples": audio_groups,
         "visual_audit": story_pictures.coverage({"scenes": manifest["scenes"]}),
         "equation_scenes": sum(
-            bool(s["visual"].get("equations")) for s in manifest["scenes"]
+            bool(s["visual"].get("equations"))
+            or any(
+                shot["visual"].get("equations")
+                for shot in (s.get("storyboard") or {}).get("shots", [])
+            )
+            for s in manifest["scenes"]
         ),
         "missing_japanese_captions": sum(
             not v.get("japanese", "").strip()
@@ -395,6 +401,7 @@ def review_scene(review, project, mode, info, runtime):
                 "sample_times": info["sample_times"],
                 "scene_title": scene["title"],
                 "visual": scene["visual"],
+                "visual_sequence": (scene.get("storyboard") or {}).get("shots", []),
                 "dialogue": [
                     {
                         "speaker": u["speaker"],

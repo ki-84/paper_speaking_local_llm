@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-08",
+  "project_id": "d428dfe92569486783a2fef181dfea69",
+  "paper": "ImplicitMemBench: Measuring Unconscious Behavioral Adaptation in Large Language Models",
+  "pipeline_version": "youtube-storyboard-5-newcomer-sequences",
+  "inspection_scope": {
+    "completed_project": "bdf247ab42f248afaa3b765f53a0a1ac",
+    "mp4_frames_per_film": 10,
+    "opening_audio_clip_seconds": 25,
+    "scripts_and_primary_sources_examined": true,
+    "continuous_full_film_watch": false,
+    "real_beginner_user_study": false
+  },
+  "findings": [
+    {
+      "problem": "The actual task appears roughly nine minutes into the overview, after abstract memory and protocol claims.",
+      "change": "Start with a concrete file-copy input, the unusual command rule and a viewer prediction before scientific terminology."
+    },
+    {
+      "problem": "The opening uses a generic input-transform-output drawing; dense originals and score tables arrive before the task is understood.",
+      "change": "A scene can now contain sequential concrete-example, explanation and original-evidence shots, bound to paragraphs and aligned spoken phrases."
+    },
+    {
+      "problem": "The earlier math fallback uses generic dots without named quantities or the actual operation.",
+      "change": "Added explicit value-error and state-vector conceptual drawings, preserving source symbols before equations."
+    },
+    {
+      "problem": "Repeated phase labels on an unchanged paper image encourage the same task to be explained again.",
+      "change": "Collapse identical whole-original beats; local-model selection can remove redundant paragraphs while preserving concrete steps and both speakers."
+    },
+    {
+      "problem": "Scientific review and editing alone do not establish whether a newcomer can follow the spoken explanation.",
+      "change": "A separate learner rehearsal sees the dialogue and pictured steps without the paper answer, returns its own explanation and identifies undefined terminology. Edited claims are checked against sources again."
+    },
+    {
+      "problem": "The writer receives growing review histories and duplicated figure catalogues, exhausting the local context and falling back to abstract notes.",
+      "change": "Pass only selected source text, the approved shots and the scene contract; reserve image review for the relevant task or source view."
+    },
+    {
+      "problem": "Approximate plot zooms cut axes or show only a legend.",
+      "change": "Keep complete original plot-column labels when a separate legend is unavailable; checked on the actual FlashSAC Figure 6 render."
+    },
+    {
+      "problem": "ACL Anthology proceedings cannot be fetched through the official-source allowlist, leaving a verified ACL paper marked unconfirmed.",
+      "change": "Allow the official aclanthology.org domain, reject hostname lookalikes, and save the verified ACL 2026 proceedings record."
+    }
+  ],
+  "local_models": {
+    "writer": "qwen-q8",
+    "reasoned_structural_selection": true,
+    "cloud_inference": false
+  },
+  "tests": [
+    {
+      "suite": "Story, diagrams, math, video, review, publication and packaging",
+      "passed": 172
+    },
+    {
+      "suite": "Final story, sequence, review, nightly, recovery, recording priority",
+      "passed": 144
+    },
+    {
+      "suite": "Blinded newcomer, story, subtitle recovery and review regression",
+      "passed": 75
+    }
+  ],
+  "visual_proofs": {
+    "concrete_input": "visuals/d428dfe92569486783a2fef181dfea69-s2/overview/71cfa89583ca/step-0.png",
+    "expected_order": "visuals/d428dfe92569486783a2fef181dfea69-s2/overview/71cfa89583ca/step-4.png",
+    "complete_plot_axes": "visuals/newcomer-chart-inspection/overview/426d34bac22a/step-1.png",
+    "command_order": "visuals/d428dfe92569486783a2fef181dfea69-s2/overview/71cfa89583ca/step-1.png"
+  },
+  "new_preview": {
+    "state": "ready",
+    "export_id": "6629884cba864d0497946e57f35c035b",
+    "duration_seconds": 80.44,
+    "bytes": 4163588,
+    "resolution": [
+      1920,
+      1080
+    ],
+    "actual_mp4_frames_inspected_seconds": [
+      5,
+      28,
+      44,
+      64,
+      77
+    ],
+    "word_anchored_changes_seconds": [
+      25.28,
+      60.08
+    ],
+    "distinct_pictures_within_preview": 3,
+    "first_three_asr_word_error_rates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mp4": "videos/dc8bb6b0bc9a4f0ab56334154dea99ac/ae22780150aa/【概要解説】ImplicitMemBench - Measuring Unconscious Behavioral Adaptation in Large Language…｜ACL 2026 — Preview.mp4",
+    "lan_range_download": {
+      "status": 206,
+      "content_type": "video/mp4",
+      "bytes": 1024
+    },
+    "actual_mp4_inspected": true,
+    "all_13_wavs_reused_for_picture_correction": true,
+    "script_note": "The first local editing attempts preserved or expanded repeated explanations. Added explicit paragraph selection, collapsed identical whole-original beats, and inspected the real preview rather than accepting positive model review notes."
+  },
+  "limits": [
+    "Local-model learner rehearsal is a diagnostic, not evidence from real viewers.",
+    "The 80-second opening is verified; both complete revised films remain in generation and need their reserved final review. Watch retention and humor have not been measured with viewers."
+  ],
+  "updated": 1791392648.410104,
+  "repository_frame_proofs": [
+    "evaluation/newcomer_preview/preview-5.jpg",
+    "evaluation/newcomer_preview/preview-28.jpg",
+    "evaluation/newcomer_preview/preview-64.jpg"
+  ]
+}

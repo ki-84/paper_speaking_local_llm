@@ -6,6 +6,7 @@ API are derived from that same recording, never synthesized a second time.
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import re
@@ -22,7 +23,9 @@ from . import (
     math_concepts,
     papers,
     publication,
+    story_direction,
     story_pictures,
+    story_shots,
     translation,
     video,
     voices,
@@ -39,9 +42,10 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-storyboard-4-purposeful-pictures"
+VERSION = "youtube-storyboard-5-newcomer-sequences"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
-EDITORIAL_REVIEW_VERSION = "content-first-editorial-2"
+EDITORIAL_REVIEW_VERSION = "content-first-editorial-3"
+NOVICE_REVIEW_VERSION = "beginner-rehearsal-3-blind"
 VISUAL_DIRECTION_VERSION = "original-first-clear-1"
 VISUAL_DIRECTION_BRIEF = (
     "Direct the scene visually before drafting the spoken exchange: one viewer question, one visible contrast, then its explanation. "
@@ -158,6 +162,30 @@ def award_context_prompt(project):
 
 
 def story_beats(project, mode):
+    if project["data"].get("direction_policy"):
+        if mode == "overview":
+            return [
+                "Briefly name today's paper, then immediately reenact one concrete task with a visible input and a surprising possible answer. Let the viewer predict what happens. Explain the first unfamiliar term through this task, not a definition dump or results table.",
+                "Show why the usual approach is awkward using the SAME task. Explain one necessary distinction and the relevant earlier attempts; retain learned knowledge versus disposable data, or stored information versus performing a rule, as appropriate to the source.",
+                "Reveal the paper's idea by changing one visible part of that example. Name the operation and causally explain how the expected answer changes.",
+                "Run the example from input through the steps to its outcome. Aiden makes one understandable prediction, Maya corrects it with the picture. Mark invented values/answers as illustrative rather than measured results.",
+                "Read one representative original experiment after explaining the task, metric and comparison. Explain tested conditions and what the outcome can and cannot establish. It is an observed result, not a universal ceiling or guarantee.",
+                "Answer the opening question, give the practical takeaway and one limitation. Revisit the actual opening joke and finish warmly. "
+                + CLOSING_BRIEF,
+            ]
+        return [
+            "Briefly orient a viewer who did not watch the overview. Start from the same concrete task with a new question about how it works; use a short recap, then move into the actual mechanism rather than repeating history or reading a leaderboard.",
+            "Explain the actual inputs, outputs and assumptions using the example. Define symbols or task terms only when they are needed and attach them to visible objects.",
+            "Walk through the central mathematical relation OR behavioral test protocol in concrete steps. If mathematical, explain every quantity before its source equation. If empirical, show learning/exposure, interference and the first test answer without inventing unnecessary equations.",
+            "Work a small controlled example from beginning to end. Draw each intermediate value or decision, let Aiden predict the result and correct the specific mistake.",
+            "Explain how the method is learned or how the experiment is constructed. Distinguish data, learned parameters, context, memory, and any controlled variables relevant to this paper.",
+            "Explain how the method is actually used or how answers are scored. Show expected versus illustrative mistaken answers. Distinguish a simplified teaching model from the paper's actual implementation/objective.",
+            "Explain one cost, scaling result, sensitivity test or evaluation-design tradeoff grounded in the source. Do not invent a formal scaling law for an empirical benchmark.",
+            "Read one original controlled result: dataset/task, tested systems, metric and comparison. Show a readable panel with axes and legend; do not present every benchmark as a shopping list.",
+            "Explain one ablation, subgroup, failure case or theoretical result and the conditions under which its explanation applies. Follow the example rather than swapping among unrelated metaphors.",
+            "Resolve the technical question, revisit the concrete example, and state the limits of the evidence. Aiden explains the idea in his own words, then close with the actual opening callback and goodbye. "
+            + CLOSING_BRIEF,
+        ]
     if mode == "overview" or is_lora(project):
         return BEATS[mode]
     return [
@@ -210,6 +238,7 @@ def create(paper_id, *, profile=None, modes=None):
                 "modes": {},
                 "storyboard_policy": "visual-before-dialogue-3-purposeful-pictures",
                 "picture_policy": story_pictures.VERSION,
+                "direction_policy": story_direction.VERSION,
                 "math_concept_policy": math_concepts.VERSION,
             }
             # Reuse source reading, never the earlier dialogue or recordings.
@@ -276,6 +305,9 @@ def create(paper_id, *, profile=None, modes=None):
             )
         jid = db.queue_job(conn, "video_project", ident, priority=10)
     db.event("video_project", {"id": ident})
+    from . import video_review
+
+    video_review.request(ident)
     return {"project_id": ident, "job_id": jid}
 
 
@@ -466,12 +498,14 @@ def get(ident):
     return project
 
 
-def ask(project, runtime, task, prompt, *, max_tokens=5500, images=None):
+def ask(
+    project, runtime, task, prompt, *, max_tokens=5500, images=None, thinking=False
+):
     result = runtime.ask(
         prompt,
         system=SYSTEM,
         profile=project["data"]["model"],
-        thinking=False,
+        thinking=thinking,
         max_tokens=max_tokens,
         **({"images": images} if images else {}),
     )
@@ -486,10 +520,24 @@ def ask(project, runtime, task, prompt, *, max_tokens=5500, images=None):
 
 
 def bounded(
-    project, runtime, key, prompt, validate, fallback, *, max_tokens=5500, images=None
+    project,
+    runtime,
+    key,
+    prompt,
+    validate,
+    fallback,
+    *,
+    max_tokens=5500,
+    images=None,
+    thinking=False,
 ):
     """A malformed local-model response gets three repair attempts, then a recorded fallback."""
     state = project["data"]["repairs"].setdefault(key, {"attempts": 0})
+    if key.startswith("plan:") and state.get("candidate") and state["attempts"]:
+        try:
+            return validate(state["candidate"])
+        except (ValueError, TypeError, KeyError):
+            pass
     if state["attempts"] >= 3:
         project["data"]["warnings"].append(
             {"unit": key, "reason": state.get("error"), "action": "bounded fallback"}
@@ -503,6 +551,7 @@ def bounded(
             prompt + "\nPREVIOUS ISSUE: " + state.get("error", ""),
             max_tokens=max_tokens,
             images=images,
+            thinking=thinking,
         )
 
         # A later tiny/incomplete object must not erase an earlier usable draft.
@@ -1177,7 +1226,104 @@ def materialize_scene(project, mode, index):
     return chapter
 
 
+def _sequence_script_prompt(project, mode, scene, index):
+    """Give the writer source evidence and the approved pictures, not repair logs.
+
+    Repeating the entire saved scene (including previous reviews and previews)
+    alongside its storyboard exhausted the local model's context with images.
+    """
+    track = project["data"]["modes"][mode]
+    board = scene.get("storyboard", {})
+    board_context = {
+        k: board[k]
+        for k in ("question", "takeaway", "humor", "shots", "beats")
+        if k in board
+    }
+    original_ids = {
+        s["visual"].get("original_asset_id") for s in board.get("shots", [])
+    }
+    return (
+        f"Write scene {index + 1} of ONE continuous {mode} film about {project['data']['paper_title']}. "
+        + story_direction.BRIEF
+        + story_direction.SCOPE_BRIEF
+        + "Maya (guide) explains; Aiden (host) predicts, questions and sometimes makes a plausible mistake. Correct that exact mistake, with light wit tied to the visible task. "
+        "Use natural, varied conversational English. No empty agreement or unrelated metaphors. Do not merely recite the source notes. "
+        "Each paragraph is at most 135 words for local speech synthesis. Use meaningful exchanges, with no fixed total duration. "
+        "Use ONLY supplied evidence for factual claims; the speakers did not perform the study. Name teaching adaptations as examples, and expected responses as expected, not as measured model outputs. "
+        "Explain the concrete task's objects, inputs and choices in ordinary words BEFORE technical terminology. For behavioral probes, performing a new action tests application; repeating the rule tests recall. "
+        "Do not read punctuation, file paths or long identifiers aloud; point to the visible values and explain their roles in ordinary words. "
+        + (
+            OPENING_BRIEF
+            if index == 0
+            else "Continue from the previous exchange without another introduction. "
+        )
+        + (
+            CLOSING_BRIEF
+            if index == len(track["scenes"]) - 1
+            else "Do not give the film's conclusions or a farewell in this scene. "
+        )
+        + (
+            "Overview: no equations or spoken algebra. "
+            if mode == "overview"
+            else "Explain any notation using the concrete quantities BEFORE the displayed formula. Do not invent equations for a behavioral protocol. "
+        )
+        + "Write to the APPROVED SHOTS. Each paragraph supplies visual_beat (an integer index into beats); use every shot, with the concrete case first. "
+        "Optional visual_cues:[{phrase:exact spoken phrase,beat:integer}] can advance a step within a paragraph. Match the visible detail and spoken words. "
+        'Return {"summary":"new insight added by this scene","utterances":[{"speaker":"host|guide","text":"spoken paragraph","kind":"paper|background|example|question|humor","source_ids":["supplied ID"],"visual_beat":0}]}.\n'
+        + "SCENE: "
+        + db.dumps(
+            {
+                k: scene[k]
+                for k in ("title", "focus", "beat_goal", "learning")
+                if k in scene
+            }
+        )
+        + "\nAPPROVED SHOTS: "
+        + db.dumps(board_context)
+        + "\nPREVIOUS KNOWLEDGE: "
+        + db.dumps(story_direction.earlier_terms(track, index))
+        + "\nSTORY ORDER: "
+        + db.dumps(
+            [{k: s[k] for k in ("title", "focus") if k in s} for s in track["scenes"]]
+        )
+        + "\nPREVIOUS EXCHANGE: "
+        + db.dumps(
+            [
+                {k: u[k] for k in ("speaker", "text")}
+                for u in (
+                    track["scenes"][index - 1].get("utterances", [])[-2:]
+                    if index
+                    else []
+                )
+            ]
+        )
+        + (
+            "\nOPENING CALLBACK: "
+            + db.dumps(
+                [
+                    {k: u[k] for k in ("speaker", "text")}
+                    for u in track["scenes"][0].get("utterances", [])[:4]
+                ]
+            )
+            if index == len(track["scenes"]) - 1
+            else ""
+        )
+        + "\nSOURCE TEXT: "
+        + db.dumps(context_for(project, scene))
+        + "\nPREVIOUS OBSERVED EDITING PROBLEMS: "
+        + db.dumps(scene.get("editorial_notes", []))
+        + "\nSELECTED ORIGINALS: "
+        + db.dumps(
+            [a for a in original_catalogue(project) if a["asset_id"] in original_ids]
+        )
+    )
+
+
 def _script_prompt(project, mode, scene, index):
+    if project["data"].get("direction_policy") and scene.get("storyboard", {}).get(
+        "shots"
+    ):
+        return _sequence_script_prompt(project, mode, scene, index)
     track = project["data"]["modes"][mode]
     preceding = [
         {
@@ -1192,6 +1338,14 @@ def _script_prompt(project, mode, scene, index):
         + CONTENT_BRIEF
         + VISUAL_DIRECTION_BRIEF
         + story_pictures.BRIEF
+        + (story_shots.BRIEF if project["data"].get("direction_policy") else "")
+        + (
+            story_direction.BRIEF
+            + story_direction.SCOPE_BRIEF
+            + story_direction.writing_context(track, scene, index)
+            if project["data"].get("direction_policy")
+            else ""
+        )
         + "Distinguish optimizer-update frequency, learning-rate step size, batch size and network capacity. Fewer updates do not automatically mean larger learning-rate steps. A larger network does not make the physical system heavier. A vehicle analogy is not experimental proof that a baseline is unstable or always inferior. "
         "Humor should reveal one actual misunderstanding or recall a concrete opening detail, not repeatedly attach unrelated funny analogies. Attribute results to tested tasks. "
         "When Aiden makes a wrong prediction, Maya must correct that particular prediction; do not say 'Exactly' and reinforce the mistake. Keep one concrete problem visible through the explanation. "
@@ -1299,6 +1453,34 @@ def _fallback_script(project, mode, scene, candidate):
                     "summary": scene["focus"],
                     "visual": candidate.get("visual", {}),
                 }
+    board = scene.get("storyboard", {})
+    if project["data"].get("direction_policy") and board.get("shots"):
+        # Keep the checked concrete case and visual progression, even when the
+        # writer is unavailable. Reading abstract evidence notes broke the hook.
+        turns = [
+            {
+                "speaker": "host",
+                "text": board["question"],
+                "kind": "question",
+                "source_ids": [],
+                "visual_beat": 0,
+            }
+        ]
+        for i, beat in enumerate(board["beats"]):
+            turns.append(
+                {
+                    "speaker": "guide",
+                    "text": "In this example, " + beat["notice"],
+                    "kind": "example",
+                    "source_ids": [],
+                    "visual_beat": i,
+                }
+            )
+        return {
+            "summary": scene["focus"],
+            "utterances": turns,
+            "visual": board["visual"],
+        }
     claims = context_for(project, scene)["claims"]
     safe = (
         [c for c in claims if not re.search(r"[=∈ΔΣ∑]|\\", c["claim"])]
@@ -1438,19 +1620,28 @@ def duplicate_dialogue_flags(scene):
 
 
 def _review_scene(project, runtime, mode, scene, index, kind):
+    scientific = kind in {"content", "content_final"}
     reviews = scene.setdefault("reviews", {})
     record = reviews.setdefault(kind, {"attempts": 0, "history": []})
-    if kind == "content":
+    if scientific:
         if record.get("version") != SOURCE_REVIEW_VERSION:
             _recover_repaired_turns(project, mode, scene, index, record)
             record["version"] = SOURCE_REVIEW_VERSION
             record.pop("complete", None)
-    elif record.get("version") != EDITORIAL_REVIEW_VERSION:
+    elif record.get("version") != (
+        NOVICE_REVIEW_VERSION if kind == "novice" else EDITORIAL_REVIEW_VERSION
+    ):
         if record.get("attempts") or record.get("history"):
             record.setdefault("previous_versions", []).append(
                 {k: v for k, v in record.items() if k != "previous_versions"}
             )
-        record.update(version=EDITORIAL_REVIEW_VERSION, attempts=0, history=[])
+        record.update(
+            version=NOVICE_REVIEW_VERSION
+            if kind == "novice"
+            else EDITORIAL_REVIEW_VERSION,
+            attempts=0,
+            history=[],
+        )
         record.pop("complete", None)
     if record.get("complete"):
         return True
@@ -1463,7 +1654,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             "Do not turn a limitation of one representation into a claim that all earlier models fail. Distinguish an open surface from a hollow object whose boundary is closed; a visible hole or a thin blade alone does not establish non-manifold geometry. An open sheet can be a manifold with boundary; do not call every open surface non-manifold either. A cup with a thick wall can have a closed manifold boundary. Explain the source's closed/watertight requirement using open boundaries, not an incorrect topology definition. Use the source's qualified difficulty, not an invented impossibility. "
             "Check the actual supplied picture: a joke or analogy must not invent a failure of the baseline. Correct the causal explanation while preserving useful humor. "
             "Use the original caption to attribute pictured outputs; do not guess a baseline from a nearby plot legend or treat a joke's smooth-blob prediction as an observed result. "
-            if kind == "content"
+            if scientific
             else "Check the scene works as part of an entertaining documentary: new insight, a concrete example, clear transitions, natural C1 English, substantive questions and gentle witty humor. "
             "Flag repeated explanations within this scene and ideas already explained in earlier scenes; replace redundant recaps with a useful transition. "
             "Flag unexplained jumps or examples that do not actually illuminate the idea. Improve the explanation locally rather than trimming it to an arbitrary size. "
@@ -1536,6 +1727,60 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             else []
         )
     )
+    if kind == "novice":
+        prompt += (
+            "\n"
+            + story_direction.BRIEF
+            + story_direction.SCOPE_BRIEF
+            + story_direction.writing_context(
+                project["data"]["modes"][mode], scene, index
+            )
+        )
+        prompt += "\nYour task is comprehension, NOT copy-editing. Do not change a colloquial phrase into technical jargon, or add constraints, statistics or mechanisms merely for completeness. Act as a curious beginner hearing these lines IN ORDER. Explain what happened in the concrete example and answer the scene's question in your own words, naming the actual input and expected output. List any specialist word used before its meaning is explained. Do not assume knowledge from the source notes. If source/destination/parameter or another specialist word is used without an ordinary explanation, correct that paragraph. Return learner_explanation_en and unexplained_terms in addition to the issue schema. Correct locally where understanding breaks down; do not introduce an unverified causal explanation."
+        if index == 0:
+            prompt += " The first concrete task must be understandable BEFORE the sticky-note/other analogy or abstract definition. Aiden should make a prediction or ask a question, not lecture through the method. Replace a premature analogy with the named objects, what action is requested, and the reader's choice."
+    if kind == "editorial" and project["data"].get("direction_policy"):
+        prompt += "\nRemove semantic repetition, not merely repeated words. When two exchanges explain the same rule/test/takeaway, keep the clearest one and remove the redundant turn. For a deletion return {utterance_id:exact ID,action:remove,reason:specific duplication}; no replacement is needed. Preserve all concrete example steps and the actual hook/reveal. A later paper-page shot should supply evidence or a new question, not recite the entire example again. Do not make a longer scene merely to satisfy a duration target."
+    if project["data"].get("direction_policy"):
+        prompt += (
+            "\n"
+            + story_direction.SCOPE_BRIEF
+            + "\nFULL VISUAL SEQUENCE: "
+            + db.dumps(scene.get("storyboard", {}))
+            + "\nOBSERVED EDITING PROBLEMS TO ADDRESS: "
+            + db.dumps(scene.get("editorial_notes", []))
+        )
+    if kind == "novice":
+        # A simulated newcomer must not get the paper's answers as extra
+        # knowledge. Keep this schema prominent instead of appending it to a
+        # long scientific/editorial review with a competing output schema.
+        prompt = (
+            "You are a curious newcomer with no machine-learning training, listening to this English conversation IN ORDER. "
+            "Use only what the speakers actually explain, not your knowledge of the paper. Answer the viewer question in your own words with the actual input, rule and expected outcome. "
+            "Name any specialist word used before its ordinary meaning is clear. Explain where the listener loses the reasoning. "
+            "Propose only necessary local fixes to comprehension, not wording preferences, completeness or extra technical details. Never upgrade a colloquial expression to jargon. "
+            "Each replacement must be the full paragraph of that existing speaker, at most 135 words. Preserve its supplied source IDs; do not add scientific claims, statistics or mechanisms. "
+            "The visible copy/other task should be understandable before its analogy. Aiden should ask or predict rather than give a second lecture. "
+            'Return {"learner_explanation_en":"your concrete answer from the dialogue","unexplained_terms":["word lacking explanation"],"issues":[{"utterance_id":"exact supplied ID","reason":"where comprehension fails","replacement":"complete improved paragraph","source_ids":["unchanged supplied IDs"],"kind":"paper|background|example|question|humor"}],"visual_issues":[],"notes":"brief assessment"}. All keys are required even when issues is empty.\n'
+            + "VIEWER QUESTION: "
+            + scene.get("learning", {}).get("question_en", scene["focus"])
+            + "\nEARLIER SPOKEN SCENE SUMMARIES: "
+            + db.dumps(
+                [
+                    s.get("summary", "")
+                    for s in project["data"]["modes"][mode]["scenes"][:index]
+                ]
+            )
+            + "\nCONVERSATION: "
+            + db.dumps(
+                [
+                    {k: u[k] for k in ("id", "speaker", "text", "source_ids") if k in u}
+                    for u in scene["utterances"]
+                ]
+            )
+            + "\nVISIBLY EXPLAINED STEPS: "
+            + db.dumps(scene.get("storyboard", {}).get("beats", []))
+        )
     if record["attempts"] >= 3:
         # Retain revisions already made; remove precisely identified unresolved claims.
         last = record["history"][-1] if record["history"] else {}
@@ -1552,7 +1797,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
                     for u in scene["utterances"]
                 )
             }
-            if kind == "content"
+            if scientific
             else set()
         )
         removed = [u for u in scene["utterances"] if u["id"] in unresolved]
@@ -1576,6 +1821,21 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         )
         record.update(complete=True, status="best_effort", passed=False)
         return True
+    image_paths = scene.get(
+        "storyboard_review_images", scene.get("storyboard_preview", [])
+    )
+    if scene.get("storyboard", {}).get("shots"):
+        # All pictures were reviewed before writing. Recheck the relevant
+        # views, rather than rerun three CPU image encodings on every edit.
+        image_paths = (
+            image_paths[-1:]
+            if scientific
+            else image_paths[:2]
+            if kind == "novice"
+            else []
+        )
+    else:
+        image_paths = image_paths[: 2 if scene["visual"].get("concepts") else 1]
     try:
         result = ask(
             project,
@@ -1583,16 +1843,21 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             f"{mode}:{index}:{kind}",
             prompt,
             max_tokens=5500,
-            images=[
-                config.safe_path(path)
-                for path in scene.get(
-                    "storyboard_review_images", scene.get("storyboard_preview", [])
-                )[: 2 if scene["visual"].get("concepts") else 1]
-            ],
+            thinking=bool(project["data"].get("direction_policy"))
+            and kind in {"novice", "content_final"},
+            images=[config.safe_path(path) for path in image_paths],
         )
         issues = result.get("issues")
         if not isinstance(issues, list):
             raise ValueError("Reviewer did not return an issues list")
+        if kind == "novice" and (
+            not isinstance(result.get("learner_explanation_en"), str)
+            or not result["learner_explanation_en"].strip()
+            or not isinstance(result.get("unexplained_terms"), list)
+        ):
+            raise ValueError(
+                "Rehearse the beginner's actual answer and list unexplained terms, even when there are no corrections"
+            )
         record["attempts"] += 1
         record["history"].append(result)
         known = set(source_lookup(project))
@@ -1608,6 +1873,24 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             )
             if i is None:
                 raise ValueError("A correction must name an existing utterance ID")
+            if issue.get("action") == "remove" and kind == "editorial":
+                trial = scene["utterances"][:i] + scene["utterances"][i + 1 :]
+                if len(trial) < 2 or len({u["speaker"] for u in trial}) < 2:
+                    raise ValueError("Keep a substantive two-speaker explanation")
+                if scene.get("storyboard", {}).get("shots"):
+                    story_shots.bind(scene["storyboard"], trial, require=True)
+                previous = scene["utterances"].pop(i)
+                scene.setdefault("omissions", []).append(
+                    {
+                        "reason": "editorial repetition",
+                        "review_reason": issue.get("reason", ""),
+                        "utterance": previous,
+                    }
+                )
+                scene.pop("subtitles_ready", None)
+                scene.pop("clips_ready", None)
+                effective.append(issue)
+                continue
             u = scene["utterances"][i] | {
                 k: issue[k] for k in ("source_ids", "kind") if k in issue
             }
@@ -1785,6 +2068,10 @@ def _sources_step(project, runtime):
                 unit.update(attempts=unit["attempts"] + 1, error=str(exc)[:300])
             return
         data["originals_checked"] = True
+    if data.get("direction_policy") and not story_direction.source_example_step(
+        project, runtime
+    ):
+        return
     if not data["evidence"]:
         data["evidence"] = collect_evidence(project)
         if not data["evidence"]:
@@ -2220,6 +2507,17 @@ def validate_hooks(result):
 
 def _plan_step(project, runtime):
     data = project["data"]
+    overview = data["modes"].get("overview")
+    if (
+        data.get("direction_policy")
+        and overview
+        and overview.get("outline")
+        and not overview.get("intro_prepared")
+    ):
+        # Keep the full narrative plan, so this opening never gets a false
+        # farewell; only the first scene is advanced before the second outline.
+        _script_step(project, runtime, "overview")
+        return
     if not data.get("exact_equations_attached"):
         attach_equation_sources(project)
         data["exact_equations_attached"] = True
@@ -2238,10 +2536,12 @@ def _plan_step(project, runtime):
             + (
                 "NO equations. Structure: short topic introduction leading into a surprising practical hook, historical problem, prior attempts and their tradeoffs, the new idea, concrete example, evidence and limits, payoff. "
                 if mode == "overview"
+                else "Do not retell the historical overview. Explain the paper's actual formalism or test protocol in depth: concrete prerequisites, meaningful source equations when relevant, a worked example, controlled evidence and limits. "
+                if data.get("direction_policy")
                 else "Do not retell the historical overview. Brief intuition, prerequisites explained visually, the central equations term by term, a hypothetical worked example, implications, controlled experiments, limitations and payoff. Include at least three mathematical teaching scenes. "
             )
             + OPENING_BRIEF
-            + "The overview must devote one scene to historical prior attempts and their remaining problem. The deep dive must explain actual formulas, not merely list topics. "
+            + "Explain relevant prior attempts and their remaining problem. In the deep dive, explain actual formulas if the paper uses them; for a behavioral benchmark explain its protocol and scoring concretely. "
             "Preserve scientific distinctions: fewer trainable parameters is NOT fewer training examples; training-memory savings do NOT remove the base-model memory; comparable scores on tested tasks are NOT a universal quality guarantee. "
             "Create THREE different hook/title/thumbnail approaches. Avoid numeric promises in titles and hooks; explain qualified numbers only in the relevant evidence scene. Select the best by how accurately it promises a specific interesting insight. "
             "Titles should invite curiosity and indicate bilingual English learning; avoid hype unsupported by the evidence. "
@@ -2256,7 +2556,19 @@ def _plan_step(project, runtime):
             + json.dumps(plan_evidence(project, mode))
             + "\nAVAILABLE CHECKED ORIGINAL FIGURES (both films): "
             + json.dumps(original_catalogue(project))
+            + "\nACTUAL SOURCE EXAMPLES (use a concrete action/probe, not a question asking the model to recall a rule): "
+            + json.dumps(data.get("source_examples", []))
         )
+
+        if data.get("direction_policy"):
+            prompt += (
+                "\n"
+                + story_direction.BRIEF
+                + story_direction.SCOPE_BRIEF
+                + "\nEvery scene supplies "
+                + story_direction.SCHEMA
+                + '. INSIDE the learning object put "example_steps":[{en:short heading,ja:heading,detail_en:actual input or rule or expected answer (<=150 chars),detail_ja:actual content (<=100 chars),icon:file|folder|chat|rule|model|memory|robot|number}] with 2-6 steps. Clearly label expected or hypothetical answers as such; do not describe them as observed model results. Keep required terms in needs only if introduced earlier. Opening visuals must show the specific task before its scores.'
+            )
 
         def valid(r):
             scenes = r.get("scenes", [])
@@ -2266,6 +2578,7 @@ def _plan_step(project, runtime):
                 raise ValueError(
                     f"Need exactly {preset['scenes']} scenes following the supplied beats, and three hook candidates"
                 )
+            explained = []
             for s in scenes:
                 if (
                     not s.get("title")
@@ -2282,8 +2595,15 @@ def _plan_step(project, runtime):
                     "matrix",
                 }:
                     s["visual_type"] = "flow"
+                if data.get("direction_policy"):
+                    story_direction.ensure_fallback_contract(s)
+                    story_direction.validate_learning(s, explained)
+                    explained.extend(
+                        t["term"] for t in s["learning"].get("introduces", [])
+                    )
             if (
                 mode == "deep_dive"
+                and not data.get("direction_policy")
                 and sum(s.get("visual_type") in {"equation", "matrix"} for s in scenes)
                 < 3
             ):
@@ -2298,7 +2618,7 @@ def _plan_step(project, runtime):
             prompt,
             valid,
             lambda r: _usable_plan(r, project, mode),
-            max_tokens=6500,
+            max_tokens=12000 if data.get("direction_policy") else 6500,
         )
         if result is None:
             return
@@ -2306,6 +2626,8 @@ def _plan_step(project, runtime):
         track["scenes"] = result["scenes"]
         # Narrative beats keep the story coherent; their lengths depend on the idea.
         for i, s in enumerate(track["scenes"]):
+            if data.get("direction_policy"):
+                story_direction.ensure_fallback_contract(s)
             s.pop("word_budget", None)
             s["beat_goal"] = story_beats(project, mode)[i]
             if mode == "overview" and s.get("visual_type") in {"matrix", "equation"}:
@@ -2610,7 +2932,17 @@ def fallback_hooks(project, mode):
 
 
 def _script_step(project, runtime, mode):
+    from . import story_video
+
     track = project["data"]["modes"][mode]
+    if (
+        project["data"].get("direction_policy")
+        and track.get("scenes")
+        and track["scenes"][0].get("visual_ready")
+        and not track.get("intro_prepared")
+    ):
+        _intro_preview_step(project, runtime, mode)
+        return
     for index, scene in enumerate(track["scenes"]):
         if (
             "utterances" not in scene
@@ -2673,13 +3005,16 @@ def _script_step(project, runtime, mode):
                     for path in scene.get(
                         "storyboard_review_images", scene.get("storyboard_preview", [])
                     )[
-                        : 2
+                        : 3
+                        if scene.get("storyboard", {}).get("shots")
+                        else 2
                         if scene.get("storyboard", {}).get("visual", {}).get("concepts")
                         else 1
                     ]
                 ],
             )
             if result is not None:
+                scene.pop("structural_edit_done", None)
                 scene.update(
                     {k: result.get(k) for k in ("utterances", "summary", "visual")}
                 )
@@ -2691,8 +3026,19 @@ def _script_step(project, runtime, mode):
                 for u in scene["utterances"]:
                     u["id"] = db.uid()
             return
+        if (
+            project["data"].get("direction_policy")
+            and scene.get("storyboard", {}).get("shots")
+            and not scene.get("structural_edit_done")
+        ):
+            _sequence_edit_step(project, runtime, mode, scene, index)
+            return
         normalize_lora_conventions(project, scene)
-        for kind in ("content", "editorial"):
+        for kind in (
+            ("content", "novice", "editorial", "content_final")
+            if project["data"].get("direction_policy")
+            else ("content", "editorial")
+        ):
             if not _review_scene(project, runtime, mode, scene, index, kind):
                 return
         normalize_lora_conventions(project, scene)
@@ -2709,6 +3055,41 @@ def _script_step(project, runtime, mode):
                         "Review: " + db.dumps(scene["visual_repair_issues"])
                     )
             except (ValueError, TypeError) as exc:
+                if project["data"].get("direction_policy") and scene.get(
+                    "storyboard", {}
+                ).get("shots"):
+                    # Re-plan the picture AND its words once, rather than repair
+                    # only a primary visual while leaving the real sequence stale.
+                    if not scene.get("sequence_content_repair"):
+                        from . import storyboards
+
+                        scene["sequence_content_repair"] = True
+                        scene.setdefault("picture_repair_history", []).append(
+                            {
+                                "visual": scene["visual"],
+                                "utterances": scene["utterances"],
+                                "reason": str(exc),
+                            }
+                        )
+                        scene["storyboard"] = storyboards.fallback(project, scene)
+                        scene["visual"] = scene["storyboard"]["visual"]
+                        scene["script_revision"] = scene.get("script_revision", 0) + 1
+                        scene.pop("utterances", None)
+                        scene.pop("reviews", None)
+                        scene.pop("visual_repair_issues", None)
+                        return
+                    scene.pop("visual_repair_issues", None)
+                    project["data"]["warnings"].append(
+                        {
+                            "unit": f"sequence:{mode}:{index}",
+                            "reason": str(exc),
+                            "action": "Keep the bounded, concrete source-supported sequence",
+                        }
+                    )
+                    story_video.render_scene(project, mode, index)
+                    scene["visual_ready"] = True
+                    materialize_scene(project, mode, index)
+                    return
                 result = bounded(
                     project,
                     runtime,
@@ -2773,10 +3154,20 @@ def _script_step(project, runtime, mode):
                     scene["storyboard_ready"] = True
                     return
                 scene["visual"] = story_pictures.teaching_spec(scene, project)
+                # The sequence renderer otherwise ignores the replacement
+                # visual and delegates straight back to the failed shots.
+                scene.pop("storyboard", None)
                 # A simplified diagram has no source panels. Stale zoom IDs
                 # would make the fallback fail again and strand the job.
                 for u in scene["utterances"]:
                     u.pop("visual_focus_region", None)
+                    u.pop("visual_cues", None)
+                    u.pop("visual_events", None)
+                    focus = u.get("visual_focus", 0)
+                    u["visual_focus"] = min(
+                        max(0, focus if type(focus) is int else 0),
+                        len(scene["visual"]["nodes"]) - 1,
+                    )
                 story_video.render_scene(project, mode, index)
             scene["visual_ready"] = True
             materialize_scene(project, mode, index)
@@ -2804,6 +3195,154 @@ def _script_step(project, runtime, mode):
             }
         )
     track["phase"] = "tts"
+
+
+def _sequence_edit_step(project, runtime, mode, scene, index):
+    """Restructure a draft before proofreading locks in repeated explanations."""
+    if any(u.get("audio") for u in scene["utterances"]):
+        scene["structural_edit_done"] = True
+        return
+    known = set(source_lookup(project))
+    candidates = {f"U{i + 1}": u for i, u in enumerate(scene["utterances"])}
+
+    def valid(result):
+        kept = result.get("keep")
+        if (
+            not isinstance(kept, list)
+            or any(not isinstance(k, str) or k not in candidates for k in kept)
+            or len(set(kept)) != len(kept)
+        ):
+            raise ValueError(
+                "Select existing U IDs once each, in the intended spoken order"
+            )
+        result["utterances"] = [copy.deepcopy(candidates[k]) for k in kept]
+        for edit in result.get("replacements", []):
+            if edit.get("id") not in kept:
+                raise ValueError("Only edit a retained paragraph")
+            u = result["utterances"][kept.index(edit["id"])]
+            u.update(
+                {
+                    k: edit[k]
+                    for k in (
+                        "text",
+                        "kind",
+                        "source_ids",
+                        "visual_beat",
+                        "visual_cues",
+                    )
+                    if k in edit
+                }
+            )
+        resolve_claim_references(result, project)
+        result["utterances"] = validate_script(result, mode, known)
+        if (
+            len(result["utterances"]) < 2
+            or len({u["speaker"] for u in result["utterances"]}) < 2
+        ):
+            raise ValueError(
+                "Keep a meaningful question/prediction and explanation between the two speakers"
+            )
+        story_shots.bind(scene["storyboard"], result["utterances"], require=True)
+        return result
+
+    original = [
+        {
+            k: u[k]
+            for k in (
+                "speaker",
+                "text",
+                "kind",
+                "source_ids",
+                "visual_beat",
+                "visual_cues",
+            )
+            if k in u
+        }
+        | {"id": key}
+        for key, u in candidates.items()
+    ]
+    result = bounded(
+        project,
+        runtime,
+        f"structure-select:{mode}:{index}:{scene.get('script_revision', 0)}",
+        "Edit this documentary conversation by SELECTING which paragraphs to keep. Remove semantic repetition instead of paraphrasing every paragraph. There is no fixed film duration. "
+        "Show a concrete input, what the rule does to that input, a plausible prediction, then its answer. Explain the task BEFORE an analogy or technical name. "
+        "Let Maya explain the actual procedure; Aiden asks or predicts instead of narrating the procedure himself. Each exchange adds a distinction; do not recap the rule, three phases or takeaways multiple times. "
+        "Retain useful dry humor, but choose one analogy, explain its boundary briefly, and do not keep comparing the same thing to doors, sticky notes and muscles. "
+        "Speak in everyday descriptions of the visible file/object/value rather than spelling code punctuation or lengthy paths. "
+        "The original figure is evidence for this case; referring to it must not restart the entire example. Preserve the substantive reasoning and all concrete step beats. Keep both speakers. "
+        "If deleting a paragraph breaks the explanation, merge its NEW fact into a retained paragraph via replacements, using that speaker's voice. Preserve evidence IDs, or copy supplied source IDs for a necessary correction. "
+        "Use only supplied evidence. Expected task answers are not observed model responses. Behavior does not reveal subjective consciousness or an internal mechanism. "
+        'Return {"keep":["U1","other retained U IDs in order"],"replacements":[{"id":"retained U ID","text":"complete improved paragraph","source_ids":["supplied IDs"],"visual_beat":0}],"summary":"what new insight this scene adds","editing_notes":"which duplicated ideas were removed"}. Do NOT return all paragraphs in an utterances array.\n'
+        + (
+            OPENING_BRIEF
+            if index == 0
+            else "Continue the preceding film, without a new welcome. "
+        )
+        + (
+            CLOSING_BRIEF
+            if index == len(project["data"]["modes"][mode]["scenes"]) - 1
+            else "Do not add a farewell. "
+        )
+        + "\nLEARNING CONTRACT: "
+        + db.dumps(scene.get("learning", {}))
+        + "\nACTUAL PICTURE BEATS: "
+        + db.dumps(scene["storyboard"])
+        + "\nSOURCE TEXT: "
+        + db.dumps(context_for(project, scene))
+        + "\nOBSERVED PROBLEMS: "
+        + db.dumps(scene.get("editorial_notes", []))
+        + "\nDRAFT: "
+        + db.dumps(original),
+        valid,
+        lambda _: {
+            "utterances": copy.deepcopy(scene["utterances"]),
+            "summary": scene.get("summary", scene["focus"]),
+        },
+        max_tokens=5500,
+        thinking=True,
+    )
+    if result is None:
+        return
+    scene.setdefault("editing_history", []).append(
+        {
+            "version": "scene-structure-select-3",
+            "editing_notes": result.get("editing_notes", ""),
+            "utterances": scene["utterances"],
+            "reviews": scene.get("reviews", {}),
+        }
+    )
+    scene["utterances"] = result["utterances"]
+    for u in scene["utterances"]:
+        u["id"] = db.uid()
+    scene["summary"] = result.get("summary", scene["focus"])
+    scene.pop("reviews", None)
+    scene["structural_edit_done"] = True
+
+
+def _intro_preview_step(project, runtime, mode):
+    """Produce a reviewable opening before spending hours on the remaining film."""
+    from . import story_video
+
+    track = project["data"]["modes"][mode]
+    intro = track["scenes"][0]
+    mini = dict(track)
+    mini["scenes"] = [intro]
+    mini["phase"] = track.get("intro_phase", "tts")
+    facade = dict(project)
+    facade["data"] = dict(project["data"])
+    facade["data"]["modes"] = {mode: mini}
+    if mini["phase"] == "tts":
+        _tts_step(facade, runtime, mode)
+    elif mini["phase"] == "align":
+        _align_step(facade, runtime, mode)
+    track["intro_phase"] = mini["phase"]
+    if mini.get("preview_id"):
+        track["preview_id"] = mini["preview_id"]
+        track["intro_prepared"] = True
+    elif mini["phase"] == "learning":
+        track["preview_id"] = story_video.enqueue(facade, mode, preview=True)
+        track["intro_prepared"] = True
 
 
 def _ensure_farewell(track):
@@ -3106,10 +3645,26 @@ def _subtitle_step(project, runtime, mode, index):
         runtime,
         key,
         "Translate this natural C1 conversation into fluent Japanese subtitles. Preserve negation, uncertainty, jokes, experimental conditions and all quantities. Do not simplify or omit clauses. "
+        "Use natural Japanese rather than literal English word order or awkward translated metaphors. Keep technical roles and terms consistent with the displayed bilingual labels. "
         'Return {"items":[{"id":"supplied ID","japanese":"日本語字幕"}]}.\n'
         + json.dumps(pending)
         + "\nCONVERSATION CONTEXT: "
-        + json.dumps([u["text"] for u in scene["utterances"]]),
+        + json.dumps([u["text"] for u in scene["utterances"]])
+        + "\nDISPLAYED BILINGUAL TERMS: "
+        + db.dumps(
+            [
+                {"en": n["en"], "ja": n["ja"]}
+                for visual in (
+                    [
+                        shot["visual"]
+                        for shot in scene.get("storyboard", {}).get("shots", [])
+                    ]
+                    or [scene.get("visual", {})]
+                )
+                for node in visual.get("nodes", [])
+                for n in [node, *node.get("objects", [])]
+            ]
+        ),
         validate,
         # A missing translation cannot be fabricated; re-use valid items, otherwise report actual failure.
         lambda r: validate(r)
@@ -3163,6 +3718,10 @@ def _clips_step(project, mode, index):
                 )
                 if a < end - 0.001 and b > start + 0.001
             )
+            sentence_focus = u.get("visual_focus", 0)
+            for event in sorted(u.get("visual_events", []), key=lambda e: e["start"]):
+                if event["start"] < end - 0.001:
+                    sentence_focus = event["focus"]
             turns.append(
                 {
                     "id": ident,
@@ -3181,7 +3740,7 @@ def _clips_step(project, mode, index):
                     "visual": {
                         "key": scene.get("focus_assets", [{"key": "scene"}])[
                             min(
-                                u.get("visual_focus", 0),
+                                sentence_focus,
                                 len(scene.get("focus_assets", [{}])) - 1,
                             )
                         ]["key"],
@@ -3466,6 +4025,19 @@ def step(job, runtime):
             else "Designing two stories and three opening approaches"
         )
         progress = 0.08
+        opening = data["modes"].get("overview", {})
+        if (
+            data.get("direction_policy")
+            and opening.get("outline")
+            and not opening.get("intro_prepared")
+        ):
+            stage = {
+                "tts": "Opening preview · making the conversation audio",
+                "align": "Opening preview · checking speech and Japanese subtitles",
+            }.get(
+                opening.get("intro_phase"),
+                "Opening preview · preparing and editing the concrete example",
+            )
     elif phase == "production":
         mode = data["current_mode"]
         track = data["modes"][mode]

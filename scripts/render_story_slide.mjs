@@ -4,7 +4,7 @@ import path from "node:path";
 import { chromium } from "../frontend/node_modules/playwright-core/index.mjs";
 import katex from "../frontend/node_modules/katex/dist/katex.mjs";
 import {renderMathConcept, mathConceptCSS} from "./math_concept_diagrams.mjs";
-import {renderStoryPicture, storyPictureCSS} from "./story_picture_templates.mjs";
+import {renderStoryPicture, storyPictureCSS, workedStepCSS, workedObjectsCSS} from "./story_picture_templates.mjs";
 
 const [input, output] = process.argv.slice(2);
 const scene = JSON.parse(await fs.readFile(input, "utf8"));
@@ -93,7 +93,7 @@ const content = scene.thumbnail
     <main id="diagram"><div class="badge">${spec.template ? "Concept sketch · 模式図" : spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
     ${showOriginal ? original : conceptMath || pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
     <div class="caption"><div>${esc(spec.caption_en)}</div><div lang="ja">${esc(spec.caption_ja)}</div></div></main>`;
-const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}${storyPictureCSS}
+const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}${storyPictureCSS}${workedStepCSS}${workedObjectsCSS}
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
 body{font-family:"Noto Sans CJK JP","Noto Sans",sans-serif;color:#edf4ef;background:#102d2c}
 header{height:144px;padding:22px 70px;background:#143b37;display:flex;align-items:center;justify-content:space-between;gap:30px}
@@ -142,7 +142,9 @@ try {
     const width=img.naturalWidth*scale,height=img.naturalHeight*scale;
     const croppedWidth=width*(right-left),croppedHeight=height*(bottom-top);
     Object.assign(box.style,{width:croppedWidth+'px',height:croppedHeight+'px',left:100+(availableWidth-croppedWidth)/2+'px',top:60+(455-croppedHeight)/2+'px'});
-    Object.assign(img.style,{width:width+'px',height:height+'px',left:-width*left+'px',top:-height*top+'px',objectFit:'fill'});
+    // A zoom can make the ORIGINAL image wider/taller than the viewport.
+    // Global image maxima must not squash it after the crop transform.
+    Object.assign(img.style,{width:width+'px',height:height+'px',maxWidth:'none',maxHeight:'none',left:-width*left+'px',top:-height*top+'px',objectFit:'fill'});
     const overview=document.querySelector('.source-image img');await overview.decode();
     const highlight=document.querySelector('.source-highlight');
     Object.assign(highlight.style,{left:x*overview.clientWidth+'px',top:y*overview.clientHeight+'px',width:w*overview.clientWidth+'px',height:h*overview.clientHeight+'px'});
@@ -185,6 +187,13 @@ try {
     for(const panel of document.querySelectorAll('.picture-panel'))if(panel.querySelector('p').getBoundingClientRect().bottom>panel.getBoundingClientRect().bottom-8)problems.push('Picture label outside its panel');
     const concept=document.querySelector('.math-concept');
     const picture=document.querySelector('.semantic-picture');
+    const worked=document.querySelector('.worked-example');
+    if(worked){
+      for(const e of worked.querySelectorAll('h2,h3,p,span,small'))if(e.scrollWidth>e.clientWidth+1)problems.push('Worked example text overflow');
+      if(caption&&worked.getBoundingClientRect().bottom>caption.top-4)problems.push('Worked example overlaps caption');
+      if(caption&&worked.lastElementChild.getBoundingClientRect().bottom>caption.top-4)problems.push('Worked progress overlaps caption');
+      const active=worked.querySelector('.worked-active');if([...active.children].some(e=>e.getBoundingClientRect().bottom>active.getBoundingClientRect().bottom+1))problems.push('Worked example details overflow');
+    }
     if(picture){
       for(const e of picture.querySelectorAll('h2,p'))if(e.scrollWidth>e.clientWidth+1)problems.push('Semantic label overflow');
       if(caption&&picture.getBoundingClientRect().bottom>caption.top-4)problems.push('Semantic picture overlaps caption');

@@ -260,10 +260,14 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
 
 def test_review_request_and_status_api(client):
     p = project()
-    assert client.get(f"/api/video-projects/{p['id']}/reviews").json() is None
+    automatic = client.get(f"/api/video-projects/{p['id']}/reviews").json()
+    assert automatic["state"] == "waiting"
     response = client.post(f"/api/video-projects/{p['id']}/reviews")
     assert response.status_code == 200
     report = client.get(f"/api/video-projects/{p['id']}/reviews").json()
+    assert (
+        report["id"] == automatic["id"]
+    )  # explicit request reuses the automatic review
     assert report["state"] == "waiting"
     assert (
         client.get(f"/api/video-projects/{p['id']}").json()["review"]["id"]

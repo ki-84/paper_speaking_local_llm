@@ -13,6 +13,14 @@ TEMPLATES = set(story_pictures.TEMPLATES)
 
 
 def validate(board, project, mode, scene=None):
+    if isinstance(board, dict) and board.get("shots"):
+        from . import story_shots
+
+        return story_shots.validate(board, project, mode, scene)
+    if scene is not None and project.get("data", {}).get("direction_policy"):
+        raise ValueError(
+            "The new scene needs shots with concrete examples and meaningful visual beats"
+        )
     if not isinstance(board, dict) or any(
         not isinstance(board.get(k), str) or not board[k].strip()
         for k in ("question", "takeaway", "humor")
@@ -57,7 +65,13 @@ def validate(board, project, mode, scene=None):
     if spec["type"] == "original" and not original:
         raise ValueError("Original visuals require a checked source asset")
     beats = board.get("beats")
-    limit = 8 if spec.get("concepts") else 4
+    limit = (
+        8
+        if spec.get("concepts")
+        else 6
+        if spec.get("template") == "worked_steps"
+        else 4
+    )
     if not isinstance(beats, list) or not 1 <= len(beats) <= limit:
         raise ValueError("Plan a bounded sequence of visual beats")
     regions = {r["id"] for r in original.get("regions", [])} if original else set()
@@ -85,7 +99,7 @@ def validate(board, project, mode, scene=None):
     return board
 
 
-def fallback(project, scene):
+def _fallback_single(project, scene):
     candidate = scene.get("math_storyboard_candidate")
     if candidate:
         board = copy.deepcopy(candidate)
@@ -230,7 +244,43 @@ def fallback(project, scene):
     }
 
 
+def fallback(project, scene):
+    board = _fallback_single(project, scene)
+    if not project.get("data", {}).get("direction_policy"):
+        return board
+    steps = scene.get("learning", {}).get("example_steps", [])
+    if steps:
+        example = {
+            "type": "example",
+            "template": "worked_steps",
+            "nodes": steps,
+            "caption_en": scene["learning"]["takeaway_en"],
+            "caption_ja": scene["learning"]["takeaway_ja"],
+        }
+        from . import story_pictures
+
+        try:
+            story_pictures.validate(example, project)
+        except (ValueError, TypeError):
+            board["omitted_example"] = "The proposed example steps were not renderable"
+            return board
+        shots = [{"id": "example", "visual": example}]
+        beats = [
+            {"shot": "example", "focus": i, "notice": n["detail_en"]}
+            for i, n in enumerate(steps)
+        ]
+        if board["visual"].get("original_asset_id") or board["visual"].get("equations"):
+            shots.append({"id": "evidence", "visual": board["visual"]})
+            beats.extend(b | {"shot": "evidence"} for b in board["beats"])
+        board.update(shots=shots, beats=beats, visual=example)
+    return board
+
+
 def bind_dialogue(board, utterances, *, require_math_sequence=False):
+    if board.get("shots"):
+        from . import story_shots
+
+        return story_shots.bind(board, utterances, require=require_math_sequence)
     for utterance in utterances:
         index = utterance.get("visual_beat", 0)
         if not isinstance(index, int) or not 0 <= index < len(board["beats"]):
@@ -271,6 +321,10 @@ def bind_dialogue(board, utterances, *, require_math_sequence=False):
 def _preview(project, mode, index):
     scene = project["data"]["modes"][mode]["scenes"][index]
     board = scene["storyboard"]
+    if board.get("shots"):
+        from . import story_shots
+
+        return story_shots.preview(project, mode, index)
     preview = {
         "id": project["id"] + "-storyboard",
         "paper_id": project["paper_id"],
@@ -322,12 +376,14 @@ def _preview(project, mode, index):
 
 def review_images(scene):
     return scene.get("storyboard_review_images", scene.get("storyboard_preview", []))[
-        :2
+        : 3 if scene.get("storyboard", {}).get("shots") else 2
     ]
 
 
 def step(project, runtime, mode, index):
     scene = project["data"]["modes"][mode]["scenes"][index]
+    if project["data"].get("direction_policy"):
+        scene["opening_scene"] = index == 0
     state = scene.setdefault("storyboard_review", {"attempts": 0, "history": []})
     if state["attempts"] >= 3:
         scene["storyboard"] = fallback(project, scene)
@@ -384,6 +440,17 @@ def step(project, runtime, mode, index):
             + "\nPREVIOUS VISUAL ISSUE: "
             + str(state.get("error", ""))
         )
+        if project["data"].get("direction_policy"):
+            from . import story_direction, story_shots
+
+            prompt += (
+                "\n"
+                + story_direction.BRIEF
+                + story_shots.BRIEF
+                + "\nLEARNING CONTRACT: "
+                + db.dumps(scene.get("learning", {}))
+                + "\nUse shots and shot IDs on all beats. Keep visual as the first shot's visual for compatibility."
+            )
         board = story.bounded(
             project,
             runtime,
@@ -391,7 +458,7 @@ def step(project, runtime, mode, index):
             prompt,
             lambda r: validate(r, project, mode, scene),
             lambda _: fallback(project, scene),
-            max_tokens=2800,
+            max_tokens=4500 if project["data"].get("direction_policy") else 2800,
         )
         if board is not None:
             scene["storyboard"] = board
@@ -408,6 +475,8 @@ def step(project, runtime, mode, index):
             "Say what a viewer can visibly notice. Flag labels that do not help, misleading relationships, illegible text, or a caption/beat that describes something absent. "
             "The source figure may contain more detail than the overview discusses; a checked conceptual sketch can deliberately omit technical details. "
             "Do not ask for unnecessary completeness. Do not praise a picture just because its metadata sounds plausible. "
+            "A teaching adaptation may replace file names or unrelated distractions when clearly marked as an illustrative example; keep the test mechanism, and never claim those adapted details are the paper's exact experiment. "
+            "Distinguish the protocol's expected answer from a measured model response. An expected-pattern example must say expected/correct answer, not assert that a model produced it. "
             "For originals the nodes are guide labels; they need not be printed over the unmodified source image. Use the verified caption and source identity below; do not guess that a checked figure number or page is wrong from its appearance. "
             "Region names identify locations, not proof of camera angles or material-channel meanings. If the source does not establish a subimage's meaning, use a visible description rather than guessing it. "
             + (
@@ -454,6 +523,10 @@ def step(project, runtime, mode, index):
 
 def timed_cues(scene, utterance):
     """Resolve spoken anchor phrases against ASR words, never guessed durations."""
+    if scene.get("beat_render_map") and scene.get("storyboard", {}).get("shots"):
+        from . import story_shots
+
+        return story_shots.timed_cues(scene, utterance)
     stamps = utterance.get("audio_check", {}).get("timestamps", [])
     norm = lambda value: re.findall(r"[a-z0-9]+", value.lower())
     tokens = [

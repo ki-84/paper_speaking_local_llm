@@ -115,6 +115,7 @@ def trusted(url):
         "proceedings.mlr.press",
         "ieee-ras.org",
         "aclweb.org",
+        "aclanthology.org",
         "thecvf.com",
     )
     return any(host == root or host.endswith("." + root) for root in roots) or (

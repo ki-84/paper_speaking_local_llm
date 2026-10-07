@@ -12,7 +12,7 @@ import imageio_ffmpeg
 
 from . import config, db, math_concepts, publication, video, video_overlay
 
-VERSION = "story-film-8-purposeful-pictures"
+VERSION = "story-film-9-concrete-sequences"
 RELEASE_VERSION = "verified-video-packaging-1"
 
 
@@ -35,7 +35,16 @@ def contextual_region(region, regions):
         None,
     )
     if not legend:
-        return region
+        # A model's approximate plot box often omits the bottom axis/legend.
+        # Keep the complete ORIGINAL column; never guess missing labels.
+        x, _, width, _ = region["box"]
+        left, right = max(0, x - 0.045), min(1, x + width + 0.045)
+        return region | {
+            "box": [left, 0, right - left, 1],
+            "verified_region_ids": [region["id"]],
+            "label_en": "Plot with complete original labels",
+            "label_ja": "軸と凡例を含む原図のグラフ",
+        }
     boxes = [region["box"], legend["box"]]
     left, top = min(b[0] for b in boxes), min(b[1] for b in boxes)
     right, bottom = max(b[0] + b[2] for b in boxes), max(b[1] + b[3] for b in boxes)
@@ -58,6 +67,10 @@ def portable_title(title):
 def render_scene(project, mode, index):
     track = project["data"]["modes"][mode]
     scene = track["scenes"][index]
+    if scene.get("storyboard", {}).get("shots"):
+        from . import story_shots
+
+        return story_shots.render(project, mode, index)
     original = None
     if (
         scene["visual"].get("type") == "original" or scene["visual"].get("image_path")
@@ -114,6 +127,23 @@ def render_scene(project, mode, index):
                     (r for r in regions if "zoom" in r.get("label_en", "").lower()),
                     None,
                 )
+            if region:
+                if re.search(r"legend", region.get("label_en", ""), re.I) and re.search(
+                    r"\b(?:curve|line|plot|graph)s?\b", u["text"], re.I
+                ):
+                    # Naming a curve needs the curve, not a legend-only shot.
+                    region = next(
+                        (
+                            r
+                            for r in regions
+                            if re.search(
+                                r"\b(?:plot|graph|chart)s?\b",
+                                r.get("label_en", ""),
+                                re.I,
+                            )
+                        ),
+                        None,
+                    )
             if region:
                 region = contextual_region(region, regions)
                 if region not in zoom_regions:
@@ -358,6 +388,8 @@ def enqueue(project, mode, *, preview=False):
                 "storyboard": s.get("storyboard"),
                 "storyboard_review": s.get("storyboard_review"),
                 "omissions": s.get("omissions", []),
+                "render_steps": s.get("render_steps", []),
+                "beat_render_map": s.get("beat_render_map", {}),
             }
             for s in scenes
         ],
@@ -414,6 +446,7 @@ def silence_file(root, frames):
 
 def timeline(manifest, root):
     """Paragraph audio is continuous; captions use slices of that same WAV."""
+    from . import story_shots
     from .story import clip_audio
 
     speech, captions, starts, animations = [], [], [], []
@@ -452,7 +485,7 @@ def timeline(manifest, root):
             ]
             anticipated = set(seen_pictures)
             for target in requested:
-                phase = math_concepts.phase(scene["visual"], target)
+                phase = story_shots.phase(scene, target)
                 if phase == "intuition":
                     anticipated.add(scene["render_paths"][target])
                 elif phase == "symbols":

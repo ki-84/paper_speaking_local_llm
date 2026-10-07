@@ -140,7 +140,12 @@ def test_repeated_original_with_new_verified_panels_is_a_valid_continuation():
 
 
 @pytest.mark.parametrize(
-    "template", [t for t in story_pictures.TEMPLATES if t != "surface_cells"]
+    "template",
+    [
+        t
+        for t in story_pictures.TEMPLATES
+        if t != "surface_cells" and story_pictures.TEMPLATES[t] is not None
+    ],
 )
 def test_pictorial_templates_render_and_highlight_the_actual_picture_offline(
     database, template

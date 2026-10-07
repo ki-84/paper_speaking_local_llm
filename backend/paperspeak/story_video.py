@@ -385,6 +385,7 @@ def enqueue(project, mode, *, preview=False):
                 "utterances": s["utterances"],
                 "subtitle_items": s["subtitle_items"],
                 "reviews": s.get("reviews", {}),
+                "scope_review": s.get("scope_review"),
                 "storyboard": s.get("storyboard"),
                 "storyboard_review": s.get("storyboard_review"),
                 "omissions": s.get("omissions", []),

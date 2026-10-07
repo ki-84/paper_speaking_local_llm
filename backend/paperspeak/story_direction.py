@@ -191,3 +191,160 @@ def source_example_step(project, runtime):
             )
         data["source_example_index"] = index + 1
     return False
+
+
+def scope_review_step(project, runtime, mode, scene, index):
+    """Separate scientific inference checks from stylistic proofreading."""
+    import copy
+
+    from . import story
+
+    categories = {
+        "sample_vs_limit",
+        "chance_vs_average",
+        "measured_vs_expected",
+        "memory_systems",
+        "author_hypothesis",
+        "experiment_attribution",
+    }
+    original = copy.deepcopy(scene["utterances"])
+    ids = {u["id"] for u in original}
+
+    def validate(r):
+        checks = r.get("checks", [])
+        if {c.get("category") for c in checks} != categories:
+            raise ValueError(
+                "Explicitly check all six inference categories; use not_present when irrelevant"
+            )
+        if any(
+            c.get("status")
+            not in {"supported", "qualified", "unsupported", "not_present"}
+            for c in checks
+        ):
+            raise ValueError("State the evidence status of each inference")
+        issues = r.get("issues", [])
+        if not isinstance(issues, list):
+            raise ValueError("Return local replacements")
+        if any(c["status"] == "unsupported" for c in checks) and not issues:
+            raise ValueError(
+                "Fix the unsupported claim, rather than merely reporting it"
+            )
+        for issue in issues:
+            if issue.get("utterance_id") not in ids:
+                raise ValueError("Use an exact paragraph ID")
+            u = next(u for u in original if u["id"] == issue["utterance_id"])
+            replacement = u | {
+                "text": issue["replacement"],
+                "source_ids": issue.get("source_ids", u.get("source_ids", [])),
+            }
+            story.resolve_claim_references({"utterances": [replacement]}, project)
+            story.validate_script(
+                {"utterances": [replacement]}, mode, set(story.source_lookup(project))
+            )
+            issue["source_ids"] = replacement["source_ids"]
+        if r.get("visual_updates"):
+            board = copy.deepcopy(scene.get("storyboard", {}))
+            for update in r["visual_updates"]:
+                shot = next(s for s in board["shots"] if s["id"] == update["shot"])
+                spec = shot["visual"]
+                if "nodes" in update:
+                    spec["nodes"] = update["nodes"]
+                for field in ("caption_en", "caption_ja"):
+                    if field in update:
+                        spec[field] = update[field]
+            from . import storyboards
+
+            storyboards.validate(board, project, mode, scene)
+            r["checked_board"] = board
+        return r
+
+    result = story.bounded(
+        project,
+        runtime,
+        f"experiment-scope:{mode}:{index}:"
+        + story.video.digest([{k: u[k] for k in ("id", "text")} for u in original])[
+            :12
+        ],
+        "Audit SCIENTIFIC INFERENCE, not style. This is not an invitation to add technical detail. "
+        "For every category give supported/qualified/unsupported/not_present and a short reason. "
+        "sample_vs_limit: a maximum among 17 tested models is an observed result, not a hard ceiling on AI or future models. Scope statements to the tested tasks/models; five human participants are not all humans. "
+        "chance_vs_average: 55% accuracy is not evidence of random guessing without the task-specific chance baseline; different task categories have different answer spaces. "
+        "measured_vs_expected: a paper's illustrated expected-pattern example is not a measured response by an actual model. Label teaching examples as hypothetical/expected rather than observed results. "
+        "memory_systems: positive results for two tested agents and negative results for another are mixed outcomes, not proof that external memory never helps or is a dead end. "
+        "author_hypothesis: attribute the authors' architectural interpretation to them; the benchmark alone does not prove an architectural change is the only solution or measure consciousness, biological reflexes or internal weight changes. "
+        "experiment_attribution: Maya and Aiden explain the study; they did not conduct it. Replace 'we tested' with 'the authors tested' for reported experiments. "
+        "Read the WHOLE exchange. Keep a useful mistaken prediction or joke when Maya clearly corrects it. Correct unsupported conclusions precisely, preserving useful facts and humor. Each replacement is at most 135 spoken words. "
+        "Fix supplemental diagram labels/captions too when they assert the same unsupported conclusion; never change the original paper image. "
+        'Return {"checks":[{"category":"one of the six category names","status":"supported|qualified|unsupported|not_present","reason":"brief"}],"issues":[{"utterance_id":"exact ID","replacement":"full corrected paragraph","source_ids":["supplied IDs"]}],"visual_updates":[{"shot":"exact existing shot ID","nodes":["complete existing node objects with only incorrect text corrected"],"caption_en":"optional","caption_ja":"optional"}],"notes":"brief"}.\n'
+        + "DIALOGUE: "
+        + db.dumps(
+            [
+                {
+                    k: u[k]
+                    for k in (
+                        "id",
+                        "speaker",
+                        "text",
+                        "source_ids",
+                        "kind",
+                        "visual_cues",
+                    )
+                    if k in u
+                }
+                for u in original
+            ]
+        )
+        + "\nPRIMARY SOURCE: "
+        + db.dumps(story.context_for(project, scene))
+        + "\nCHECKED ILLUSTRATIVE SOURCE CASES: "
+        + db.dumps(project["data"].get("source_examples", []))
+        + "\nVISUAL PLAN: "
+        + db.dumps(scene.get("storyboard", {})),
+        validate,
+        lambda _: {
+            "checks": [],
+            "issues": [],
+            "notes": "Scope audit could not produce a valid correction after three attempts",
+            "fallback": True,
+        },
+        max_tokens=6500,
+        thinking=True,
+    )
+    if result is None:
+        return
+    changed = False
+    for issue in result["issues"]:
+        u = next(u for u in scene["utterances"] if u["id"] == issue["utterance_id"])
+        if u["text"] == issue["replacement"]:
+            continue
+        u.setdefault("text_history", []).append(
+            {"text": u["text"], "reason": "scientific inference scope"}
+        )
+        if u.get("audio"):
+            u.setdefault("audio_history", []).append(
+                {k: u[k] for k in ("audio", "duration", "tts_settings") if k in u}
+            )
+        u.update(text=issue["replacement"], source_ids=issue["source_ids"])
+        for field in (
+            "audio",
+            "duration",
+            "tts_settings",
+            "audio_check",
+            "aligned",
+            "sentence_ranges",
+            "caption_ranges",
+            "voice_candidates",
+            "audio_retries",
+            "tempo_applied",
+            "visual_events",
+        ):
+            u.pop(field, None)
+        changed = True
+    if changed:
+        scene.pop("subtitles_ready", None)
+        scene.pop("clips_ready", None)
+    if result.get("checked_board"):
+        scene["storyboard"] = result.pop("checked_board")
+        scene["visual"] = scene["storyboard"]["visual"]
+        scene.pop("visual_ready", None)
+    scene["scope_review"] = result | {"complete": True, "version": "experiment-scope-1"}

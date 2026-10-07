@@ -497,6 +497,7 @@ def test_second_renderer_failure_uses_the_replacement_not_stale_shots(
         "storyboard": b,
         "structural_edit_done": True,
         "renderer_dialogue_repair": True,
+        "scope_review": {"complete": True},
         "utterances": [
             {
                 "id": str(i),
@@ -568,3 +569,112 @@ def test_newcomer_only_gets_spoken_explanation_not_source_answers(
 
     story._review_scene(p, Learner(), "overview", scene, 0, "novice")
     assert scene["reviews"]["novice"]["passed"]
+
+
+def test_outline_review_keeps_prepared_preview_and_unwritten_learning_contract():
+    prepared = {
+        "title": "The task",
+        "focus": "Apply a rule",
+        "utterances": [
+            {
+                "id": "ready",
+                "text": "The folder comes first.",
+                "audio": "audio/reusable.wav",
+            }
+        ],
+        "visual_ready": True,
+        "learning": {"example_steps": steps()},
+    }
+    unwritten = {
+        "title": "Later",
+        "focus": "What scores mean",
+        "learning": {"example_steps": steps(), "needs": []},
+    }
+    track = {
+        "scenes": [prepared, unwritten],
+        "preview_id": "already-rendered",
+        "intro_prepared": True,
+    }
+    review = {
+        "scenes": [
+            {"title": "A new hook", "focus": "Try another hook"},
+            {"title": "Read the scores", "focus": "Only the tested setting"},
+        ]
+    }
+    story._install_reviewed_outline(track, review)
+    assert track["scenes"][0] is prepared
+    assert track["scenes"][0]["utterances"][0]["audio"] == "audio/reusable.wav"
+    assert track["scenes"][1]["learning"]["example_steps"] == steps()
+    assert track["scenes"][1]["title"] == "Read the scores"
+    assert track["preview_id"] == "already-rendered"
+
+
+def test_inference_audit_requires_explicit_categories_and_preserves_other_speech(
+    database,
+):
+    p = project()
+    scene = {
+        "title": "The scoreboard",
+        "focus": "Read the results",
+        "claim_ids": [],
+        "utterances": [
+            {
+                "id": "keep",
+                "speaker": "host",
+                "kind": "question",
+                "source_ids": [],
+                "text": "What does this score tell us?",
+                "audio": "audio/keep.wav",
+            },
+            {
+                "id": "fix",
+                "speaker": "guide",
+                "kind": "example",
+                "source_ids": [],
+                "text": "Fifty-five percent means the model is guessing.",
+                "audio": "audio/old.wav",
+                "aligned": True,
+            },
+        ],
+        "subtitles_ready": True,
+        "clips_ready": True,
+    }
+
+    class Audit:
+        def ask(self, prompt, **kwargs):
+            assert "task-specific chance baseline" in prompt
+            assert kwargs["thinking"]
+            cats = [
+                "sample_vs_limit",
+                "chance_vs_average",
+                "measured_vs_expected",
+                "memory_systems",
+                "author_hypothesis",
+                "experiment_attribution",
+            ]
+            return {
+                "checks": [
+                    {
+                        "category": c,
+                        "status": "unsupported"
+                        if c == "chance_vs_average"
+                        else "not_present",
+                    }
+                    for c in cats
+                ],
+                "issues": [
+                    {
+                        "utterance_id": "fix",
+                        "replacement": "The average describes these test results. We cannot call it random guessing without the task-specific chance baseline.",
+                        "source_ids": [],
+                    }
+                ],
+                "notes": "Avoid an unsupported interpretation",
+            }
+
+    story_direction.scope_review_step(p, Audit(), "overview", scene, 0)
+    assert scene["scope_review"]["complete"]
+    assert scene["utterances"][0]["audio"] == "audio/keep.wav"
+    assert "audio" not in scene["utterances"][1]
+    assert scene["utterances"][1]["audio_history"][0]["audio"] == "audio/old.wav"
+    assert not scene.get("subtitles_ready") and not scene.get("clips_ready")

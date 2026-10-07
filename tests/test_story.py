@@ -1133,6 +1133,7 @@ def test_simplified_visual_fallback_clears_stale_panel_cues_and_finishes(
     )
     s = scene_data(database)
     s["utterances"][0]["visual_focus_region"] = "missing-source-panel"
+    s["scope_review"] = {"complete": True}
     p["data"]["modes"]["overview"]["scenes"] = [s]
     monkeypatch.setattr(story, "_review_scene", lambda *_: True)
     story._script_step(p, object(), "overview")

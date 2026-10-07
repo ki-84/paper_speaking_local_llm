@@ -239,6 +239,7 @@ def create(paper_id, *, profile=None, modes=None):
                 "storyboard_policy": "visual-before-dialogue-3-purposeful-pictures",
                 "picture_policy": story_pictures.VERSION,
                 "direction_policy": story_direction.VERSION,
+                "scope_review_policy": "experiment-scope-1",
                 "math_concept_policy": math_concepts.VERSION,
             }
             # Reuse source reading, never the earlier dialogue or recordings.
@@ -1880,6 +1881,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
                 if scene.get("storyboard", {}).get("shots"):
                     story_shots.bind(scene["storyboard"], trial, require=True)
                 previous = scene["utterances"].pop(i)
+                scene.pop("scope_review", None)
                 scene.setdefault("omissions", []).append(
                     {
                         "reason": "editorial repetition",
@@ -1905,6 +1907,7 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             ):
                 effective.append(issue)
                 if not _same_text(previous["text"], u["text"]):
+                    scene.pop("scope_review", None)
                     if previous.get("audio"):
                         u.setdefault("audio_history", []).append(
                             {
@@ -2512,6 +2515,7 @@ def _plan_step(project, runtime):
         data.get("direction_policy")
         and overview
         and overview.get("outline")
+        and overview.get("plan_checked")
         and not overview.get("intro_prepared")
     ):
         # Keep the full narrative plan, so this opening never gets a false
@@ -2725,8 +2729,7 @@ def _plan_step(project, runtime):
             # The full scientific outline editor must not replace the separately checked hooks.
             r["hook_candidates"] = track["outline"]["hook_candidates"]
             r["selected_hook"] = track["outline"].get("selected_hook", 0)
-            track["outline"] = r
-            track["scenes"] = r["scenes"]
+            _install_reviewed_outline(track, r)
             for i, s in enumerate(track["scenes"]):
                 s.pop("word_budget", None)
                 s["beat_goal"] = story_beats(project, mode)[i]
@@ -2748,6 +2751,28 @@ def _plan_step(project, runtime):
             track["plan_checked"] = True
         return
     data.update(phase="production", current_mode=next(iter(data["modes"])))
+
+
+def _install_reviewed_outline(track, reviewed):
+    """Outline editing must retain learning contracts and prepared media."""
+    merged = []
+    for i, proposed in enumerate(reviewed["scenes"]):
+        prior = track.get("scenes", [])[i]
+        if prior.get("utterances") or prior.get("storyboard"):
+            # Generated material is an immutable production decision. A later
+            # outline edit is recorded rather than silently replacing it.
+            prior.setdefault("outline_edit_notes", []).append(
+                {k: proposed.get(k) for k in ("title", "focus", "claim_ids")}
+            )
+            merged.append(prior)
+        else:
+            scene = {**prior, **proposed}
+            if not proposed.get("learning") and prior.get("learning"):
+                scene["learning"] = prior["learning"]
+            merged.append(scene)
+    reviewed["scenes"] = merged
+    track["outline"] = reviewed
+    track["scenes"] = merged
 
 
 def _usable_plan(candidate, project, mode):
@@ -3042,6 +3067,11 @@ def _script_step(project, runtime, mode):
             if not _review_scene(project, runtime, mode, scene, index, kind):
                 return
         normalize_lora_conventions(project, scene)
+        if project["data"].get("scope_review_policy") and not scene.get(
+            "scope_review", {}
+        ).get("complete"):
+            story_direction.scope_review_step(project, runtime, mode, scene, index)
+            return
         if mode == "deep_dive":
             ensure_lora_math_visual(project, scene)
             if project["data"].get("math_concept_policy"):
@@ -3119,8 +3149,13 @@ def _script_step(project, runtime, mode):
             scene["visual_direction_version"] = VISUAL_DIRECTION_VERSION
             from . import story_video
 
-            if not scene["visual"].get("original_asset_id") and any(
-                u.get("visual_focus_region") for u in scene["utterances"]
+            if (
+                not scene["visual"].get("original_asset_id")
+                and not any(
+                    shot["visual"].get("original_asset_id")
+                    for shot in scene.get("storyboard", {}).get("shots", [])
+                )
+                and any(u.get("visual_focus_region") for u in scene["utterances"])
             ):
                 # A stale panel pointer is metadata damage, not a reason to
                 # change an otherwise valid diagram and its saved speech.

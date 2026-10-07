@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-08",
+  "project_id": "d428dfe92569486783a2fef181dfea69",
+  "inspected_export": "60d2a912e76c40f28aaffc03248ce665",
+  "duration_seconds": 1120.58,
+  "inspected_mp4_seconds": [
+    5,
+    30,
+    70,
+    120,
+    240,
+    420,
+    600,
+    780,
+    960,
+    1110
+  ],
+  "findings": [
+    {
+      "issue": "Later outline editing overwrote the prepared opening, its learning contract, figures, cues and speech. The full film differed from its inspected 80-second preview.",
+      "fix": "Only prepare the opening after outline review; preserve generated scenes and inherit omitted learning contracts during outline edits. Restore the saved opening manifest and WAVs."
+    },
+    {
+      "issue": "Narration treats the highest tested score as a ceiling, describes average accuracy as guessing without a chance baseline, and extrapolates mixed memory-agent results to architectural necessity.",
+      "fix": "Add a separate local-model inference audit with six explicit checks and finite repair attempts; distinguish measured observations, illustrative expected outputs and author hypotheses. Repair both dialogue and supplemental captions."
+    },
+    {
+      "issue": "Source-region pointers are removed when the primary shot is a teaching diagram even though a secondary shot uses an original.",
+      "fix": "Check originals across the sequence before dropping panel pointers."
+    }
+  ],
+  "validation": {
+    "regression_tests_passed": 139,
+    "retains_existing_mp4": true,
+    "retains_other_prepared_audio": true,
+    "previous_opening_wavs_restored": 13
+  },
+  "corrected_full_films_state": "regenerating",
+  "not_yet_verified": [
+    "Final corrected MP4s",
+    "Local scope audit corrections across all scenes"
+  ],
+  "viewer_retention_measurement": false
+}

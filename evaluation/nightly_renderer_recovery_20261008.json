@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-08",
+  "project_id": "f37939cec3db41f2b9489c0fee753a6a",
+  "paper_title": "Characterizing the Expressivity of Local Attention in Transformers",
+  "nightly_run": "79b2d07ea85740919b67d710c77bcf05",
+  "stopped_at_jst": "2026-10-08 13:20",
+  "cause": "A fixed-height worked-example box overlapped a long bilingual caption. Rendering after semantic correction bypassed the renderer recovery guard.",
+  "changes": [
+    "Fit the worked-example area to actual bilingual caption height without truncating text.",
+    "Route semantic-repair rendering through the same guarded fallback as normal rendering.",
+    "Include renderer stderr in the final error instead of only the subprocess return code.",
+    "Invalidate inference checks when a replacement script is generated."
+  ],
+  "regression_tests_passed": 152,
+  "actual_failed_scene_rendered_images": 6,
+  "recovered_visuals_ready": 3,
+  "resumed_job_state": "running",
+  "existing_audio_and_images_preserved": true
+}

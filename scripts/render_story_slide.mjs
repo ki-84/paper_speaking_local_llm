@@ -150,6 +150,30 @@ try {
     Object.assign(highlight.style,{left:x*overview.clientWidth+'px',top:y*overview.clientHeight+'px',width:w*overview.clientWidth+'px',height:h*overview.clientHeight+'px'});
   });
   await page.evaluate(() => {
+    // Bilingual captions vary in height. Reserve their real space instead of
+    // rejecting a valid example because its fixed-height container overlaps.
+    const worked=document.querySelector('.worked-example');
+    if(worked){
+      worked.style.height='auto';
+      const active=worked.querySelector('.worked-active'),strip=worked.querySelector('.worked-progress-strip');
+      const caption=document.querySelector('.caption');
+      const available=caption.getBoundingClientRect().top-worked.getBoundingClientRect().top-strip.getBoundingClientRect().height-30;
+      if(available<active.getBoundingClientRect().height){
+        active.style.height=Math.max(220,available)+'px';
+        for(const svg of active.querySelectorAll('svg'))svg.style.maxHeight=Math.max(100,available-15)+'px';
+        const floors={H2:30,H3:24,P:23,STRONG:22,SMALL:20,B:24};
+        for(let pass=0;pass<18;pass++){
+          const bottom=active.getBoundingClientRect().bottom;
+          if([...active.children].every(c=>c.getBoundingClientRect().bottom<=bottom+1))break;
+          for(const e of active.querySelectorAll('h2,h3,p,strong,small,b')){
+            e.style.fontSize=Math.max(floors[e.tagName]||23,parseFloat(getComputedStyle(e).fontSize)-1)+'px';
+          }
+          for(const e of active.querySelectorAll('h3,p')){
+            e.style.marginTop='4px';e.style.marginBottom='4px';
+          }
+        }
+      }
+    }
     // Preserve all notation and meanings; reduce type only within a readable bound.
     const formula=document.querySelector('.mapped-equation');
     if(formula)for(let i=0;i<8;i++){

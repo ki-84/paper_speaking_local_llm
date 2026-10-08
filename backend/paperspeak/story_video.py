@@ -329,9 +329,18 @@ def _render(input_path, output_path):
             if layout.is_file():
                 layout.replace(output_path.with_name(output_path.name + ".layout.json"))
             return
-        except (subprocess.SubprocessError, ValueError):
+        except (subprocess.SubprocessError, ValueError) as exc:
             partial.unlink(missing_ok=True)
             if attempt == 2:
+                if isinstance(exc, subprocess.CalledProcessError):
+                    detail = (
+                        (exc.stderr or b"").decode(errors="replace")
+                        if isinstance(exc.stderr, bytes)
+                        else str(exc.stderr or "")
+                    )
+                    raise RuntimeError(
+                        "Story slide rendering failed: " + detail[-1400:]
+                    ) from exc
                 raise
 
 

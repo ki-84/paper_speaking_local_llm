@@ -3040,6 +3040,7 @@ def _script_step(project, runtime, mode):
             )
             if result is not None:
                 scene.pop("structural_edit_done", None)
+                scene.pop("scope_review", None)
                 scene.update(
                     {k: result.get(k) for k in ("utterances", "summary", "visual")}
                 )
@@ -3078,6 +3079,10 @@ def _script_step(project, runtime, mode):
                 math_concepts.ensure(scene, lora_paper=is_lora(project))
             ensure_worked_example_cues(scene)
         if not scene.get("visual_ready"):
+            sequence_visual = bool(
+                project["data"].get("direction_policy")
+                and scene.get("storyboard", {}).get("shots")
+            )
             try:
                 validate_visual(scene["visual"], mode)
                 if scene.get("visual_repair_issues"):
@@ -3116,36 +3121,35 @@ def _script_step(project, runtime, mode):
                             "action": "Keep the bounded, concrete source-supported sequence",
                         }
                     )
-                    story_video.render_scene(project, mode, index)
-                    scene["visual_ready"] = True
-                    materialize_scene(project, mode, index)
-                    return
-                result = bounded(
-                    project,
-                    runtime,
-                    f"visual:{mode}:{index}",
-                    "Correct only the structured visual, keeping accurate formulas and the scene meaning. "
-                    + VISUAL_DIRECTION_BRIEF
-                    + "Use at most six nodes; equation scenes have at most THREE formulas and THREE nodes. Every short label needs en and ja. "
-                    'Types: flow, timeline, comparison, matrix, equation, example, original. Return {"visual":{...}}.\n'
-                    + json.dumps(scene["visual"])
-                    + "\nERROR: "
-                    + str(exc)
-                    + "\nEVIDENCE: "
-                    + json.dumps(context_for(project, scene))
-                    + "\nSPOKEN EXPLANATION: "
-                    + json.dumps(scene["utterances"])
-                    + "\nAVAILABLE CHECKED ORIGINAL FIGURES: "
-                    + json.dumps(original_catalogue(project)),
-                    lambda r: validate_visual(r["visual"], mode),
-                    lambda _: scene.get("storyboard", {}).get("visual")
-                    or story_pictures.teaching_spec(scene, project),
-                    max_tokens=2500,
-                )
-                if result is None:
-                    return
-                scene["visual"] = result
-                scene.pop("visual_repair_issues", None)
+                    # Use the guarded rendering path below as well after a
+                    # semantic repair. It handles layout failure and fallback.
+                if not sequence_visual:
+                    result = bounded(
+                        project,
+                        runtime,
+                        f"visual:{mode}:{index}",
+                        "Correct only the structured visual, keeping accurate formulas and the scene meaning. "
+                        + VISUAL_DIRECTION_BRIEF
+                        + "Use at most six nodes; equation scenes have at most THREE formulas and THREE nodes. Every short label needs en and ja. "
+                        'Types: flow, timeline, comparison, matrix, equation, example, original. Return {"visual":{...}}.\n'
+                        + json.dumps(scene["visual"])
+                        + "\nERROR: "
+                        + str(exc)
+                        + "\nEVIDENCE: "
+                        + json.dumps(context_for(project, scene))
+                        + "\nSPOKEN EXPLANATION: "
+                        + json.dumps(scene["utterances"])
+                        + "\nAVAILABLE CHECKED ORIGINAL FIGURES: "
+                        + json.dumps(original_catalogue(project)),
+                        lambda r: validate_visual(r["visual"], mode),
+                        lambda _: scene.get("storyboard", {}).get("visual")
+                        or story_pictures.teaching_spec(scene, project),
+                        max_tokens=2500,
+                    )
+                    if result is None:
+                        return
+                    scene["visual"] = result
+                    scene.pop("visual_repair_issues", None)
             scene["visual_direction_version"] = VISUAL_DIRECTION_VERSION
             from . import story_video
 

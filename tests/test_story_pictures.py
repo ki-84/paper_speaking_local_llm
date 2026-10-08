@@ -255,6 +255,7 @@ def test_renderer_failure_rewrites_dialogue_for_its_replacement(database, monkey
     )
     s = {
         "title": "Norm bounds",
+        "scope_review": {"complete": True},
         "title_ja": "ノルムの制限",
         "focus": "Bound gradient and feature scale",
         "claim_ids": [],

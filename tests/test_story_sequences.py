@@ -609,6 +609,68 @@ def test_outline_review_keeps_prepared_preview_and_unwritten_learning_contract()
     assert track["preview_id"] == "already-rendered"
 
 
+def test_long_bilingual_caption_fits_without_losing_the_example(database):
+    p = project()
+    b = storyboards.validate(board(), p, "overview")
+    spec = b["shots"][0]["visual"]
+    spec["caption_en"] = (
+        "Hybrid attention pairs a wide-angle detective (global) with a close-up one (local). For this simple rule the wide-angle could handle both, but for trickier patterns only the pair sees the full story."
+    )
+    spec["caption_ja"] = (
+        "ハイブリッドアテンションは広角の探偵（グローバル）とズームの探偵（ローカル）を組ませる。この単純ルールでは広角だけで対応できるが、複雑なパターンでは二人揃って初めて全体が把握できる。"
+    )
+    s = {
+        "title": "A complete example",
+        "title_ja": "具体例",
+        "focus": "Explain the actual operation",
+        "visual": spec,
+        "utterances": [{"text": "Copy the file.", "visual_focus": 0}],
+    }
+    p["data"]["modes"]["overview"]["scenes"] = [s]
+    story_video.render_scene(p, "overview", 0)
+    assert len(s["render_paths"]) == 3
+    assert all(
+        config.safe_path(path).stat().st_size > 5000 for path in s["render_paths"]
+    )
+
+
+def test_semantic_repair_render_failure_uses_guarded_fallback(database, monkeypatch):
+    p = project()
+    p["data"].pop("scope_review_policy", None)
+    b = storyboards.validate(board(), p, "overview")
+    s = {
+        "title": "The example",
+        "title_ja": "具体例",
+        "focus": "Explain the rule",
+        "claim_ids": [],
+        "visual": b["visual"],
+        "storyboard": b,
+        "structural_edit_done": True,
+        "sequence_content_repair": True,
+        "visual_repair_issues": [{"reason": "The selected figure is unrelated"}],
+        "utterances": [
+            {
+                "id": "line",
+                "speaker": "guide",
+                "text": "Use the destination first.",
+                "visual_beat": 0,
+                "source_ids": [],
+            }
+        ],
+    }
+    p["data"]["modes"]["overview"]["scenes"] = [s]
+    monkeypatch.setattr(story, "_review_scene", lambda *args: True)
+
+    def broken(*args):
+        raise RuntimeError("Visual text overflow: Worked example overlaps caption")
+
+    monkeypatch.setattr(story_video, "render_scene", broken)
+    story._script_step(p, None, "overview")
+    assert s["renderer_dialogue_repair"]
+    assert "utterances" not in s
+    assert s["omissions"][-1]["reason"] == "visual renderer fallback"
+
+
 def test_inference_audit_requires_explicit_categories_and_preserves_other_speech(
     database,
 ):

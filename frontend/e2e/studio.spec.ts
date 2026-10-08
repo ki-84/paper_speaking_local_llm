@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await page.locator(".login-page, .video-library").first().waitFor();
+  await page.locator(".login-page, .learning-home").first().waitFor();
   if (await page.getByLabel("Studio password").isVisible()) {
     await page.getByLabel("Studio password").fill("ui-test-only");
     await page.getByRole("button", { name: "Come on in" }).click();
@@ -28,6 +28,48 @@ test.beforeEach(async ({ page }) => {
       .first(),
   ).toBeVisible();
 });
+test("home resumes the course and records explicitly studied chapters", async ({page})=>{
+  const lesson=(await(await page.request.get('/api/lessons')).json()).find((l:any)=>l.data.title==='Interface test: a small change');
+  await page.getByRole('button',{name:'Next sentence',exact:true}).click();
+  await expect.poll(async()=> (await(await page.request.get(`/api/lessons/${lesson.id}`)).json()).progress.turn_index).toBe(1);
+  await page.getByRole('button',{name:'この章を学習済みにする',exact:true}).click();
+  await expect(page.getByRole('button',{name:'✓ 学習済み · 取り消す',exact:true})).toBeVisible();
+  await page.locator('nav').getByRole('button',{name:'ホーム',exact:true}).click();
+  const home=page.getByRole('region',{name:'学習ホーム',exact:true});
+  await expect(home.getByRole('heading',{name:'今日の学習',exact:true})).toBeVisible();
+  const card=home.locator('.home-course').filter({has:page.getByRole('heading',{name:'Interface test: a small change',exact:true})});
+  await expect(card.getByText(/学習済み 1 \/ 2章/)).toBeVisible();
+  await expect(card.getByText(/2文目/)).toBeVisible();
+  await card.getByRole('button',{name:'続きから学ぶ'}).click();
+  await expect(page.locator('.spoken-sentence')).toHaveText('The old weights stay fixed.');
+  await page.locator('nav').getByRole('button',{name:'ホーム',exact:true}).click();
+  await page.setViewportSize({width:390,height:844});
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
+  await page.screenshot({path:'../data/evaluation/learning-home-mobile.png',fullPage:true});
+});
+
+test("recall rating changes the schedule without overwriting the course resume point",async({page})=>{
+  const lesson=(await(await page.request.get('/api/lessons')).json()).find((l:any)=>l.data.title==='Interface test: a small change');
+  await page.getByRole('button',{name:'Next sentence',exact:true}).click();
+  await expect.poll(async()=> (await(await page.request.get(`/api/lessons/${lesson.id}`)).json()).progress.turn_index).toBe(1);
+  await page.locator('nav').getByRole('button',{name:'ホーム',exact:true}).click();
+  await page.getByRole('button',{name:'復習を始める',exact:true}).click();
+  await page.getByRole('button',{name:'録音して練習',exact:true}).first().click();
+  const review=page.getByRole('article',{name:'思い出す練習',exact:true});
+  await expect(review.getByRole('button',{name:'答えを確認する'})).toBeVisible();
+  await expect(page.locator('.spoken-sentence')).toContainText('Listen first.');
+  await review.getByRole('button',{name:'答えを確認する'}).click();
+  await expect(review.getByRole('button',{name:/難しい/})).toBeEnabled();
+  await review.getByRole('button',{name:/難しい/}).click();
+  await expect(review.getByRole('status')).toContainText('記録しました');
+  const saved=await(await page.request.get(`/api/lessons/${lesson.id}`)).json();
+  expect(saved.progress.turn_index).toBe(1);
+  await page.screenshot({path:'../data/evaluation/fsrs-review-session.png',fullPage:true});
+  await page.locator('nav').getByRole('button',{name:'ホーム',exact:true}).click();
+  const home=page.getByRole('region',{name:'学習ホーム',exact:true});
+  await expect(home.getByText(/今日の復習/)).toBeVisible();
+});
+
 test("video library shows completed films by date with filters and folded revisions", async ({ page }) => {
   const row = (id: string, kind: string, completed: number, paper = "A useful robot paper") => ({
     id, kind, completed_at: completed, lesson_id: "test-lesson", paper_title: paper,

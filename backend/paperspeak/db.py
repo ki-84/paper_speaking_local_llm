@@ -89,6 +89,10 @@ def init():
           id TEXT PRIMARY KEY, lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
           chapter_id TEXT NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
           turn_id TEXT, due REAL NOT NULL, step INTEGER NOT NULL DEFAULT 0, data TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS review_events (
+          id TEXT PRIMARY KEY, review_id TEXT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+          rating TEXT NOT NULL, reviewed REAL NOT NULL, data TEXT NOT NULL);
+        CREATE INDEX IF NOT EXISTS review_events_card ON review_events(review_id,reviewed);
         CREATE TABLE IF NOT EXISTS recommendations (
           id TEXT PRIMARY KEY, paper_id TEXT NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
           day TEXT NOT NULL, state TEXT NOT NULL, data TEXT NOT NULL, feedback TEXT,
@@ -136,7 +140,7 @@ def init():
         c.execute("""CREATE UNIQUE INDEX IF NOT EXISTS nightly_video_scheduled_day
           ON nightly_video_runs(day)
           WHERE coalesce(json_extract(data,'$.manual_repeat'),0)=0""")
-        c.execute("PRAGMA user_version=6")
+        c.execute("PRAGMA user_version=7")
         for key, value in config.DEFAULTS.items():
             c.execute(
                 "INSERT OR IGNORE INTO settings VALUES (?,?)", (key, dumps(value))

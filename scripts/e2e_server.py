@@ -7,7 +7,7 @@ import tempfile
 
 os.environ["PAPERSPEAK_DATA"] = tempfile.mkdtemp(prefix="paperspeak-ui-")
 import uvicorn
-from paperspeak import config, db, lessons, papers, practice, visual_render
+from paperspeak import config, db, lessons, papers, practice, repetition, visual_render
 from paperspeak.quality import word_diff
 
 try:
@@ -151,6 +151,8 @@ try:
                         visuals=[{"key":"V1","asset_id":"ui-diagram"}])
     next_chapter["translation"]["items"]["turn:next-turn"] = {"english": turns[1]["text"], "japanese":"元の重みは固定されたままです。"}
     db.execute("INSERT INTO chapters VALUES (?,?,?,?,?)", ("next-chapter", lid, 1, "ready", db.dumps(next_chapter)))
+    import time
+    repetition.enroll(lid, "test-chapter", turn_id="test-turn-0", now=time.time()-172800)
     reference_line = "The old weights stay fixed"
     heard_line = "The old weights stay mixed"
     reference_stamps = [

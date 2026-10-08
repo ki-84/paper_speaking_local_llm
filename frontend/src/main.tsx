@@ -27,6 +27,7 @@ import {
   FileText,
   RotateCcw,
   ExternalLink,
+  House,
 } from "lucide-react";
 import {
   api,
@@ -41,8 +42,10 @@ import "./style.css";
 import { VisualPanel } from "./VisualPanel";
 import { VideoLibrary } from "./VideoLibrary";
 import { PipelineStatus } from "./PipelineStatus";
+import { LearningHome } from "./LearningHome";
+import { ReviewQueue, ReviewSession } from "./ReviewSession";
 
-type Page = "library" | "create" | "practice" | "discover" | "review" | "settings" | "learn";
+type Page = "home" | "library" | "create" | "practice" | "discover" | "review" | "settings" | "learn";
 function microphoneError(error: unknown, selectedMic = "") {
   const reason = error instanceof Error ? error.name : "";
   if (reason === "NotAllowedError" || reason === "PermissionDeniedError")
@@ -56,6 +59,7 @@ function microphoneError(error: unknown, selectedMic = "") {
   return error instanceof Error ? error.message : "Chrome could not start the microphone.";
 }
 const tabs: [Page, string, typeof BookOpen][] = [
+  ["home", "ホーム", House],
   ["library", "動画一覧", Film],
   ["create", "動画を作る", Clapperboard],
   ["practice", "英語練習", Headphones],
@@ -75,7 +79,7 @@ function Badge({
 function App() {
   const [signed, setSigned] = useState(false),
     [checking, setChecking] = useState(true);
-  const [page, setPage] = useState<Page>("library"),
+  const [page, setPage] = useState<Page>("home"),
     [active, setActive] = useState<string | null>(null);
   const [lessons, setLessons] = useState<Row[]>([]),
     [papers, setPapers] = useState<Row[]>([]),
@@ -205,7 +209,7 @@ function App() {
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            navigate("library");
+            navigate("home");
           }}
         >
           <span className="brand-symbol">
@@ -281,6 +285,7 @@ function App() {
           </div>
         )}
         {page === "library" && <VideoLibrary version={version} onError={setError} openLesson={openLesson} create={() => navigate("create")} />}
+        {page === "home" && <LearningHome version={version} onError={setError} openLesson={openLesson} review={()=>navigate("review")} practice={()=>navigate("practice")} viewGeneration={paper=>{setSelectedPaper(paper);setCreationTab("manual");navigate("create");}} />}
         {page === "create" && <>
           <div className="workspace-heading"><PageHeading eyebrow="論文から2本の動画へ" title="動画を作る" description="論文を自動で選ぶか、保存済みの論文を指定してください。作成中も完成した動画や英語教材を使えます。" />
             <button className="secondary" onClick={() => setAdding(true)}><Upload size={16} /> arXiv・PDFを取り込む</button></div>
@@ -362,70 +367,7 @@ function App() {
             )}
           </>
         )}
-        {page === "review" && (
-          <>
-            <PageHeading
-              eyebrow="前に練習した表現をもう一度"
-              title="今日の復習"
-              description="録音練習で保存した文と、理解を確かめる問題を復習できます。"
-            />
-            {reviews.length ? (
-              <div className="list">
-                {reviews.map((r) => (
-                  <div className="list-row" key={r.id}>
-                    <RotateCcw size={22} />
-                    <div>
-                      <strong>{JSON.parse(r.lesson_data).title}</strong>
-                      <small>
-                        {r.data.kind === "read"
-                          ? "Speak a sentence again"
-                          : "Explain an idea again"}
-                      </small>
-                    </div>
-                    <button
-                      className="primary"
-                      onClick={() => openLesson(r.lesson_id, r)}
-                    >
-                      Practice
-                    </button>
-                    <button
-                      className="secondary"
-                      onClick={() =>
-                        act(() =>
-                          post(
-                            `/reviews/${encodeURIComponent(r.id)}/complete`,
-                            { again: false },
-                          ),
-                        )
-                      }
-                    >
-                      I remember
-                    </button>
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        act(() =>
-                          post(
-                            `/reviews/${encodeURIComponent(r.id)}/complete`,
-                            { again: true },
-                          ),
-                        )
-                      }
-                    >
-                      Tomorrow
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={Check}
-                title="You are up to date."
-                text="After you practice, we will bring useful sentences and ideas back at the right time."
-              />
-            )}
-          </>
-        )}
+        {page === "review" && <ReviewQueue cards={reviews} onError={setError} refresh={refresh} openLesson={openLesson} />}
         {page === "settings" && (
           <SettingsPage onError={setError} status={status} />
         )}
@@ -808,6 +750,7 @@ function Learn({
   const selfAudio = useRef<HTMLAudioElement | null>(null);
   const [visualMode, setVisualMode] = useState<"auto" | "pinned">("auto");
   const [visualKey, setVisualKey] = useState<string | null>(null);
+  const [reviewNotice,setReviewNotice] = useState("");
   const selectVisual = (mode: "auto" | "pinned", key: string | null) => {
     setVisualMode(mode); setVisualKey(key);
   };
@@ -934,8 +877,9 @@ function Learn({
   const load = () =>
     api<Row>(`/lessons/${id}`).then((l) => {
       setLesson(l);
-      if (initialized.current !== id) {
-        initialized.current = id;
+      const sessionKey = `${id}:${reviewTarget?.id||'study'}`;
+      if (initialized.current !== sessionKey) {
+        initialized.current = sessionKey;
         setChapterId(
           reviewTarget?.chapter_id ||
             l.progress?.chapter_id ||
@@ -963,7 +907,7 @@ function Learn({
           );
         setRole(l.progress?.role || "both");
         setSpeed(l.progress?.speed === 0.9 ? 1 : (l.progress?.speed ?? 1));
-        setSubtitles(l.progress?.subtitles ?? true);
+        setSubtitles(reviewTarget?.turn_id ? false : (l.progress?.subtitles ?? true));
         selectVisual(l.progress?.visual_mode || "auto", l.progress?.visual_key || null);
         setAttempt(null);
       } else if (!chapterId && l.chapters.length)
@@ -971,7 +915,7 @@ function Learn({
     });
   useEffect(() => {
     load().catch((e) => onError(e.message));
-  }, [id, version]);
+  }, [id, version, reviewTarget?.id]);
   useEffect(() => {
     pendingRecording("get")
       .then(setPending)
@@ -1030,7 +974,7 @@ function Learn({
       .catch((e) => onError(e.message));
   };
   useEffect(() => {
-    if (chapterId && lesson) {
+    if (chapterId && lesson && !reviewTarget) {
       api(`/lessons/${id}/progress`, {
         method: "PUT",
         body: JSON.stringify({
@@ -1044,7 +988,7 @@ function Learn({
         }),
       }).catch(() => {});
     }
-  }, [chapterId, index, role, speed, subtitles, visualMode, visualKey]);
+  }, [chapterId, index, role, speed, subtitles, visualMode, visualKey, reviewTarget?.id]);
   const spokenRate = speed * (turn?.voice === "Ryan" ? 1.2 : 1);
   useEffect(() => {
     if (audio.current) {
@@ -1299,9 +1243,11 @@ function Learn({
             ))}
           </aside>
           <section className="study-main">
+            {reviewTarget&&<ReviewSession key={reviewTarget.id} card={reviewTarget} onError={onError} onRated={refresh} disabled={recording||requestingMic||sending} />}
             <div className="study-title">
               <h2>{chapter?.data.title}</h2>
               <p>{chapter?.data.focus}</p>
+              {ready&&!reviewTarget&&<div className="actions"><button className="secondary" disabled={recording} onClick={()=>post(`/lessons/${id}/chapters/${chapterId}/study`,{completed:!lesson.progress?.completed_chapters?.includes(chapterId)}).then(refresh).catch(e=>onError(e.message))}>{lesson.progress?.completed_chapters?.includes(chapterId)?'✓ 学習済み · 取り消す':'この章を学習済みにする'}</button><button className="text-button" disabled={recording||!turn} onClick={()=>post(`/lessons/${id}/reviews`,{chapter_id:chapterId,turn_id:question?null:turn?.id,question_id:question?.id||null}).then(()=>{refresh();setReviewNotice('復習に追加しました。最初の復習は明日です。');}).catch(e=>onError(e.message))}>復習に追加</button>{reviewNotice&&<small role="status">{reviewNotice}</small>}</div>}
               {ready && (chapter?.data.best_effort_omissions?.length || 0) > 0 && (
                 <p className="subtle">Some details were left out because they could not be checked. See the original paper for the full results. · 確認できなかった内容は省略しています。詳細は論文の原文をご覧ください。</p>
               )}

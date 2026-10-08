@@ -12,7 +12,7 @@ dependencies = [
   "pydantic>=2.10,<3", "python-multipart>=0.0.20", "beautifulsoup4>=4.13",
   "lxml>=5.3", "pymupdf>=1.25", "numpy>=2,<3", "soundfile>=0.13",
   "huggingface-hub>=0.34,<1", "imageio-ffmpeg>=0.6", "cmudict>=1.1",
-  "num2words>=0.5", "pytest>=8", "pytest-asyncio>=0.25"
+  "num2words>=0.5", "fsrs==6.3.2", "pytest>=8", "pytest-asyncio>=0.25"
 ]
 
 [tool.setuptools.packages.find]

@@ -28,11 +28,12 @@ from . import (
     awards,
     config,
     db,
+    learning_home,
     lessons,
     nightly,
     papers,
-    practice,
     recommendation_ja,
+    repetition,
     story,
     thumbnails,
     translation,
@@ -542,10 +543,11 @@ def progress(ident: str, body: Progress):
         raise HTTPException(422, "Choose a visual from this chapter.")
     if body.visual_mode == "auto":
         body.visual_key = None
-    db.execute(
-        "INSERT INTO cursors VALUES (?,?) ON CONFLICT(key) DO UPDATE SET data=excluded.data",
-        ("lesson:" + ident, db.dumps(body.model_dump())),
+    values = body.model_dump()
+    values["turn_index"] = min(
+        body.turn_index, max(0, len(chapter["data"].get("turns", [])) - 1)
     )
+    learning_home.save_position(ident, values)
     return {"ok": True}
 
 
@@ -683,23 +685,75 @@ def delete_attempt(ident: str):
 
 @app.get("/api/reviews", dependencies=[Depends(auth)])
 def reviews():
-    return db.all(
-        "SELECT r.*,json_object('title',json_extract(l.data,'$.title')) AS lesson_data FROM reviews r JOIN lessons l ON l.id=r.lesson_id WHERE r.due<=? AND coalesce(json_extract(l.data,'$.archived'),0)=0 ORDER BY r.due",
-        (time.time(),),
-    )
+    return repetition.due_cards()
 
 
 class ReviewResult(BaseModel):
     again: bool = False
+    rating: Literal["again", "hard", "good", "easy"] | None = None
+    event_id: str | None = Field(default=None, max_length=64)
+    revision: int | None = Field(default=None, ge=0)
 
 
 @app.post("/api/reviews/{ident}/complete", dependencies=[Depends(auth)])
 def finish_review(ident: str, body: ReviewResult):
     try:
-        practice.complete_review(ident, body.again)
+        return repetition.rate(
+            ident,
+            body.rating or ("again" if body.again else "good"),
+            event_id=body.event_id,
+            revision=body.revision,
+        )
+    except repetition.ReviewConflict as e:
+        raise HTTPException(409, str(e))
     except ValueError as e:
         raise HTTPException(404, str(e))
-    return {"ok": True}
+
+
+@app.get("/api/learning-home", dependencies=[Depends(auth)])
+def learning_dashboard():
+    return learning_home.dashboard()
+
+
+class StudyChapter(BaseModel):
+    completed: bool = True
+
+
+@app.post(
+    "/api/lessons/{ident}/chapters/{chapter_id}/study", dependencies=[Depends(auth)]
+)
+def study_chapter(ident: str, chapter_id: str, body: StudyChapter):
+    try:
+        return learning_home.mark_chapter(ident, chapter_id, body.completed)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+class CourseState(BaseModel):
+    state: Literal["active", "paused"]
+
+
+@app.put("/api/lessons/{ident}/study-state", dependencies=[Depends(auth)])
+def set_study_state(ident: str, body: CourseState):
+    try:
+        return learning_home.course_state(ident, body.state)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+class EnrollReview(BaseModel):
+    chapter_id: str
+    turn_id: str | None = None
+    question_id: str | None = None
+
+
+@app.post("/api/lessons/{ident}/reviews", dependencies=[Depends(auth)])
+def enroll_review(ident: str, body: EnrollReview):
+    try:
+        card = repetition.enroll(ident, body.chapter_id, body.turn_id, body.question_id)
+        return {"id": card["id"], "due": card["due"], "scheduler": repetition.VERSION}
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 @app.get("/api/jobs", dependencies=[Depends(auth)])

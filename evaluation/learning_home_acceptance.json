@@ -1,0 +1,72 @@
+{
+  "checked_at": "2026-10-09T07:48:10.579561+09:00",
+  "feature": "Study home and local adaptive spaced repetition",
+  "scheduler": {
+    "package": "fsrs",
+    "version": "6.3.2",
+    "desired_retention": 0.9,
+    "fuzzing": false,
+    "compute": "local CPU",
+    "ratings": [
+      "again",
+      "hard",
+      "good",
+      "easy"
+    ],
+    "personal_weight_optimization": false
+  },
+  "tests": {
+    "backend": {
+      "passed": 59,
+      "command": ".venv/bin/pytest -q tests/test_learning_home.py tests/test_core.py tests/test_resilience.py tests/test_video_library.py tests/test_practice_priority.py"
+    },
+    "browser": {
+      "passed": 29,
+      "command": "npm --prefix frontend run test:e2e"
+    },
+    "frontend_build": "passed",
+    "ruff": "passed",
+    "diff_check": "passed"
+  },
+  "checks": [
+    "Course resumes the saved chapter and sentence",
+    "Explicit chapter completion preserves the position and enrolls understanding questions",
+    "Finished chapters remain available during a paused video project",
+    "Four memory ratings adapt intervals and a lapse shortens the next review",
+    "Review does not overwrite normal learning position",
+    "Idempotent network retry and stale tab conflict",
+    "Existing due dates retained without invented memory ratings",
+    "Missing or archived targets omitted from the queue without deletion",
+    "Unscored recordings do not create a memory rating",
+    "Japanese calendar midnight and 105 due items counted beyond a 100-item queue batch",
+    "Mobile 390px home has no horizontal overflow",
+    "LAN HTTPS home and review API return 200",
+    "Live browser answer is hidden before reveal and all four rating choices become available",
+    "No live browser errors"
+  ],
+  "deployment": {
+    "reviews_unchanged": true,
+    "study_positions_unchanged": true,
+    "old_lesson_jobs_unchanged": true,
+    "counts": {
+      "lessons": 36,
+      "chapters": 410,
+      "reviews": 64,
+      "attempts": 89
+    },
+    "schema_version": 7,
+    "live_active_courses": 11,
+    "live_due_reviews": 16,
+    "browser_check": "passed"
+  },
+  "screenshots": [
+    "data/evaluation/learning-home-mobile.png",
+    "data/evaluation/fsrs-review-session.png",
+    "data/evaluation/learning-home-live.png",
+    "data/evaluation/learning-review-live.png"
+  ],
+  "limits": [
+    "Retention target uses default FSRS weights and is not a measurement of the learner's biological forgetting curve",
+    "Memory ratings are learner self reports; pronunciation evaluation is independent"
+  ]
+}

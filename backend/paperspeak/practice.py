@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import re
 import subprocess
-import time
 from difflib import SequenceMatcher
 from functools import lru_cache
 
@@ -490,39 +489,27 @@ def practice_step(job, runtime):
 
 
 def add_review(attempt):
-    rid = f"{attempt['chapter_id']}:{attempt['turn_id'] or attempt['data'].get('question_id', 'chapter')}"
-    existing = db.one("SELECT * FROM reviews WHERE id=?", (rid,))
-    if existing:
+    from . import repetition
+
+    if attempt.get("state") != "ready":
         return
-    db.execute(
-        "INSERT INTO reviews VALUES (?,?,?,?,?,?,?)",
-        (
-            rid,
+    try:
+        repetition.enroll(
             attempt["lesson_id"],
             attempt["chapter_id"],
-            attempt["turn_id"],
-            time.time() + 86400,
-            0,
-            db.dumps(
-                {
-                    "kind": attempt["kind"],
-                    "question_id": attempt["data"].get("question_id"),
-                }
-            ),
-        ),
-    )
+            turn_id=attempt.get("turn_id"),
+            question_id=attempt["data"].get("question_id"),
+        )
+    except ValueError:
+        # Regeneration may remove a sentence while its recording is checked.
+        # Retain the recording feedback even when that review target vanished.
+        return
 
 
 def complete_review(ident, again=False):
-    r = db.one("SELECT * FROM reviews WHERE id=?", (ident,))
-    if not r:
-        raise ValueError("Review not found")
-    step = 0 if again else min(4, r["step"] + 1)
-    intervals = [1, 3, 7, 14, 30]
-    db.execute(
-        "UPDATE reviews SET step=?,due=? WHERE id=?",
-        (step, time.time() + intervals[step] * 86400, ident),
-    )
+    from . import repetition
+
+    return repetition.rate(ident, "again" if again else "good")
 
 
 def vowel_energy(path, phones, timestamps):

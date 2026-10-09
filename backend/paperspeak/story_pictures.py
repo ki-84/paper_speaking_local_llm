@@ -3,6 +3,24 @@
 import re
 
 VERSION = "purposeful-pictures-1"
+EXAMPLE_ICONS = {
+    "file",
+    "folder",
+    "chat",
+    "rule",
+    "model",
+    "memory",
+    "robot",
+    "number",
+    "banana",
+    "plate",
+    "lid",
+    "door",
+    "handle",
+    "gripper",
+    "block",
+    "token",
+}
 TEMPLATES = {
     "signal_path": 3,
     "robot_control": 3,
@@ -19,6 +37,7 @@ BRIEF = (
     "Its active step is drawn LARGE, with a progress strip. Use this to reenact a paper example, show a changing rule/state/answer, or reveal a hypothetical calculation; do not supply generic Input/Processing/Output labels. "
     "Give the concrete input and the operation/rule separate steps when they require different pictures. A copy-flow arrow shows where the file goes; numbered arguments show command order. Do not use the same flow picture while explaining a different ordering relation. Advance with an exact spoken phrase when one paragraph explains two steps. "
     "For a visible relationship, each step can add objects:[{en:short concrete name,ja:日本語,icon:supported icon}] with two or three objects, and relation:flow|order|contrast. flow draws a directional arrow; order numbers the objects in command/operation order; contrast separates alternatives. Show actual named input/output objects instead of one decorative icon. "
+    "Concrete icons also include banana,plate,lid,door,handle,gripper,block,token. Use them to draw the things being explained, not a generic file icon. Token windows allow relation:window with 2–8 token objects; selected:true/false highlights the visible positions. Keep the same concrete names across steps and reconnect changes of example explicitly. "
     "Choose visuals from REAL renderer capabilities. signal_path draws input data packets, processing layers, output signals; robot_control draws a robot, observations, a policy and joint-action arrows; "
     "replay_memory draws recorded transitions in a replay drawer and a batch reused for learning; "
     "update_schedule draws data, model capacity and sparse vs dense optimizer-update ticks (not larger step sizes); "
@@ -46,16 +65,7 @@ def validate(spec, project=None):
                 isinstance(node.get(k), str) and node[k].strip() for k in ("en", "ja")
             ):
                 raise ValueError("Example headings need both languages")
-            if node.get("icon") not in {
-                "file",
-                "folder",
-                "chat",
-                "rule",
-                "model",
-                "memory",
-                "robot",
-                "number",
-            }:
+            if node.get("icon") not in EXAMPLE_ICONS:
                 raise ValueError("Choose a supported visible example object")
             for field, limit in (("detail_en", 150), ("detail_ja", 100)):
                 if (
@@ -69,28 +79,26 @@ def validate(spec, project=None):
                 objects = node["objects"]
                 if (
                     not isinstance(objects, list)
-                    or not 2 <= len(objects) <= 3
-                    or node.get("relation") not in {"flow", "order", "contrast"}
+                    or not 2
+                    <= len(objects)
+                    <= (8 if node.get("relation") == "window" else 3)
+                    or node.get("relation")
+                    not in {"flow", "order", "contrast", "window"}
                 ):
                     raise ValueError(
                         "Draw two or three named objects with an explicit flow, order or contrast"
                     )
                 for obj in objects:
-                    if obj.get("icon") not in {
-                        "file",
-                        "folder",
-                        "chat",
-                        "rule",
-                        "model",
-                        "memory",
-                        "robot",
-                        "number",
-                    } or not all(
+                    if obj.get("icon") not in EXAMPLE_ICONS or not all(
                         isinstance(obj.get(k), str) and 1 <= len(obj[k]) <= limit
                         for k, limit in (("en", 35), ("ja", 25))
                     ):
                         raise ValueError(
                             "Visible objects need short bilingual names and supported icons"
+                        )
+                    if "selected" in obj and type(obj["selected"]) is not bool:
+                        raise ValueError(
+                            "A token's visible-window selection must be boolean"
                         )
         return
     if template not in TEMPLATES or len(spec.get("nodes", [])) != TEMPLATES[template]:

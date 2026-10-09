@@ -253,6 +253,7 @@ class Runtime:
         thinking=True,
         profile=None,
         max_tokens=8192,
+        response_schema=None,
     ):
         self.ensure_llm(profile)
         # Short, unambiguous evidence handles prevent models from dropping UUID suffixes.
@@ -317,7 +318,10 @@ class Runtime:
             # for a non-empty schema. An empty json_object hint is insufficient.
             "response_format": {
                 "type": "json_schema",
-                "json_schema": {"name": "response", "schema": {"type": "object"}},
+                "json_schema": {
+                    "name": "response",
+                    "schema": response_schema or {"type": "object"},
+                },
             },
             "chat_template_kwargs": {
                 "enable_thinking": thinking,

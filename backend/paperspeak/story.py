@@ -17,6 +17,7 @@ from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
 
 from . import (
+    audience,
     config,
     db,
     lessons,
@@ -42,7 +43,7 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-storyboard-5-newcomer-sequences"
+VERSION = "youtube-storyboard-6-audience-rehearsal"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 EDITORIAL_REVIEW_VERSION = "content-first-editorial-3"
 NOVICE_REVIEW_VERSION = "beginner-rehearsal-3-blind"
@@ -239,6 +240,7 @@ def create(paper_id, *, profile=None, modes=None):
                 "storyboard_policy": "visual-before-dialogue-3-purposeful-pictures",
                 "picture_policy": story_pictures.VERSION,
                 "direction_policy": story_direction.VERSION,
+                "audience_policy": audience.VERSION,
                 "scope_review_policy": "experiment-scope-1",
                 "math_concept_policy": math_concepts.VERSION,
             }
@@ -1247,6 +1249,7 @@ def _sequence_script_prompt(project, mode, scene, index):
         f"Write scene {index + 1} of ONE continuous {mode} film about {project['data']['paper_title']}. "
         + story_direction.BRIEF
         + story_direction.SCOPE_BRIEF
+        + (audience.BRIEF if project["data"].get("audience_policy") else "")
         + "Maya (guide) explains; Aiden (host) predicts, questions and sometimes makes a plausible mistake. Correct that exact mistake, with light wit tied to the visible task. "
         "Use natural, varied conversational English. No empty agreement or unrelated metaphors. Do not merely recite the source notes. "
         "Each paragraph is at most 135 words for local speech synthesis. Use meaningful exchanges, with no fixed total duration. "
@@ -1624,6 +1627,19 @@ def _review_scene(project, runtime, mode, scene, index, kind):
     scientific = kind in {"content", "content_final"}
     reviews = scene.setdefault("reviews", {})
     record = reviews.setdefault(kind, {"attempts": 0, "history": []})
+    if kind == "novice" and project["data"].get("audience_policy"):
+        if not audience.draft_step(project, runtime, mode, scene, index):
+            return False
+        digest = scene.get("audience_rehearsal", {}).get("digest")
+        state = scene.get("audience_rehearsal", {})
+        record["audience_assessment_incomplete"] = (
+            not state.get("result")
+            or digest != video.digest([audience.VERSION, audience.draft_material(scene)])
+            or (index == 0 and not state.get("opening"))
+        )
+        if record.get("audience_digest") != digest and record["attempts"] < 3:
+            record.pop("complete", None)
+        record["audience_digest"] = digest
     if scientific:
         if record.get("version") != SOURCE_REVIEW_VERSION:
             _recover_repaired_turns(project, mode, scene, index, record)
@@ -1782,6 +1798,46 @@ def _review_scene(project, runtime, mode, scene, index, kind):
             + "\nVISIBLY EXPLAINED STEPS: "
             + db.dumps(scene.get("storyboard", {}).get("beats", []))
         )
+        if project["data"].get("audience_policy"):
+            # The audience is blind to the answer key. The editor is a separate
+            # pass and DOES need checked evidence to add a missing causal step.
+            prompt = (
+                "You are the editor responding to three simulated viewers' chronological comprehension tests. "
+                "Repair specific unanswered questions, contradictions, unexplained terms, abrupt example switches and missing reasons to keep watching. "
+                "Use the supplied source passages for missing scientific explanations; do not invent data, guarantees or a false failure of an earlier method for a joke. "
+                + audience.BRIEF
+                + "Make only necessary local replacements, preserving the speaker, approved visual beat and source provenance. Each replacement is that speaker's complete spoken paragraph, at most 135 words. "
+                "Preserve natural B2/C1 English and useful wit. For the opening show the concrete task and the viewer's question before explaining the solution. "
+                "Compare the viewers' retellings with the intended question and supported takeaway. A fluent paraphrase that misses the causal step or confuses what changed is not a successful explanation; repair that particular step. "
+                "Triage requests: define an essential term or causal link now, bridge to a later scene for promised mechanisms, keep optional mathematics for the deep dive, and mark untested questions as source limitations. Keep healthy curiosity alive; do not explain the whole paper in the opening. The overview must remain equation-free. "
+                "Do not label the film successful just because one persona liked it. If a required object is absent from the picture, report it as a visual issue. "
+                'Return {"learner_explanation_en":"brief summary of what the viewers actually understood", "unexplained_terms":[], "issues":[{"utterance_id":"exact ID","reason":"specific viewer gap","replacement":"full improved paragraph","source_ids":["checked source ID"],"kind":"paper|background|example|question|humor"}],"visual_issues":[],"notes":"what was repaired, or why no correction is needed"}.\n'
+                + db.dumps(
+                    {
+                        "mode": mode,
+                        "scene_index": index,
+                        "audience": audience.editorial_context(scene),
+                        "conversation": scene["utterances"],
+                        "visible_labels": [
+                            audience.visible_labels(scene, u)
+                            for u in scene["utterances"]
+                        ],
+                        "intended_question": scene.get("learning", {}).get(
+                            "question_en"
+                        ),
+                        "supported_teaching_target": scene.get("learning", {}).get(
+                            "takeaway_en"
+                        ),
+                        "source_passages": evidence,
+                        "upcoming_questions": [
+                            s.get("learning", {}).get("question_en", s.get("focus", ""))
+                            for s in project["data"]["modes"][mode]["scenes"][
+                                index + 1 :
+                            ]
+                        ],
+                    }
+                )
+            )
     if record["attempts"] >= 3:
         # Retain revisions already made; remove precisely identified unresolved claims.
         last = record["history"][-1] if record["history"] else {}
@@ -1937,9 +1993,9 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         result["issues"] = effective
         record.update(
             complete=not effective,
-            passed=not issues,
+            passed=not issues and not record.get("audience_assessment_incomplete"),
             status="checked"
-            if not issues
+            if not issues and not record.get("audience_assessment_incomplete")
             else "repairing"
             if effective
             else "best_effort",
@@ -2534,6 +2590,7 @@ def _plan_step(project, runtime):
             + CONTENT_BRIEF
             + VISUAL_DIRECTION_BRIEF
             + story_pictures.BRIEF
+            + (audience.BRIEF if data.get("audience_policy") else "")
             + "Give each scene a concrete visual question: what does the viewer see change, compare, or connect? "
             "Advance that question across scenes, rather than changing a title over the same background. Reuse a figure when reading another verified panel, not to illustrate a different mechanism. "
             + "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
@@ -2571,7 +2628,7 @@ def _plan_step(project, runtime):
                 + story_direction.SCOPE_BRIEF
                 + "\nEvery scene supplies "
                 + story_direction.SCHEMA
-                + '. INSIDE the learning object put "example_steps":[{en:short heading,ja:heading,detail_en:actual input or rule or expected answer (<=150 chars),detail_ja:actual content (<=100 chars),icon:file|folder|chat|rule|model|memory|robot|number}] with 2-6 steps. Clearly label expected or hypothetical answers as such; do not describe them as observed model results. Keep required terms in needs only if introduced earlier. Opening visuals must show the specific task before its scores.'
+                + '. INSIDE the learning object put "example_steps":[{en:short heading,ja:heading,detail_en:actual input or rule or expected answer (<=150 chars),detail_ja:actual content (<=100 chars),icon:supported icon,objects:[{en:concrete name,ja:名前,icon:supported icon}],relation:flow|order|contrast|window}] with 2-6 steps. Use two or three actual pictured objects in at least the task and decision steps, rather than one decorative file/model icon. For a token window use 2–8 token objects with selected:true/false to show which positions are visible. Supported icons: file,folder,chat,rule,model,memory,robot,number,banana,plate,lid,door,handle,gripper,block,token. Clearly label expected or hypothetical answers as such; do not describe them as observed model results. Keep required terms in needs only if introduced earlier. Opening visuals must show the specific task before its scores.'
             )
 
         def valid(r):
@@ -2602,6 +2659,18 @@ def _plan_step(project, runtime):
                 if data.get("direction_policy"):
                     story_direction.ensure_fallback_contract(s)
                     story_direction.validate_learning(s, explained)
+                    if (
+                        data.get("audience_policy")
+                        and not s["learning"].get("fallback")
+                        and sum(
+                            bool(n.get("objects"))
+                            for n in s["learning"].get("example_steps", [])
+                        )
+                        < 2
+                    ):
+                        raise ValueError(
+                            "Draw actual named objects in the task and decision steps, rather than decorative icons"
+                        )
                     explained.extend(
                         t["term"] for t in s["learning"].get("introduces", [])
                     )
@@ -3061,7 +3130,9 @@ def _script_step(project, runtime, mode):
             return
         normalize_lora_conventions(project, scene)
         for kind in (
-            ("content", "novice", "editorial", "content_final")
+            ("content", "editorial", "novice", "content_final")
+            if project["data"].get("audience_policy")
+            else ("content", "novice", "editorial", "content_final")
             if project["data"].get("direction_policy")
             else ("content", "editorial")
         ):

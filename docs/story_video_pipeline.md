@@ -44,6 +44,38 @@ is synthesized continuously; subtitle cues and sentence practice clips are
 aligned slices of that recording. New films use variable pauses, without
 changing the one-second pauses in existing video revisions.
 
+## Sequential audience rehearsal
+
+New projects use `youtube-storyboard-6-audience-rehearsal`. Three local AI
+personas represent a curious non-specialist, a Python practitioner without this
+field's specialist background, and a Japanese learner of B2 English using
+bilingual captions. The first persona emphasizes spoken comprehension; natural
+B2/C1 English remains the production target.
+
+Before speech generation, the opening is tested with only an estimated first
+30 seconds of words. Each later scene receives only what these simulated
+viewers previously understood, rather than the author's summaries or answer
+key. Every understanding point and gap cites an actual line. The editor then
+receives the gaps and checked sources separately, compares the viewers'
+retellings with the intended question, and repairs missing causal steps,
+transitions, unexplained terms and reasons to keep watching. Edits are checked
+against source text before speech generation. Rehearsals and repairs are saved,
+bounded and do not consume attempts during GPU waits or recording preemption.
+
+The running example keeps its named objects across scenes. A change from the
+main example to another paper experiment needs an explicit bridge. Fixed local
+drawings can now show bananas, plates, lids, doors, grippers and token windows
+instead of decorative document icons. Worked examples show the viewer's
+question before revealing the takeaway at the final step.
+
+Completed-film reviews repeat these tests using measured MP4 caption times,
+actual frames and the saved spoken dialogue. The opening excludes words spoken
+after 30 seconds. The report separates clarity, engagement and useful humor,
+and records each unanswered question and the specific addition it needs.
+Existing frame/audio checks are reused only when the export ID and MP4 hash
+both match. These are AI simulations, not human viewing tests or predictions of
+YouTube audience retention. No old MP4 or recording is overwritten.
+
 ## Saved stages and recovery
 
 `video_projects` groups two `paper-story-1` lessons. Main-paper reading notes

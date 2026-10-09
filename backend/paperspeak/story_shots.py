@@ -31,6 +31,16 @@ def validate(board, project, mode, scene=None):
         set(ids)
     ) != len(ids):
         raise ValueError("Every shot needs a distinct ID")
+    if scene:
+        for shot in shots:
+            spec = shot["visual"]
+            if spec.get("template") == "worked_steps":
+                learning = scene.get("learning", {})
+                spec.setdefault(
+                    "question_en",
+                    learning.get("question_en", board.get("question", "")),
+                )
+                spec.setdefault("question_ja", learning.get("question_ja", ""))
     if scene and scene.get("opening_scene"):
         board["concrete_first"] = True
         case = next(
@@ -56,7 +66,11 @@ def validate(board, project, mode, scene=None):
     # An unchanged whole original is one shot, not three new explanations just
     # because its metadata lists three guide labels. Keep genuinely distinct
     # verified regions and mathematical reveals.
-    whole_originals = {s["id"] for s in shots if s["visual"].get("original_asset_id") and not s["visual"].get("equations")}
+    whole_originals = {
+        s["id"]
+        for s in shots
+        if s["visual"].get("original_asset_id") and not s["visual"].get("equations")
+    }
     seen_regions, unique = set(), []
     for beat in beats:
         if beat["shot"] in whole_originals:

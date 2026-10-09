@@ -1,0 +1,511 @@
+{
+  "checked_at": "2026-10-10T02:47:56.423099+09:00",
+  "pipeline_version": "youtube-storyboard-6-audience-rehearsal",
+  "audience_version": "audience-rehearsal-1-sequential",
+  "baseline_project": "12fe2676ecd442e091514e601b4c7155",
+  "baseline_paper": "Symskill: Symbol and Skill Co-Invention for Data-Efficient and Reactive Long-Horizon Manipulation",
+  "review_id": "b2fe6d40eb7b4ba5ac43b2bfd0111f5d",
+  "report_html": "videos/reviews/b2fe6d40eb7b4ba5ac43b2bfd0111f5d/report.html",
+  "inspection": {
+    "completed_films": 2,
+    "actual_mp4_durations_seconds": {
+      "overview": 929.9,
+      "deep_dive": 2028.5
+    },
+    "persona_checkpoints": 18,
+    "persona_responses": 54,
+    "sources": "Actual MP4 frames and timed English/Japanese captions; saved dialogue; existing encoded-audio checks",
+    "real_human_viewing_test": false,
+    "continuous_full_audio_listen": false,
+    "supplementary_paper": "Characterizing the Expressivity of Local Attention in Transformers",
+    "supplementary_scope": "Opening actual frame and overview script; no new complete three-persona evaluation of that second paper"
+  },
+  "personas": [
+    {
+      "id": "curious",
+      "name_ja": "AIに興味がある非専門家"
+    },
+    {
+      "id": "practitioner",
+      "name_ja": "Pythonを使う実務者"
+    },
+    {
+      "id": "english_learner",
+      "name_ja": "英語学習者・日本語字幕あり"
+    }
+  ],
+  "verified_findings": [
+    {
+      "problem": "The first 30 seconds uses think before showing the concrete decision; simulated clarity is 2/5 for all three overview personas.",
+      "change": "Introduce named objects, a goal and disturbance before abstraction; test only the words heard at that checkpoint."
+    },
+    {
+      "problem": "The opening depicts a generic robot or file icon next to text about bananas/doors, rather than the actual objects.",
+      "change": "Add fixed local banana, plate, lid, door, handle, gripper and token drawings; plan objects for task and decision steps; reveal the question before the final takeaway."
+    },
+    {
+      "problem": "The narrative switches among banana/plate, a door, a pan and several metaphors without enough bridging.",
+      "change": "Maintain the running example and explicitly connect each different paper experiment; keep useful humor attached to the same prediction and callback."
+    },
+    {
+      "problem": "Some viewers can repeat the gist but cannot connect observations, predicates, operators and motion skills.",
+      "change": "Blind viewer retelling, then separate source-informed editing against the intended question; add the missing causal step and recheck edited claims."
+    },
+    {
+      "problem": "A request for optional algorithm details can be healthy curiosity, not a blocking comprehension failure.",
+      "change": "Triage essential additions, later scenes, deep-dive details and untested limitations; preserve suspense and avoid overloading the opening."
+    },
+    {
+      "problem": "The Local Attention overview says global attention can check the last position, then presents a formal inability without stating the changed model assumptions.",
+      "change": "Require architecture restrictions, positional/output conventions and the scope of formal results before expressing limitations; never generalize a restricted theorem to all practical models."
+    }
+  ],
+  "tests": {
+    "backend_passed": 215,
+    "ruff": "passed",
+    "actual_offline_native_drawings": "passed: banana states and highlighted token windows at 1920x1080",
+    "live_LAN_report": "passed: 18 persona sections and 81 questions, no browser/HTTP errors"
+  },
+  "policy": {
+    "inference": "Free local Qwen Q8",
+    "cloud_inference": false,
+    "C1_conversation_preserved": true,
+    "repairs_per_unit_max": 3,
+    "source_recheck_after_editing": true,
+    "recording_priority_preserved": true,
+    "old_MP4s_and_recordings_preserved": true
+  },
+  "reliability": {
+    "typed_three_viewer_response_schema": true,
+    "current_checkpoint_quote_grounding": true,
+    "summary_omits_repeated_memories_and_model_manifests": true,
+    "cached_summary_survives_report_file_error": true,
+    "reused_frame_paths_served_from_actual_cached_directory": true
+  },
+  "scores": [
+    {
+      "mode": "overview",
+      "checkpoint": "最初の30秒",
+      "start": 0,
+      "end": 30,
+      "scores": {
+        "curious": {
+          "clarity": 2,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 2,
+          "engagement": 4,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 2,
+          "engagement": 3,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "overview",
+      "checkpoint": "開かないドア",
+      "start": 0.0,
+      "end": 190.72,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "overview",
+      "checkpoint": "「暗記するだけ」が失敗する理由",
+      "start": 190.72,
+      "end": 382.48,
+      "scores": {
+        "curious": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "overview",
+      "checkpoint": "部屋の「ルール」を学ぶ",
+      "start": 382.48,
+      "end": 525.72,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "overview",
+      "checkpoint": "スキル：安定した運動経路",
+      "start": 525.72,
+      "end": 612.62,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "overview",
+      "checkpoint": "証明：85%の成功率",
+      "start": 612.62,
+      "end": 767.1,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "overview",
+      "checkpoint": "シェフの教訓",
+      "start": 767.1,
+      "end": 929.8599999999998,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 3,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 3,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 4
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "最初の30秒",
+      "start": 0,
+      "end": 30,
+      "scores": {
+        "curious": {
+          "clarity": 2,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 2,
+          "engagement": 3,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "ロボットのジレンマ",
+      "start": 0.0,
+      "end": 132.88,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "SymSkill：統合フレームワーク",
+      "start": 132.88,
+      "end": 363.76,
+      "scores": {
+        "curious": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "参照フレームのトリック",
+      "start": 363.76,
+      "end": 584.86,
+      "scores": {
+        "curious": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 5,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "安定したモーションの学習",
+      "start": 584.86,
+      "end": 799.64,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "ルールの定義",
+      "start": 799.64,
+      "end": 1009.08,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 3,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "学習パイプライン",
+      "start": 1009.08,
+      "end": 1221.54,
+      "scores": {
+        "curious": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "リアルタイムの回復",
+      "start": 1221.54,
+      "end": 1416.92,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 4
+        },
+        "practitioner": {
+          "clarity": 3,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 5,
+          "humor": 5
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "証拠：シミュレーション",
+      "start": 1416.92,
+      "end": 1603.8,
+      "scores": {
+        "curious": {
+          "clarity": 3,
+          "engagement": 5,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 2
+        },
+        "english_learner": {
+          "clarity": 3,
+          "engagement": 3,
+          "humor": 3
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "証拠：実世界",
+      "start": 1603.8,
+      "end": 1837.0,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 5,
+          "humor": 3
+        },
+        "practitioner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 4
+        }
+      }
+    },
+    {
+      "mode": "deep_dive",
+      "checkpoint": "限界とさようなら",
+      "start": 1837.0,
+      "end": 2028.4599999999982,
+      "scores": {
+        "curious": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 4
+        },
+        "practitioner": {
+          "clarity": 5,
+          "engagement": 4,
+          "humor": 3
+        },
+        "english_learner": {
+          "clarity": 4,
+          "engagement": 4,
+          "humor": 5
+        }
+      }
+    }
+  ],
+  "visual_proofs": [
+    "data/evaluation/persona-visual-proof/banana-0.png",
+    "data/evaluation/persona-visual-proof/banana-1.png",
+    "data/evaluation/persona-visual-proof/tokens.png",
+    "data/evaluation/persona-report-live.png"
+  ],
+  "limits": [
+    "Persona scores and enjoyment are local AI simulations, not measured human comprehension or audience retention.",
+    "Existing MP4s were evaluated and preserved; no replacement full MP4 was rendered in this change."
+  ]
+}

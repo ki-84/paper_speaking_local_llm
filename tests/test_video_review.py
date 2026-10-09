@@ -1,9 +1,11 @@
+import copy
+import json
 import time
 import wave
 
 import numpy as np
 import pytest
-from paperspeak import config, db, papers, story, video, video_review
+from paperspeak import audience, config, db, papers, story, video, video_review
 from paperspeak.runtime import GPUUnavailable, PracticePreempted
 
 
@@ -41,6 +43,38 @@ def test_request_is_persistent_idempotent_and_does_not_change_generation(databas
     assert (
         db.one("SELECT available FROM jobs WHERE id=?", (job["id"],))["available"]
         > time.time()
+    )
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_reuse_requires_the_exact_completed_file_hash(database, changed):
+    p = project(["overview"])
+    export = finish_film(p)
+    previous = video_review.get(p["id"])
+    previous["state"] = "ready"
+    previous["data"]["modes"] = {
+        "overview": {
+            "export_id": export["id"],
+            "mp4": export["data"]["mp4"],
+            "sha256": video.file_digest(config.safe_path(export["data"]["mp4"])),
+            "scenes": [{"assessment": {"verdict": "good"}}],
+        }
+    }
+    video_review.save(previous)
+    db.execute(
+        "UPDATE video_reviews SET input_digest='earlier-review-format' WHERE id=?",
+        (previous["id"],),
+    )
+    if changed:
+        with config.safe_path(export["data"]["mp4"]).open("ab") as f:
+            f.write(b"changed-cut")
+    latest = video_review.request(p["id"])
+    data = video_review.get(p["id"])["data"]
+    assert latest["review_id"] != previous["id"]
+    assert bool(data["modes"]) is not changed
+    assert (
+        db.one("SELECT state FROM video_reviews WHERE id=?", (previous["id"],))["state"]
+        == "ready"
     )
 
 
@@ -179,7 +213,7 @@ def test_waits_for_every_full_film_and_never_resumes_a_paused_review(
     assert video_review.finished_exports(p, ["overview", "deep_dive"]) is None
 
 
-def test_actual_encoded_frames_audio_and_report_survive_restart(database):
+def test_actual_encoded_frames_audio_and_report_survive_restart(database, monkeypatch):
     p = project(["overview"])
     requested = video_review.request(p["id"])
     export = finish_film(p)
@@ -187,8 +221,32 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
 
     class Reviewer:
         last_generation = {"profile": "local-test"}
+        synthesis_calls = 0
 
         def ask(self, prompt, *, images=None, **kwargs):
+            if "heard_and_seen" in prompt:
+                line = json.loads(prompt.rsplit("\n", 1)[-1])["heard_and_seen"][0]
+                return {
+                    "personas": [
+                        {
+                            "id": p["id"],
+                            "retell_en": "Look at the robot's next action.",
+                            "understood": [
+                                {
+                                    "point_ja": "次の動きを見る",
+                                    "utterance_id": line["id"],
+                                    "quote": line["text"],
+                                }
+                            ],
+                            "gaps": [],
+                            "keep_watching": "yes",
+                            "reason_ja": "次の行動を知りたい。",
+                            "next_question_ja": "次は何？",
+                            "scores": {"clarity": 4, "engagement": 3, "humor": 2},
+                        }
+                        for p in audience.PERSONAS
+                    ]
+                }
             if images:
                 assert all(path.is_file() for path in images)
                 return {
@@ -206,6 +264,7 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
                         }
                     ],
                 }
+            Reviewer.synthesis_calls += 1
             return {
                 "summary_ja": "実動画の確認を完了。",
                 "priority_fixes_ja": ["説明と図の関係を強める"],
@@ -220,14 +279,29 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
                 assert wav.getnframes() > 60000 and wav.getframerate() == 24000
             return {"text": "Notice the robot and the next action."}
 
+    original_publisher = video_review.publish_report
+    publication_calls = 0
+
+    def failed_disk_once(review):
+        nonlocal publication_calls
+        publication_calls += 1
+        if publication_calls == 1:
+            raise OSError("Report disk temporarily unavailable")
+        return original_publisher(review)
+
+    monkeypatch.setattr(video_review, "publish_report", failed_disk_once)
     for _ in range(12):
         # New instances read the committed checkpoint, as after a worker restart.
         job = db.one("SELECT * FROM jobs WHERE id=?", (requested["job_id"],))
-        if video_review.step(job, Reviewer()):
-            break
+        try:
+            if video_review.step(job, Reviewer()):
+                break
+        except OSError:
+            assert video_review.get(p["id"])["data"]["summary"]["summary_ja"]
     else:
         pytest.fail("Review did not finish")
     result = video_review.get(p["id"])
+    assert Reviewer.synthesis_calls == 1
     assert result["state"] == "ready"
     info = result["data"]["modes"]["overview"]
     assert info["sha256"] == video.file_digest(config.safe_path(export["data"]["mp4"]))
@@ -238,6 +312,13 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
     report = config.safe_path(result["data"]["report_html"]).read_text()
     assert "&lt;script&gt;" in report and "<script>alert" not in report
     assert config.safe_path(result["data"]["report_json"]).is_file()
+    # A subsequent review can reuse actual frames from the earlier review's
+    # directory. Publishing must not assume that every image is under its root.
+    reused = copy.deepcopy(result)
+    reused["id"] = "later-review-reusing-frames"
+    video_review.publish_report(reused)
+    reused_html = config.safe_path(reused["data"]["report_html"]).read_text()
+    assert "/api/files/videos/reviews/" in reused_html
     assert (
         db.dumps(
             db.one("SELECT data FROM video_projects WHERE id=?", (p["id"],))["data"]
@@ -256,6 +337,52 @@ def test_actual_encoded_frames_audio_and_report_survive_restart(database):
     assert "追加照合済み" in corrected
     assert "<details><summary>初回ローカルAIレビュー" in corrected
     assert "&lt;script&gt;" in corrected
+
+
+def test_summary_uses_findings_without_repeating_memory_or_model_manifests(database):
+    p = project(["overview"])
+    export = finish_film(p)
+    info = video_review.prepare_mode(video_review.get(p["id"]), "overview", export)
+    info["audience"] = [
+        {
+            "title": "Opening",
+            "start": 0,
+            "assessment": {
+                "memory": {"curious": ["UNNEEDED_MEMORY_MARKER" * 5000]},
+                "generation": {"manifest": "UNNEEDED_MODEL_MANIFEST" * 5000},
+                "personas": [
+                    {
+                        "id": "curious",
+                        "scores": {"clarity": 2, "humor": 3, "engagement": 4},
+                        "retell_en": "The task is clear but the cause is not.",
+                        "keep_watching": "yes",
+                        "reason_ja": "理由を知りたい。",
+                        "gaps": [
+                            {
+                                "question_ja": "何を見て判定する？",
+                                "add_ja": "入力から判定までの図を追加。",
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+    ]
+    r = video_review.get(p["id"])
+    r["data"]["modes"] = {"overview": info}
+
+    class Local:
+        def ask(self, prompt, **kwargs):
+            assert "UNNEEDED_MEMORY_MARKER" not in prompt
+            assert "UNNEEDED_MODEL_MANIFEST" not in prompt
+            assert "何を見て判定する" in prompt
+            assert len(prompt) < 15000
+            return {
+                "summary_ja": "原因の説明を補う。",
+                "priority_fixes_ja": ["判定の図"],
+            }
+
+    assert video_review.overall_review(r, p, Local())["summary_ja"]
 
 
 def test_review_request_and_status_api(client):

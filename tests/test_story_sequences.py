@@ -533,6 +533,7 @@ def test_newcomer_only_gets_spoken_explanation_not_source_answers(
     database, monkeypatch
 ):
     p = project()
+    p["data"].pop("audience_policy", None)  # legacy single-listener rehearsal
     scene = {
         "title": "Copy a picture",
         "focus": "Which comes first?",

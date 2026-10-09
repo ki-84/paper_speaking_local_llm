@@ -256,6 +256,8 @@ def fallback(project, scene):
             "nodes": steps,
             "caption_en": scene["learning"]["takeaway_en"],
             "caption_ja": scene["learning"]["takeaway_ja"],
+            "question_en": scene["learning"]["question_en"],
+            "question_ja": scene["learning"]["question_ja"],
         }
         from . import story_pictures
 

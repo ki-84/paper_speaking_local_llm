@@ -14,6 +14,8 @@ BRIEF = (
     "Aiden does not introduce unexplained jargon or lecture before Maya. Use dry humor tied to the actual task, with one opening callback at the end. "
     "Alternate a specific example, its explanation, a consequence/question, and the source evidence. Show the mechanism while explaining it, not only results or paper pages. "
     "Keep natural B2/C1 English. Simpler concepts do not require babyish sentences. Do not pad, rush, or target a fixed runtime. "
+    "Carry the same named objects and practical example through the film; when a paper experiment uses different objects, announce the change and connect the observation back to that first example. "
+    "Aiden must ask from the audience's existing knowledge, not recite an unexplained VLM/algorithm procedure before Maya. "
 )
 SCOPE_BRIEF = (
     "Distinguish observations, the authors' interpretation, and a teaching example. "
@@ -26,6 +28,8 @@ SCOPE_BRIEF = (
     "Training-update frequency, batch size, learning-rate step size, and real-time action/inference frequency are different quantities. "
     "Introduce a simplified/basic mathematical model as such, and explain when the paper's actual objective or implementation differs. "
     "Results from a few memory frameworks do not prove every retrieval system fails or that only an architectural change can help. Attribute proposed explanations to the authors. "
+    "A learned robot policy is not necessarily a replayed video or literal trajectory memorization. Attribute poor generalization to the tested data and conditions, not an invented impossibility of all monolithic policies. "
+    "For formal expressivity results, state the architecture restrictions, positional information and location/convention of the output before comparing operations. Do not turn such a theorem into a universal inability of global attention to read the final character. "
 )
 SCHEMA = (
     'learning:{question_en:"one question the viewer can answer",question_ja:"日本語",'

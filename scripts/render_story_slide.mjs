@@ -25,6 +25,9 @@ const avatars = (await Promise.all(["guide", "host"].map(async role => {
   return `<div class="avatar ${esc(person.side)}"><img src="data:image/svg+xml;base64,${bytes.toString("base64")}"><div class="nameplate">${esc(person.name)} · ${esc(person.role)}</div></div>`;
 }))).join("");
 const spec = scene.visual;
+const revealQuestion = spec.template === 'worked_steps' && Number(scene.focus||0) < (spec.nodes||[]).length-1 && spec.question_en && spec.question_ja;
+const captionEn = revealQuestion ? spec.question_en : spec.caption_en;
+const captionJa = revealQuestion ? spec.question_ja : spec.caption_ja;
 const nodes = spec.nodes || [];
 const mathematical = (spec.equations || []).length > 0;
 const zoom = (spec.zoom_regions||[])[Number(scene.focus||0)-Number(spec.zoom_start||999)];
@@ -92,7 +95,7 @@ const content = scene.thumbnail
   : `<header><div><h1>${esc(scene.title_en)}</h1><p lang="ja">${esc(scene.title_ja)}</p></div><span>${badge}</span></header>
     <main id="diagram"><div class="badge">${spec.template ? "Concept sketch · 模式図" : spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
     ${showOriginal ? original : conceptMath || pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
-    <div class="caption"><div>${esc(spec.caption_en)}</div><div lang="ja">${esc(spec.caption_ja)}</div></div></main>`;
+    <div class="caption"><div>${esc(captionEn)}</div><div lang="ja">${esc(captionJa)}</div></div></main>`;
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}${storyPictureCSS}${workedStepCSS}${workedObjectsCSS}
 *{box-sizing:border-box}html,body{width:1920px;height:1080px;margin:0;overflow:hidden}
 body{font-family:"Noto Sans CJK JP","Noto Sans",sans-serif;color:#edf4ef;background:#102d2c}

@@ -10,9 +10,17 @@ import wave
 
 import imageio_ffmpeg
 
-from . import config, db, math_concepts, publication, video, video_overlay
+from . import (
+    config,
+    db,
+    japanese_story,
+    math_concepts,
+    publication,
+    video,
+    video_overlay,
+)
 
-VERSION = "story-film-9-concrete-sequences"
+VERSION = "story-film-10-language-captions"
 RELEASE_VERSION = "verified-video-packaging-1"
 
 
@@ -196,8 +204,11 @@ def render_scene(project, mode, index):
                         "title_en": scene["title"],
                         "title_ja": scene["title_ja"],
                         "mode": mode,
+                        "language": japanese_story.language(mode),
                         "focus": focus,
-                        "visual": scene["visual"],
+                        "visual": japanese_story.localize_labels(scene["visual"])
+                        if mode == japanese_story.MODE
+                        else scene["visual"],
                         "data_root": str(config.DATA),
                         "study_output": str(root / f"study-{focus}.png"),
                     }
@@ -368,6 +379,7 @@ def enqueue(project, mode, *, preview=False):
         "duration_policy": track.get("duration_policy", {}),
         "project_id": project["id"],
         "mode": mode,
+        **japanese_story.metadata(mode),
         "preview": preview,
         "renderer_sha256": renderer_digest(),
         "math_concept_policy": project["data"].get("math_concept_policy"),
@@ -388,6 +400,7 @@ def enqueue(project, mode, *, preview=False):
         "scenes": [
             {
                 "title": s["title"],
+                "language": japanese_story.language(mode),
                 "title_ja": s["title_ja"],
                 "visual": s["visual"],
                 "render_paths": s["render_paths"],
@@ -558,7 +571,9 @@ def timeline(manifest, root):
                     )
                 captions.append(
                     {
-                        "english": text,
+                        "english": text
+                        if manifest.get("language", "en") == "en"
+                        else "",
                         "japanese": scene["subtitle_items"][f"{ui}:{si}"]["japanese"],
                         "speaker": u["speaker"],
                         "audio": str(path.relative_to(config.DATA)),
@@ -668,6 +683,36 @@ def finalize_packaging(export_id, *, project=None):
         or not config.safe_path(export["data"]["mp4"]).is_file()
     ):
         raise ValueError("The video file must exist before its release check")
+    if mode == japanese_story.MODE:
+        if manifest.get("language") != "ja" or manifest.get("subtitle_languages") != [
+            "ja"
+        ]:
+            raise ValueError(
+                "Japanese releases require Japanese speech and Japanese-only captions"
+            )
+        for scene in manifest["scenes"]:
+            for turn in scene["utterances"]:
+                if turn.get("tts_settings", {}).get("language") != "Japanese":
+                    raise ValueError(
+                        "A Japanese film contains speech generated in another language"
+                    )
+        subtitle_file = (
+            config.safe_path(export["data"]["captions_ass"])
+            if export["data"].get("captions_ass")
+            else config.DATA / "jobs" / ("story-video-" + export_id) / "captions.ass"
+        )
+        if not subtitle_file.is_file():
+            raise ValueError(
+                "The Japanese film needs its actual burned-caption receipt"
+            )
+        if any(
+            ",English," in line
+            for line in subtitle_file.read_text().splitlines()
+            if line.startswith("Dialogue:")
+        ):
+            raise ValueError(
+                "The Japanese film contains burned English subtitle events"
+            )
     repairs = publication.description_issues(
         project, mode, export["data"].get("description", "")
     )
@@ -777,7 +822,11 @@ def step(job, runtime):
             clipped.append(cue | {"frames": n})
             remaining -= n
         captions = clipped
-    tracks, ass, expected = video._captions(captions, animate=True)
+    tracks, ass, expected = video._captions(
+        captions,
+        animate=True,
+        languages=manifest.get("subtitle_languages", ["en", "ja"]),
+    )
     ass += "\n".join(animation) + "\n"
     duration = min(90, expected) if preview else expected
     output = config.DATA / "videos" / export["lesson_id"] / export["input_digest"][:12]
@@ -787,7 +836,10 @@ def step(job, runtime):
         "mp4": output / (title + ".mp4"),
         "en_srt": output / (title + ".en.srt"),
         "ja_srt": output / (title + ".ja.srt"),
+        "captions_ass": output / (title + ".ass"),
     }
+    if manifest.get("language") == "ja":
+        paths.pop("en_srt", None)
     # Encode finite 60-second segments so recording priority/restarts never discard a whole film.
     ass_path = work / "captions.ass"
     ass_path.write_text(ass, encoding="utf-8")
@@ -914,7 +966,8 @@ def step(job, runtime):
         partial.unlink(missing_ok=True)
         raise ValueError("Final story audio/video duration mismatch")
     partial.replace(paths["mp4"])
-    for lang in ("en", "ja"):
+    paths["captions_ass"].write_text(ass, encoding="utf-8")
+    for lang in manifest.get("subtitle_languages", ["en", "ja"]):
         paths[lang + "_srt"].write_text(tracks[lang], encoding="utf-8")
     thumbnail = _thumbnail(manifest, work)
 
@@ -933,7 +986,8 @@ def step(job, runtime):
     acceptance = {
         "version": VERSION,
         "preview": preview,
-        "burned_subtitles": ["en", "ja"],
+        "burned_subtitles": manifest.get("subtitle_languages", ["en", "ja"]),
+        "language": manifest.get("language", "en"),
         "resolution": [1920, 1080],
         "duration_error_s": round(actual - duration, 3),
         "paragraphs": sum(len(s["utterances"]) for s in manifest["scenes"]),
@@ -962,6 +1016,9 @@ def step(job, runtime):
         encode_settings=video.ENCODE,
         characters=manifest["characters"],
         acceptance=acceptance,
+        language=manifest.get("language", "en"),
+        subtitle_languages=manifest.get("subtitle_languages", ["en", "ja"]),
+        voice_profile=manifest.get("voice_profile"),
         encoder=imageio_ffmpeg.get_ffmpeg_version(),
     )
     finalize_packaging(export["id"], project=project)

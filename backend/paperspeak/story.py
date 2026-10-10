@@ -20,6 +20,7 @@ from . import (
     audience,
     config,
     db,
+    japanese_story,
     lessons,
     math_concepts,
     paper_profile,
@@ -44,7 +45,7 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-storyboard-7-paper-types"
+VERSION = "youtube-details-8-en-ja"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 EDITORIAL_REVIEW_VERSION = "content-first-editorial-3"
 NOVICE_REVIEW_VERSION = "beginner-rehearsal-3-blind"
@@ -100,10 +101,12 @@ MODES = {
         "scenes": 6,
     },
     "deep_dive": {
-        "label": "詳解編",
+        "label": "英語・詳細解説",
         "scenes": 10,
     },
+    "deep_dive_ja": {"label": "日本語解説", "scenes": 10},
 }
+DEFAULT_MODES = ("deep_dive", "deep_dive_ja")
 BEATS = {
     "overview": [
         OPENING_BRIEF
@@ -137,6 +140,7 @@ SYSTEM = (
     "Maya (guide) is an insightful female engineer; Aiden (host) is a witty, curious male engineer. "
     "Use contractions, varied sentences, concrete imagery and occasional dry humor. Avoid empty agreement and artificial jargon. "
     + CONTENT_BRIEF
+    + "Every new detailed film is standalone; there is no overview prerequisite. Do not refer to an earlier overview or tell viewers to watch it first. "
     + "Plans and notes are drafting aids, NOT factual evidence; correct them when the primary source disagrees. "
     "Never include private deliberation or speculative self-questioning in a JSON field. "
     "Return the requested JSON object only. Japanese fields must be natural Japanese."
@@ -147,8 +151,13 @@ def is_lora(project):
     # Mentioning LoRA in a comparison/variant does not authorize the original
     # paper's fixed rank, scaling or worked-example conventions.
     title = re.sub(r"\s+", " ", project["data"]["paper_title"]).strip()
-    return title.casefold() == "lora" or bool(re.fullmatch(
-        r"LoRA\s*:\s*Low[- ]Rank Adaptation of Large Language Models[.\s]*", title, re.I))
+    return title.casefold() == "lora" or bool(
+        re.fullmatch(
+            r"LoRA\s*:\s*Low[- ]Rank Adaptation of Large Language Models[.\s]*",
+            title,
+            re.I,
+        )
+    )
 
 
 def award_context_prompt(project):
@@ -210,17 +219,44 @@ def story_beats(project, mode):
     ]
 
 
-def create(paper_id, *, profile=None, modes=None):
+def project_fingerprint(paper, model, selected):
+    # Cosmetic edition labels do not create duplicate projects during generation.
+    return video.digest(
+        [
+            paper["id"],
+            paper["version"],
+            VERSION,
+            model,
+            selected,
+            {
+                mode: {"scenes": MODES[mode]["scenes"], **japanese_story.metadata(mode)}
+                for mode in selected
+            },
+            DURATION_POLICY,
+            video.file_digest(config.ROOT / "backend/paperspeak/speech_actor.py"),
+            {
+                key: config.manifest().get("models", {}).get(key)
+                for key in (model, "tts", "tts-design", "asr", "aligner")
+            },
+        ]
+    )
+
+
+def create(paper_id, *, profile=None, modes=None, legacy=False):
     paper = db.one("SELECT * FROM papers WHERE id=?", (paper_id,))
     if not paper:
         raise ValueError("Paper not found")
     model = profile or db.settings()["model_profile"]
-    selected = list(dict.fromkeys(modes if modes is not None else MODES))
-    if not selected or any(mode not in MODES for mode in selected):
-        raise ValueError("Choose overview, deep_dive, or both")
-    fingerprint = video.digest(
-        [paper_id, paper["version"], VERSION, model, selected, MODES, DURATION_POLICY]
-    )
+    defaults = ("overview", "deep_dive") if legacy else DEFAULT_MODES
+    selected = list(dict.fromkeys(modes if modes is not None else defaults))
+    allowed = set(MODES) if legacy else set(DEFAULT_MODES)
+    if not selected or any(mode not in allowed for mode in selected):
+        raise ValueError(
+            "Choose deep_dive and/or deep_dive_ja; new overviews are retired"
+        )
+    if "deep_dive_ja" in selected:
+        selected = ["deep_dive", "deep_dive_ja"]
+    fingerprint = project_fingerprint(paper, model, selected)
     with db.connection() as conn:
         conn.execute("BEGIN IMMEDIATE")
         old = conn.execute(
@@ -253,15 +289,23 @@ def create(paper_id, *, profile=None, modes=None):
             # Reuse source reading, never the earlier dialogue or recordings.
             prior = db.row(
                 conn.execute(
-                    "SELECT * FROM video_projects WHERE paper_id=? AND state='ready' ORDER BY created DESC LIMIT 1",
+                    "SELECT * FROM video_projects WHERE paper_id=? AND (state='ready' OR json_extract(data,'$.reading_complete')=1) ORDER BY created DESC LIMIT 1",
                     (paper_id,),
                 ).fetchone()
             )
             if prior:
+                reference_ids = [
+                    r["paper_id"]
+                    for r in prior["data"].get("references", [])
+                    if r.get("paper_id")
+                ]
                 known = {
                     r["id"]
                     for r in conn.execute(
-                        "SELECT id FROM sources WHERE paper_id=?", (paper_id,)
+                        "SELECT id FROM sources WHERE paper_id IN ("
+                        + ",".join("?" for _ in [paper_id, *reference_ids])
+                        + ")",
+                        [paper_id, *reference_ids],
                     )
                 }
                 reused = [
@@ -272,15 +316,51 @@ def create(paper_id, *, profile=None, modes=None):
                 if reused:
                     data.update(
                         evidence=reused,
+                        references=copy.deepcopy(prior["data"].get("references", [])),
                         reading_complete=True,
                         reading_includes_structured=bool(
                             prior["data"].get("reading_includes_structured")
+                            or (
+                                not legacy
+                                and prior["data"].get("version")
+                                in {"youtube-storyboard-7-paper-types", VERSION}
+                                and prior["data"].get("reading_complete")
+                                and prior["data"].get("reading_index", -1)
+                                == len(
+                                    lessons.source_groups(
+                                        papers.reading_sources(paper_id)
+                                    )
+                                )
+                            )
                         ),
                         reading_reuse=prior["id"],
                         reading_reuse_digest=video.digest(reused),
                     )
+                    if (
+                        prior["data"].get("phase") in {"production", "complete"}
+                        and data["reading_includes_structured"]
+                    ):
+                        for source_key in (
+                            "publication",
+                            "source_review",
+                            "figure_index",
+                            "figure_candidates",
+                            "figure_checks",
+                            "source_examples_done",
+                            "research_profile",
+                            "exact_equations_attached",
+                            "references_selected",
+                            "background_index",
+                        ):
+                            if source_key in prior["data"]:
+                                data[source_key] = copy.deepcopy(
+                                    prior["data"][source_key]
+                                )
+                        data["phase"] = "plan"
             for mode in selected:
-                preset = MODES[mode]
+                preset = dict(MODES[mode])
+                if legacy and mode == "deep_dive":
+                    preset["label"] = "詳解編"
                 lid = db.uid()
                 data["modes"][mode] = {
                     "lesson_id": lid,
@@ -289,19 +369,49 @@ def create(paper_id, *, profile=None, modes=None):
                     "scenes": [],
                     "preset": preset,
                     "duration_policy": DURATION_POLICY,
+                    **({} if legacy else japanese_story.metadata(mode)),
                 }
+                if (
+                    prior
+                    and not legacy
+                    and mode == "deep_dive"
+                    and prior["data"].get("modes", {}).get(mode, {}).get("plan_checked")
+                ):
+                    previous = prior["data"]["modes"][mode]
+                    for reuse_key in (
+                        "outline",
+                        "scenes",
+                        "hooks_refined",
+                        "plan_checked",
+                        "packaging",
+                    ):
+                        if reuse_key in previous:
+                            data["modes"][mode][reuse_key] = copy.deepcopy(
+                                previous[reuse_key]
+                            )
+                    for scene in data["modes"][mode]["scenes"]:
+                        scene.pop("chapter_id", None)
+                        # Existing clips belong to the earlier lesson; rematerialize them without new TTS.
+                        scene.pop("clips_ready", None)
+                        scene.pop("questions_ready", None)
+                    data["modes"][mode]["english_reuse"] = prior["id"]
                 ld = {
                     "format": FORMAT,
                     "phase": "story",
                     "project_id": ident,
                     "mode": mode,
+                    **({} if legacy else japanese_story.metadata(mode)),
                     "title": paper["title"] + " · " + preset["label"],
                     "model": model,
                     "glossary": [],
                     "models_used": config.manifest(),
                     "settings": {
-                        "language": "English",
-                        "target": "C1 natural conversation",
+                        "language": "Japanese"
+                        if mode == japanese_story.MODE
+                        else "English",
+                        "target": "natural scientific conversation"
+                        if mode == japanese_story.MODE
+                        else "C1 natural conversation",
                     },
                 }
                 conn.execute(
@@ -399,6 +509,7 @@ def get(ident):
             "duration_policy",
             "phase",
             "paper_title",
+            "superseded_by_project",
             "publication",
             "warnings",
             "references",
@@ -415,6 +526,11 @@ def get(ident):
                 "label",
                 "phase",
                 "preset",
+                "language",
+                "subtitle_languages",
+                "learning_enabled",
+                "voice_profile",
+                "derived_from_mode",
                 "packaging",
                 "expressions",
                 "duration_check",
@@ -426,6 +542,10 @@ def get(ident):
             )
             if k in track
         }
+        if mode == japanese_story.MODE:
+            value["label"] = "日本語解説"
+        for descriptor, default in japanese_story.metadata(mode).items():
+            value.setdefault(descriptor, default)
         scenes = track["scenes"]
         utterances = [u for s in scenes for u in s.get("utterances", [])]
         # Counts reflect saved work, including speech rechecks that can move
@@ -437,8 +557,13 @@ def get(ident):
             "speech_ready": sum(bool(u.get("audio")) for u in utterances),
             "speech_checked": sum(bool(u.get("aligned")) for u in utterances),
             "subtitled_scenes": sum(bool(s.get("subtitles_ready")) for s in scenes),
-            "practice_scenes": sum(
-                bool(s.get("clips_ready") and s.get("questions_ready")) for s in scenes
+            "practice_scenes": (
+                sum(
+                    bool(s.get("clips_ready") and s.get("questions_ready"))
+                    for s in scenes
+                )
+                if track.get("learning_enabled", True)
+                else 0
             ),
             "speech_retries": sum(u.get("audio_retries", 0) for u in utterances),
             "updated": project["updated"],
@@ -1641,7 +1766,8 @@ def _review_scene(project, runtime, mode, scene, index, kind):
         state = scene.get("audience_rehearsal", {})
         record["audience_assessment_incomplete"] = (
             not state.get("result")
-            or digest != video.digest([audience.VERSION, audience.draft_material(scene)])
+            or digest
+            != video.digest([audience.VERSION, audience.draft_material(scene)])
             or (index == 0 and not state.get("opening"))
         )
         if record.get("audience_digest") != digest and record["attempts"] < 3:
@@ -2591,6 +2717,8 @@ def _plan_step(project, runtime):
         attach_equation_sources(project)
         data["exact_equations_attached"] = True
     for mode, track in data["modes"].items():
+        if mode == japanese_story.MODE:
+            continue
         if track.get("outline"):
             continue
         preset = MODES[mode]
@@ -2601,7 +2729,11 @@ def _plan_step(project, runtime):
             + story_pictures.BRIEF
             + (audience.BRIEF if data.get("audience_policy") else "")
             + paper_profile.brief(project)
-            + ("Deep-dive focus: " + paper_profile.deep_focus(project) + ". " if mode == "deep_dive" else "")
+            + (
+                "Deep-dive focus: " + paper_profile.deep_focus(project) + ". "
+                if mode == "deep_dive"
+                else ""
+            )
             + "Give each scene a concrete visual question: what does the viewer see change, compare, or connect? "
             "Advance that question across scenes, rather than changing a title over the same background. Reuse a figure when reading another verified panel, not to illustrate a different mechanism. "
             + "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
@@ -2728,6 +2860,8 @@ def _plan_step(project, runtime):
         }
         return
     for mode, track in data["modes"].items():
+        if mode == japanese_story.MODE:
+            continue
         if track.get("hooks_refined"):
             continue
 
@@ -2773,6 +2907,8 @@ def _plan_step(project, runtime):
             track["hooks_refined"] = True
         return
     for mode, track in data["modes"].items():
+        if mode == japanese_story.MODE:
+            continue
         if track.get("plan_checked"):
             continue
         r = bounded(
@@ -3081,6 +3217,8 @@ def fallback_hooks(project, mode):
 
 
 def _script_step(project, runtime, mode):
+    if mode == japanese_story.MODE:
+        return japanese_story.script_step(project, runtime)
     from . import story_video
 
     track = project["data"]["modes"][mode]
@@ -3555,11 +3693,23 @@ def _tts_step(project, runtime, mode):
                         VERSION,
                         u["id"],
                         u["text"],
+                        u.get("spoken_text"),
+                        video.file_digest(
+                            config.ROOT / "backend/paperspeak/speech_actor.py"
+                        ),
+                        japanese_story.metadata(mode),
+                        voices.JAPANESE_INSTRUCTIONS
+                        if mode == japanese_story.MODE
+                        else voices.GUIDE_INSTRUCTION,
                         role,
                         u.get("audio_retries", 0),
                         config.manifest()
                         .get("models", {})
-                        .get("tts-design" if role == "guide" else "tts"),
+                        .get(
+                            "tts-design"
+                            if role == "guide" or mode == japanese_story.MODE
+                            else "tts"
+                        ),
                     ]
                 )
                 path = config.DATA / "audio" / (key + ".wav")
@@ -3569,16 +3719,29 @@ def _tts_step(project, runtime, mode):
                     if role == "guide"
                     else "Speak as an adult American male engineer in a lively, fluent conversation. Natural native pace, curious questions and understated wit. No background sounds."
                 )
+                if mode == japanese_story.MODE:
+                    instruction = voices.JAPANESE_INSTRUCTIONS[role]
                 result = runtime.speech(
-                    "tts_design" if role == "guide" else "tts",
+                    "tts_design"
+                    if role == "guide" or mode == japanese_story.MODE
+                    else "tts",
                     {
-                        "text": u["text"],
+                        "text": u.get("spoken_text") or u["text"],
+                        "language": "Japanese"
+                        if mode == japanese_story.MODE
+                        else "English",
+                        "voice_profile": japanese_story.metadata(mode)["voice_profile"],
                         "voice": voices.GUIDE_VOICE
                         if role == "guide"
                         else voices.HOST_VOICE,
                         "instruction": instruction,
                         "output": str(path),
-                        "seed": int(key[:8], 16),
+                        "seed": (
+                            (20261010 if role == "guide" else 20261011)
+                            + u.get("audio_retries", 0)
+                        )
+                        if mode == japanese_story.MODE
+                        else int(key[:8], 16),
                     },
                 )
                 u.update(
@@ -3653,18 +3816,43 @@ def _align_step(project, runtime, mode):
                 {
                     "audio": str(config.safe_path(u["audio"])),
                     "context": speech_context(project["data"]["paper_title"], [], [u]),
+                    "language": "Japanese"
+                    if mode == japanese_story.MODE
+                    else "English",
                 },
             )
-            diff, _ = speech_match(u["text"], result["text"])
+            diff, accepted = (
+                japanese_story.speech_check(
+                    u.get("spoken_text") or u["text"], result["text"]
+                )
+                if mode == japanese_story.MODE
+                else speech_match(u["text"], result["text"])
+            )
             u["audio_check"] = {
                 "transcript": result["text"],
                 "wer": diff["wer"],
+                **(
+                    {
+                        "cer": diff["cer"],
+                        "metric": diff["metric"],
+                        "critical_mismatch": bool(
+                            diff.get("lost_numbers") or diff.get("negation_lost")
+                        ),
+                    }
+                    if mode == japanese_story.MODE
+                    else {}
+                ),
                 "timestamps": result.get("timestamps", []),
                 "settings": result.get("generation_settings", {}),
             }
             retries = u.get("audio_retries", 0)
-            disagreement = diff["wer"] > 0.18 or (
-                diff["wer"] > 0 and critical_speech_change(u["text"], diff, ())
+            disagreement = (
+                not accepted
+                if mode == japanese_story.MODE
+                else (
+                    diff["wer"] > 0.18
+                    or (diff["wer"] > 0 and critical_speech_change(u["text"], diff, ()))
+                )
             )
             if disagreement and retries < 3:
                 u.setdefault("voice_candidates", []).append(
@@ -3699,7 +3887,10 @@ def _align_step(project, runtime, mode):
                 }
                 best = min(
                     [current, *u.get("voice_candidates", [])],
-                    key=lambda c: c["audio_check"]["wer"],
+                    key=lambda c: (
+                        c["audio_check"].get("critical_mismatch", False),
+                        c["audio_check"]["wer"],
+                    ),
                 )
                 u.update(best)
                 result = {
@@ -3713,21 +3904,38 @@ def _align_step(project, runtime, mode):
                     {"unit": u["id"], "reason": u["audio_warning"], "wer": diff["wer"]}
                 )
             u["aligned"] = True
-            u["sentence_ranges"] = sentence_ranges(
-                u["text"], result.get("timestamps", []), u["duration"]
-            )
-            u["caption_ranges"] = aligned_ranges(
-                caption_units(u["text"]), result.get("timestamps", []), u["duration"]
-            )
+            if mode == japanese_story.MODE:
+                ranges = japanese_story.aligned_ranges(
+                    japanese_story.chunks(u["text"]),
+                    result.get("timestamps", []),
+                    u["duration"],
+                )
+                u["sentence_ranges"] = u["caption_ranges"] = ranges
+            else:
+                u["sentence_ranges"] = sentence_ranges(
+                    u["text"], result.get("timestamps", []), u["duration"]
+                )
+                u["caption_ranges"] = aligned_ranges(
+                    caption_units(u["text"]),
+                    result.get("timestamps", []),
+                    u["duration"],
+                )
             if scene.get("storyboard"):
                 from . import storyboards
 
-                u["visual_events"] = storyboards.timed_cues(scene, u)
+                u["visual_events"] = (
+                    japanese_story.visual_events(scene, u)
+                    if mode == japanese_story.MODE
+                    else storyboards.timed_cues(scene, u)
+                )
             return
         if not scene.get("subtitles_ready"):
             _subtitle_step(project, runtime, mode, index)
             return
         if not scene.get("clips_ready"):
+            if mode == japanese_story.MODE:
+                scene["clips_ready"] = True
+                return
             _clips_step(project, mode, index)
             return
         if index == 0 and not track.get("preview_id"):
@@ -3749,6 +3957,14 @@ def _align_step(project, runtime, mode):
 
 def _subtitle_step(project, runtime, mode, index):
     scene = project["data"]["modes"][mode]["scenes"][index]
+    if mode == japanese_story.MODE:
+        scene["subtitle_items"] = {
+            f"{ui}:{si}": {"japanese": text}
+            for ui, u in enumerate(scene["utterances"])
+            for si, (text, _, _) in enumerate(u["caption_ranges"])
+        }
+        scene["subtitles_ready"] = True
+        return
     # Sentence-sized bilingual captions, independent of the paragraph TTS boundaries.
     rows = [
         {"id": f"{ui}:{si}", "english": s}
@@ -4007,6 +4223,10 @@ def fallback_questions(scene):
 
 def _learning_step(project, runtime, mode):
     track = project["data"]["modes"][mode]
+    if mode == japanese_story.MODE:
+        track["expressions"] = []
+        for scene in track["scenes"]:
+            scene["questions_ready"] = True
     if "expressions" not in track:
         script = [
             {"id": u["id"], "text": u["text"]}
@@ -4213,11 +4433,14 @@ def step(job, runtime):
                 "script": "Writing and editing the story",
                 "tts": "Making natural paragraph speech",
                 "align": "Checking speech and preparing Japanese subtitles",
-                "learning": "Preparing English practice",
+                "learning": "Preparing Japanese release information"
+                if mode == japanese_story.MODE
+                else "Preparing English practice",
                 "export": "Rendering the film",
             }[p]
         )
-        progress = (0.10 if mode == "overview" else 0.55) + {
+        first_mode = next(iter(data["modes"]))
+        progress = (0.10 if mode == first_mode else 0.55) + {
             "script": 0.02,
             "tts": 0.15,
             "align": 0.23,

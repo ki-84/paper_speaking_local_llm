@@ -68,7 +68,7 @@ try{
   </style></head><body><div class="rays">${rays}</div>${bg?`<img class="idea" src="${bg}">`:`<div class="idea" style="background:linear-gradient(145deg,#f7d75a,#74d8d1);display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:900;color:#122f41">${esc(spec.topic||'AI × NEW IDEA')}</div>`}
   <img class="portrait maya" src="${maya}"><img class="portrait aiden" src="${aiden}"><div class="bang left">!?</div><div class="bang right">!!</div>
   <div class="paper-name"><span>${esc(identity.paper_title)}</span></div><div class="identity"><div class="edition">${esc(identity.edition)}</div><div class="conference">${esc(identity.conference)}</div></div>
-  <div class="title">${spec.lines.map(s=>`<span>${esc(s)}</span>`).join('')}</div>${award?`<div class="award"><div class="award-label">${esc(award.label)}</div><div class="award-name">${esc(award.name)}</div></div>`:''}<div class="tag">英語で学ぶAI</div><div class="name m">MAYA</div><div class="name a">AIDEN</div></body></html>`);
+  <div class="title">${spec.lines.map(s=>`<span>${esc(s)}</span>`).join('')}</div>${award?`<div class="award"><div class="award-label">${esc(award.label)}</div><div class="award-name">${esc(award.name)}</div></div>`:''}<div class="tag">${String(spec.identity?.edition||'').includes('日本語')?'日本語で学ぶAI':'英語で学ぶAI'}</div><div class="name m">MAYA</div><div class="name a">AIDEN</div></body></html>`);
   await page.evaluate(()=>document.fonts.ready);
   await page.evaluate(()=>{
    const paper=document.querySelector('.paper-name'),name=paper.firstElementChild;

@@ -8,6 +8,10 @@ import {renderStoryPicture, storyPictureCSS, workedStepCSS, workedObjectsCSS} fr
 
 const [input, output] = process.argv.slice(2);
 const scene = JSON.parse(await fs.readFile(input, "utf8"));
+if(scene.language==='ja'){
+  const localize=v=>{if(Array.isArray(v))return v.map(localize);if(!v||typeof v!=='object')return v;const r=Object.fromEntries(Object.entries(v).map(([k,x])=>[k,localize(x)]));for(const k of Object.keys(r)){const j=k==='en'?'ja':k.endsWith('_en')?k.slice(0,-3)+'_ja':null;if(j&&r[j])r[k]=r[j];}return r;};
+  scene.visual=localize(scene.visual);scene.title_en=scene.title_ja;
+}
 const esc = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 const root = new URL("../assets/video/", import.meta.url);
 const characters = JSON.parse(await fs.readFile(new URL("characters.json", root), "utf8"));
@@ -89,11 +93,11 @@ if (spec.image_path) {
       <div class="region-label"><div>${esc(labelEn)}</div><div lang="ja">${esc(labelJa)}</div></div>`;
   }
 }
-const badge = scene.mode === "overview" ? "THE IDEA · 解説編" : "UNDER THE HOOD · 詳解編";
+const badge = scene.language === "ja" ? "日本語解説" : scene.mode === "overview" ? "THE IDEA · 解説編" : "UNDER THE HOOD · 詳解編";
 const content = scene.thumbnail
   ? `<div class="thumbnail"><p>AI PAPERS × REAL ENGLISH</p><h1 lang="ja">${esc(scene.title_ja)}</h1><h2>${esc(scene.title_en)}</h2><span>図解・英日字幕 / ${badge}</span></div>`
   : `<header><div><h1>${esc(scene.title_en)}</h1><p lang="ja">${esc(scene.title_ja)}</p></div><span>${badge}</span></header>
-    <main id="diagram"><div class="badge">${spec.template ? "Concept sketch · 模式図" : spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図"}</div>
+    <main id="diagram"><div class="badge">${scene.language === "ja" ? (spec.template ? "模式図" : spec.type === "example" ? "仮の例" : showOriginal ? "論文の原図" : "説明用の補助図") : (spec.template ? "Concept sketch · 模式図" : spec.type === "example" ? "Hypothetical example · 仮の例" : showOriginal ? "Original paper figure · 論文の原図" : "Teaching diagram · 説明用の補助図")}</div>
     ${showOriginal ? original : conceptMath || pictorial || `${mathematical ? `<div class="equations">${equations}</div>` : ""}${nodesHTML}${arrows}`}
     <div class="caption"><div>${esc(captionEn)}</div><div lang="ja">${esc(captionJa)}</div></div></main>`;
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>${css}${mathConceptCSS}${storyPictureCSS}${workedStepCSS}${workedObjectsCSS}
@@ -135,6 +139,13 @@ try {
   await page.route("**/*", route => route.abort());
   await page.setContent(html);
   await page.evaluate(() => document.fonts.ready);
+  if(scene.language==='ja')await page.evaluate(()=>{
+    for(const el of document.querySelectorAll('[lang="ja"]')){
+      const previous=el.previousElementSibling;
+      if(previous&&!previous.querySelector('svg,img')&&previous.textContent.trim()===el.textContent.trim())previous.remove();
+      if(el.matches('p,h3,small,span'))el.style.fontSize=(Number.parseFloat(getComputedStyle(el).fontSize)*1.15)+'px';
+    }
+  });
   await page.evaluate(async()=>{
     const box=document.querySelector('.original-window');if(!box)return;
     const img=box.querySelector('img');await img.decode();

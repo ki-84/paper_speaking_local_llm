@@ -18,6 +18,7 @@ type Video = {
     duration?: number;
     bytes: number;
     conference?: string;
+    english_lesson_id?: string;
     awards?: { label?: string; name: string; venue: string; year: number }[];
   };
   revisions: Video[];
@@ -46,7 +47,7 @@ export function VideoLibrary({ version, onError, openLesson, create }: Props) {
   const [selected, setSelected] = useState<Video | null>(null);
   useEffect(() => {
     let live = true;
-    api<Video[]>("/videos").then(rows => { if (live) setVideos(rows.filter(v => ["overview", "deep_dive"].includes(v.kind))); })
+    api<Video[]>("/videos").then(rows => { if (live) setVideos(rows.filter(v => ["overview", "deep_dive", "deep_dive_ja"].includes(v.kind))); })
       .catch(error => { if (live) onError(error.message); });
     return () => { live = false; };
   }, [version]);
@@ -78,8 +79,8 @@ export function VideoLibrary({ version, onError, openLesson, create }: Props) {
         <input type="search" placeholder="LoRA、Muninn、RSS…" value={query} onChange={e => setQuery(e.target.value)} />
       </label>
       <label>動画の種類<select aria-label="動画の種類" value={kind} onChange={e => setKind(e.target.value)}>
-        <option value="films">すべて</option><option value="overview">概要解説</option>
-        <option value="deep_dive">詳細解説</option>
+        <option value="films">すべて</option><option value="overview">旧版の概要解説</option>
+        <option value="deep_dive">英語・詳細解説</option><option value="deep_dive_ja">日本語解説</option>
       </select></label>
       <label>並び順<select aria-label="並び順" value={order} onChange={e => setOrder(e.target.value)}>
         <option value="newest">新しい順</option><option value="oldest">古い順</option>
@@ -106,7 +107,7 @@ export function VideoLibrary({ version, onError, openLesson, create }: Props) {
               <a className="primary" href={fileUrl(video.data.mp4)} download={`${video.data.title}.mp4`}>MP4をダウンロード</a>
               {video.data.thumbnail && <a className="secondary" href={fileUrl(video.data.thumbnail)} download={`${video.data.title}-thumbnail.png`}>サムネイル</a>}
               <button className="text-button" onClick={() => setSelected(video)}>タイトル・説明</button>
-              <button className="text-button" onClick={() => openLesson(video.lesson_id)}>英語練習</button>
+              <button className="text-button" disabled={video.kind==='deep_dive_ja'&&!video.data.english_lesson_id} onClick={() => openLesson(video.kind==='deep_dive_ja' ? (video.data.english_lesson_id || video.lesson_id) : video.lesson_id)}>英語練習</button>
             </div>
             {video.revisions.length > 0 && <details className="video-library-revisions"><summary>以前の版（{video.revisions.length}本）</summary>
               {video.revisions.map(previous => <div key={previous.id}>

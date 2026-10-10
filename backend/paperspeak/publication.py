@@ -13,8 +13,12 @@ from . import awards, config, db
 
 VERSION = "paper-venue-edition-awards-2"
 LOOKUP_VERSION = "official-records-5-cvf-links"
-DESCRIPTION_VERSION = "paper-awards-no-urls-2"
-EDITIONS = {"overview": "概要解説", "deep_dive": "詳細解説"}
+DESCRIPTION_VERSION = "paper-awards-no-urls-3-languages"
+EDITIONS = {
+    "overview": "概要解説",
+    "deep_dive": "詳細解説",
+    "deep_dive_ja": "日本語解説",
+}
 ALIASES = {
     "ICML": r"\bICML\b|International Conference on Machine Learning",
     "ICLR": r"\bICLR\b|International Conference on Learning Representations",
@@ -358,7 +362,11 @@ def identity(project, mode):
         "version": VERSION,
         "paper_title": project["data"]["paper_title"],
         "conference": project["data"].get("publication", {}).get("label", "学会未確認"),
-        "edition": EDITIONS[mode],
+        "edition": (
+            "英語・詳細解説"
+            if mode == "deep_dive" and project["data"].get("modes", {}).get(mode, {}).get("language")
+            else EDITIONS[mode]
+        ),
         "publication": project["data"].get("publication", {}),
         "awards": award_identity(project),
     }
@@ -496,6 +504,17 @@ def description(project, mode, *, references=None):
         "",
         "参考文献",
     ]
+    if mode == "deep_dive_ja":
+        lines = [
+            line.replace(
+                "図解とMaya・Aidenの自然な英語の会話で、AI論文の",
+                "図解とMaya・Aidenの自然な日本語の会話で、AI論文の",
+            ).replace(
+                "英語・日本語の字幕付きです。英語表現を聞き取り、動画を止めて声に出したり、自分の言葉で説明したりしてみてください。",
+                "日本語音声・大きな日本語字幕付きです。原理を具体例と図で理解し、自分の言葉で説明してみてください。",
+            )
+            for line in lines
+        ]
     for paper in references:
         if not paper:
             continue
@@ -506,7 +525,12 @@ def description(project, mode, *, references=None):
             else ""
         )
         lines.append(paper["title"] + suffix)
-    lines += ["", "#AI論文 #英語学習 #機械学習"]
+    lines += [
+        "",
+        "#AI論文 #日本語解説 #機械学習"
+        if mode == "deep_dive_ja"
+        else "#AI論文 #英語学習 #機械学習",
+    ]
     return without_urls("\n".join(lines))
 
 

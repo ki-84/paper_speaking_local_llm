@@ -14,6 +14,7 @@ from . import (
     config,
     db,
     discovery,
+    japanese_story,
     lessons,
     local_network,
     nightly,
@@ -184,6 +185,9 @@ def run():
                 elif job["kind"] == "paper_profile_audit":
                     with local_network.inference_only():
                         done = paper_profile.audit_step(job, runtime)
+                elif job["kind"] == "japanese_voice_probe":
+                    with local_network.inference_only():
+                        done = japanese_story.probe_step(job, runtime)
                 elif job["kind"] == "thumbnail":
                     with local_network.inference_only():
                         done = thumbnails.step(job, runtime)

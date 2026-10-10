@@ -102,6 +102,9 @@ RESPONSE_SCHEMA = {
 
 
 def visible_labels(scene, utterance):
+    if scene.get("language") == "ja":
+        from .japanese_story import localize_labels
+        scene = localize_labels(scene)
     board = scene.get("storyboard", {})
     beat = utterance.get("visual_beat", 0)
     beats = board.get("beats", [])
@@ -309,6 +312,19 @@ def assess(
     field=None,
 ):
     personas = [dict(p) for p in PERSONAS]
+    if mode == "deep_dive_ja":
+        personas[0].update(
+            name_ja="日本語の初学者",
+            brief="You are a curious Japanese-speaking beginner without ML training. Judge only the Japanese words and pictures you have seen; explain missing causal steps.",
+        )
+        personas[1].update(
+            name_ja="日本語の実務者",
+            brief="You are a Japanese-speaking Python practitioner new to this paper. Look for inputs, operations, outputs, conditions and transferable reasoning.",
+        )
+        personas[2].update(
+            name_ja="数式が苦手な日本語視聴者",
+            brief="You are a Japanese-speaking viewer uncomfortable with mathematical notation. Check that concrete objects and intuitive pictures explain each symbol before equations. This is NOT English practice; do not request bilingual subtitles.",
+        )
     field = {k: (field or {}).get(k) for k in ("kind", "domain")}
     emphasis = {
         "theory": "Focus on definitions, assumptions, witnesses and what a proof actually establishes.",
@@ -323,7 +339,12 @@ def assess(
     )
     personas[1]["brief"] += " " + emphasis
     result = runtime.ask(
-        "Evaluate this checkpoint IN SPOKEN ORDER for EACH supplied persona. Later dialogue and the paper's answers are deliberately absent. "
+        (
+            "This film is spoken in Japanese with Japanese-only captions. Give retell_en as natural Japanese (the field name is retained for storage compatibility), within 160 Japanese characters. Judge Japanese-native fluency and comprehension, not English difficulty.\n"
+            if mode == "deep_dive_ja"
+            else ""
+        )
+        + "Evaluate this checkpoint IN SPOKEN ORDER for EACH supplied persona. Later dialogue and the paper's answers are deliberately absent. "
         "Explain what you can now say in your own words and where you cannot follow. A term explained later is still unexplained at this checkpoint. "
         "The retelling must answer the supplied viewer question, explaining the named input, what operation changes it and the outcome when these have been explained. Say which part you cannot answer; a list of technical nouns is not understanding. "
         "Evaluate visible causes, transitions, a reason to keep watching, and useful humor separately. Do not mistake fluent English, correct ASR or many pictures for clear teaching. "

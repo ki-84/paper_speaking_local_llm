@@ -923,7 +923,7 @@ def step(job, runtime):
                         result = _ask(
                             run,
                             runtime,
-                            'Assess this paper for an engaging, accurate overview and deep-dive video. Awards and community attention are recognition, not proof of scientific claims. Explain what viewers will learn from the full text, with limitations. Return {"suitable":true,"content_quality":4,"story_value":4,"why_ja":"何が面白く何を学べるか","cautions_ja":["限界"],"source_ids":["existing ID"]}. Scores 0..5. Do not reject complex math: the deep dive explains it.\nTITLE: '
+                            'Assess this paper for engaging, accurate English and Japanese detailed explanation videos. Awards and community attention are recognition, not proof of scientific claims. Explain what viewers will learn from the full text, with limitations. Return {"suitable":true,"content_quality":4,"story_value":4,"why_ja":"何が面白く何を学べるか","cautions_ja":["限界"],"source_ids":["existing ID"]}. Scores 0..5. Do not reject complex math: the deep dive explains it.\nTITLE: '
                             + candidate["title"]
                             + "\nPUBLICATION DATE: "
                             + candidate["published"]

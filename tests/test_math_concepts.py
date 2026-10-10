@@ -261,7 +261,8 @@ def test_late_lora_example_keeps_concepts_and_its_spoken_numerical_cues(
         {"source_id": "lora-example", "version": "v1", "title": "LoRA"}
     )
     project = db.one(
-        "SELECT * FROM video_projects WHERE id=?", (story.create(paper)["project_id"],)
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper, legacy=True)["project_id"],),
     )
     monkeypatch.setattr(story, "lora_anchor", lambda *_: "primary")
     track = project["data"]["modes"]["deep_dive"]
@@ -308,7 +309,7 @@ def test_original_math_scene_has_a_source_then_paired_concept_then_zoom(
     )
     project = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper_id, modes=["deep_dive"])["project_id"],),
+        (story.create(paper_id, modes=["deep_dive"], legacy=True)["project_id"],),
     )
     image = database / "source.png"
     pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 500, 350), False)

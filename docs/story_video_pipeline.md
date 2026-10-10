@@ -1,3 +1,5 @@
+> 現在の標準構成は英語・詳細解説→日本語解説です。概要編の記述は旧形式の互換仕様です。[新構成と日本語音声・字幕](detail_languages.md)を参照してください。
+
 # Two films from one paper
 
 Open the library, select a saved paper, and press **解説・詳解動画を作る**.

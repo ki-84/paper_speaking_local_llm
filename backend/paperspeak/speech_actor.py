@@ -39,6 +39,9 @@ def run(request):
     torch.set_num_threads(8)
     root = Path(request["root"])
     models = root / "models"
+    language = request.get("language", "English")
+    if language not in {"English", "Japanese"}:
+        raise ValueError("Unsupported speech language")
     op = request["operation"]
     phoneme_profile = request.get("phoneme_profile", "phoneme")
     if phoneme_profile not in {"phoneme", "phoneme-timit"}:
@@ -59,12 +62,13 @@ def run(request):
                 dtype=torch.bfloat16,
                 attn_implementation="sdpa",
             )
+        speech_tokens = 4096 if language == "Japanese" else 2048
         common = {
             "text": request["text"],
-            "language": "English",
+            "language": language,
             "instruct": instruction,
             "non_streaming_mode": True,
-            "max_new_tokens": 2048,
+            "max_new_tokens": speech_tokens,
         }
         if op == "tts":
             wavs, sr = CACHE["model"].generate_custom_voice(
@@ -79,7 +83,7 @@ def run(request):
         model_record = json.loads((root / "models.lock.json").read_text())["models"][model_key]
         settings.update(
             seed=seed,
-            max_new_tokens=2048,
+            max_new_tokens=speech_tokens,
             non_streaming_mode=True,
             speaker=request.get("voice", "Aiden"),
             model=model_key,
@@ -87,7 +91,8 @@ def run(request):
             model_sha256=next(
                 f["sha256"] for f in model_record["files"] if f["file"] == "model.safetensors"
             ),
-            language="English",
+            language=language,
+            voice_profile=request.get("voice_profile"),
             instruction=instruction,
             dtype="bfloat16",
             attention="sdpa",
@@ -116,10 +121,12 @@ def run(request):
                     "attn_implementation": "sdpa",
                 },
             )
+        recognition_tokens = 2048 if language == "Japanese" else 512
+        CACHE["model"].max_new_tokens = recognition_tokens
         results = CACHE["model"].transcribe(
             audio=request["audio"],
             context=request.get("context", ""),
-            language="English",
+            language=language,
             return_time_stamps=True,
         )
         r = results[0]
@@ -146,10 +153,10 @@ def run(request):
             "language": r.language,
             "timestamps": timestamps,
             "generation_settings": {
-                "language": "English",
+                "language": language,
                 "dtype": "bfloat16",
                 "attention": "sdpa",
-                "max_new_tokens": 512,
+                "max_new_tokens": recognition_tokens,
                 "forced_alignment": True,
                 "vocabulary_context": request.get("context", ""),
             },

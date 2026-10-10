@@ -24,7 +24,8 @@ def project():
         {"source_id": "caption-recovery", "version": "v1", "title": "A paper"}
     )
     return db.one(
-        "SELECT * FROM video_projects WHERE id=?", (story.create(paper)["project_id"],)
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(paper, legacy=True)["project_id"],),
     )
 
 

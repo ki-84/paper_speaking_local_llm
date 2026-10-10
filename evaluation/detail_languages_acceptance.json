@@ -1,0 +1,119 @@
+{
+  "checked_at_jst": "2026-10-10T23:42:59.774096+09:00",
+  "generation_modes": [
+    "deep_dive",
+    "deep_dive_ja"
+  ],
+  "edition_names": [
+    "英語・詳細解説",
+    "日本語解説"
+  ],
+  "english_before_japanese": true,
+  "tests": {
+    "backend_passed": 334,
+    "browser_passed": 30,
+    "frontend_build": "passed",
+    "scoped_ruff": "passed"
+  },
+  "live_speech": {
+    "model": "Qwen3-TTS 1.7B VoiceDesign BF16",
+    "asr": "Qwen3-ASR + ForcedAligner Japanese",
+    "voices": [
+      "Maya",
+      "Aiden"
+    ],
+    "all_accepted": true,
+    "samples": [
+      {
+        "role": "guide",
+        "duration": 12.16,
+        "cer": 0.11940298507462686,
+        "tts_language": "Japanese",
+        "tts_budget": 4096,
+        "asr_budget": 2048,
+        "timestamps": 38
+      },
+      {
+        "role": "host",
+        "duration": 9.44,
+        "cer": 0.0,
+        "tts_language": "Japanese",
+        "tts_budget": 4096,
+        "asr_budget": 2048,
+        "timestamps": 26
+      },
+      {
+        "role": "guide",
+        "duration": 11.92,
+        "cer": 0.09433962264150944,
+        "tts_language": "Japanese",
+        "tts_budget": 4096,
+        "asr_budget": 2048,
+        "timestamps": 36
+      }
+    ]
+  },
+  "caption_and_animation_acceptance": {
+    "language": "ja",
+    "subtitle_languages": [
+      "ja"
+    ],
+    "subtitle_size": [
+      54,
+      64
+    ],
+    "duration": 35.36,
+    "expected_duration": 35.36,
+    "bytes": 879459,
+    "mp4": "videos/evaluation/japanese-details-probe/日本語字幕・音声の確認.mp4",
+    "sha256": "3f288719299ef11e9ee9314292aabaea149ed14692716f3be70dc0c21c186851",
+    "all_voice_checks_accepted": true,
+    "offline_render": true,
+    "purpose": "Acceptance clip, not the completed documentary",
+    "role_changes": 2
+  },
+  "lan": {
+    "trusted_tls_health": 200,
+    "mp4_range_download": 206
+  },
+  "migration": {
+    "paper": "RoboJEPA: Scaling Robotic Latent World Models",
+    "source_reading_reused": true,
+    "english_outline_reused": true,
+    "saved_audio_hashes_preserved": 20,
+    "history_counts_before": {
+      "attempts": 90,
+      "reviews": 65,
+      "review_events": 0
+    },
+    "history_counts_after": {
+      "attempts": 90,
+      "reviews": 65,
+      "review_events": 0
+    },
+    "old_project_paused": true,
+    "no_duplicate_current_project": true
+  },
+  "nightly": {
+    "nightly_video_enabled": true,
+    "nightly_video_hour": 2,
+    "nightly_video_minute": 0,
+    "discovery_enabled": false,
+    "daily_limit": 0,
+    "youtube_auto_upload": false
+  },
+  "full_documentary_acceptance": {
+    "state": "generation_in_progress",
+    "project_id": "465b606a1b884acbb1c99f6ee09bfbf9",
+    "job_id": "ffdb6a5eedd041599fe6d04d13bbffd7",
+    "remaining": [
+      "Finish English RoboJEPA MP4 and thumbnail",
+      "Finish Japanese RoboJEPA MP4 and thumbnail",
+      "Run the attached completed-video review for both language versions"
+    ]
+  },
+  "limits": [
+    "The short acceptance clip is not the completed documentary.",
+    "AI persona reviews are simulations, not human viewing trials."
+  ]
+}

@@ -12,7 +12,7 @@ def project():
             "title": "LoRA: Low-Rank Adaptation",
         }
     )
-    created = story.create(pid)
+    created = story.create(pid, legacy=True)
     row = db.one("SELECT * FROM video_projects WHERE id=?", (created["project_id"],))
     row["data"]["modes"]["overview"].update(
         packaging={"title": "AIの調整"},
@@ -188,7 +188,8 @@ def test_general_story_prompts_do_not_inject_lora_mechanisms(database):
         {"source_id": "new", "version": "v1", "title": "Streaming Video Memory"}
     )
     row = db.one(
-        "SELECT * FROM video_projects WHERE id=?", (story.create(pid)["project_id"],)
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(pid, legacy=True)["project_id"],),
     )
     row["data"]["modes"]["overview"]["packaging"] = {"hook": "Watch a stream"}
     scene = {

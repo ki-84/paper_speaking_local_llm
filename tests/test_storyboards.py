@@ -16,7 +16,7 @@ def project():
     )
     return db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper, modes=["overview"])["project_id"],),
+        (story.create(paper, modes=["overview"], legacy=True)["project_id"],),
     )
 
 
@@ -62,7 +62,7 @@ def test_source_reuse_preserves_reading_coverage_and_does_not_copy_old_script(
         {"utterances": [{"text": "Old script", "audio": "old.wav"}]}
     ]
     story.save(previous)
-    result = story.create(previous["paper_id"], modes=["deep_dive"])
+    result = story.create(previous["paper_id"], modes=["deep_dive"], legacy=True)
     current = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     assert current["data"]["evidence"] == [fact]
     assert current["data"]["reading_includes_structured"] is structured

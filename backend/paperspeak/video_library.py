@@ -7,7 +7,12 @@ import time
 
 from . import config, db
 
-KINDS = {"overview": "概要解説", "deep_dive": "詳細解説", "full": "全章まとめ"}
+KINDS = {
+    "overview": "概要解説",
+    "deep_dive": "英語・詳細解説",
+    "deep_dive_ja": "日本語解説",
+    "full": "全章まとめ",
+}
 
 
 def archive_before_story(*, apply=False):
@@ -68,6 +73,10 @@ def catalogue():
             'thumbnail',json_extract(v.data,'$.thumbnail'),
             'thumbnail_jpg',json_extract(v.data,'$.thumbnail_jpg'),
             'description',json_extract(v.data,'$.description'),
+            'language',coalesce(json_extract(v.data,'$.language'),'en'),
+            'subtitle_languages',json_extract(v.data,'$.subtitle_languages'),
+            'voice_profile',json_extract(v.data,'$.voice_profile'),
+            'english_lesson_id',(SELECT json_extract(project.data,'$.modes.deep_dive.lesson_id') FROM video_projects project WHERE project.id=json_extract(l.data,'$.project_id')),
             'duration',json_extract(v.data,'$.duration'),
             'bytes',json_extract(v.data,'$.bytes'),
             'completed_at',json_extract(v.data,'$.completed_at'),
@@ -78,7 +87,7 @@ def catalogue():
         JOIN lessons l ON l.id=v.lesson_id
         JOIN papers p ON p.id=l.paper_id
         LEFT JOIN chapters c ON c.id=v.chapter_id AND c.lesson_id=v.lesson_id
-        WHERE v.state='ready' AND v.kind IN ('overview','deep_dive','full','chapter')
+        WHERE v.state='ready' AND v.kind IN ('overview','deep_dive','deep_dive_ja','full','chapter')
           AND coalesce(json_extract(l.data,'$.archived'),0)=0
         """)
     ready = []

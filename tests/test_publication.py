@@ -168,7 +168,7 @@ def test_offline_reuses_confirmed_bibliography_and_exposes_it(database, monkeypa
     monkeypatch.setattr(
         awards, "fetch", lambda url: pytest.fail("Offline lookup made a request")
     )
-    pid = story.create(row["id"])["project_id"]
+    pid = story.create(row["id"], legacy=True)["project_id"]
     project = db.one("SELECT * FROM video_projects WHERE id=?", (pid,))
     publication.ensure(project)
     story.save(project)
@@ -246,7 +246,7 @@ def test_title_and_thumbnail_share_identity_without_mutating_story_hooks(databas
     row = paper(database, journal_ref="ICML 2016")
     project = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(row["id"])["project_id"],),
+        (story.create(row["id"], legacy=True)["project_id"],),
     )
     publication.ensure(project)
     for mode, track in project["data"]["modes"].items():

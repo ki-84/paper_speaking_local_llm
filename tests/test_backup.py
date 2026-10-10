@@ -123,7 +123,7 @@ def test_nightly_records_and_thumbnail_candidates_survive_backup(database, tmp_p
     pid = papers.register(
         {"source_id": "2610.00002", "version": "v1", "title": "Nightly backup"}
     )
-    created = story.create(pid)
+    created = story.create(pid, legacy=True)
     project = db.one(
         "SELECT * FROM video_projects WHERE id=?", (created["project_id"],)
     )

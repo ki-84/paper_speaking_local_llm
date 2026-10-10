@@ -221,7 +221,8 @@ def _ass_text(value):
     return value.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").replace("\n", "\\N").replace("\r", " ")
 
 
-def _captions(turns, *, animate=False):
+def _captions(turns, *, animate=False, languages=None):
+    languages = languages or ["en", "ja"]
     lines = {"en": [], "ja": []}
     events = []
     cumulative = 0
@@ -234,14 +235,22 @@ def _captions(turns, *, animate=False):
         end = round(cumulative / 24)
         if turn.get("silence"):
             continue
-        pages = video_overlay.caption_pages(turn["english"], turn["japanese"])
-        weights = [max(1, len(p["english"].strip())) for p in pages]
+        pages = video_overlay.caption_pages(
+            turn.get("english", ""), turn["japanese"], languages=languages
+        )
+        weights = [
+            max(1, len(p["japanese" if languages == ["ja"] else "english"].strip()))
+            for p in pages
+        ]
         cuts = [0]
         if len(pages) > 1 and turn.get("word_timestamps"):
             from .story import aligned_ranges
 
+            if languages == ["ja"]:
+                from .japanese_story import aligned_ranges
+
             ranges = aligned_ranges(
-                [p["english"] for p in pages],
+                [p["japanese" if languages == ["ja"] else "english"] for p in pages],
                 turn["word_timestamps"],
                 turn["frames"] / 24000,
             )
@@ -258,6 +267,8 @@ def _captions(turns, *, animate=False):
             page_end = round((start_frame + cuts[page_index + 1]) / 24)
             layout = page["layout"]
             for lang, key in (("en", "english"), ("ja", "japanese")):
+                if lang not in languages:
+                    continue
                 wrapped = "\n".join(layout[key])
                 lines[lang].append(
                     f"{index}\n{_srt_time(page_start)} --> {_srt_time(page_end)}\n{wrapped}\n"
@@ -309,7 +320,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         + "\n"
     )
     return (
-        {lang: "\n".join(content) + "\n" for lang, content in lines.items()},
+        {lang: ("\n".join(content) + "\n") if lang in languages else "" for lang, content in lines.items()},
         ass,
         cumulative / 24000,
     )

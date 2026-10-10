@@ -831,7 +831,7 @@ def test_recent_award_beats_trending_paper_even_with_old_arxiv_date(database):
     assert rows[0]["source_id"] == awarded["source_id"]
     assert rows[0]["awards"]
     pid = papers.register(awarded)
-    story.create(pid)
+    story.create(pid, legacy=True)
     assert all(
         r["source_id"] != awarded["source_id"]
         for r in nightly.shortlist(

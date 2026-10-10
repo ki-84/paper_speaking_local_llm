@@ -1,3 +1,5 @@
+> 現在の標準構成は英語・詳細解説→日本語解説です。概要編の記述は旧形式の互換仕様です。[新構成と日本語音声・字幕](detail_languages.md)を参照してください。
+
 # Nightly paper stories and local thumbnails
 
 The library now includes **昨夜の動画**. In **Settings → 夜間に解説・詳解を自動作成**, set the start time (Japan time) and paper categories. This schedule is independent of the earlier chapter-lesson discovery switch. The production machine enabled **02:00 Asia/Tokyo** after both films in the first new-paper acceptance run completed and passed media/browser checks. Existing paused lesson jobs are retained.

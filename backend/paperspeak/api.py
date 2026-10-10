@@ -285,7 +285,7 @@ def generate_lesson(ident: str):
 @app.get("/api/lessons", dependencies=[Depends(auth)])
 def list_lessons():
     return db.all(
-        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format'),'project_id',json_extract(l.data,'$.project_id'),'mode',json_extract(l.data,'$.mode')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE (j.kind='lesson' AND j.target=l.id) OR (j.kind='video_project' AND j.target=json_extract(l.data,'$.project_id')) ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l WHERE coalesce(json_extract(l.data,'$.archived'),0)=0 ORDER BY created DESC"
+        "SELECT l.id,l.paper_id,l.state,l.created,l.updated,json_object('title',json_extract(l.data,'$.title'),'phase',json_extract(l.data,'$.phase'),'format',json_extract(l.data,'$.format'),'project_id',json_extract(l.data,'$.project_id'),'mode',json_extract(l.data,'$.mode')) AS data, (SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id AND c.state='ready') AS ready_chapters,(SELECT count(*) FROM chapters c WHERE c.lesson_id=l.id) AS chapter_count,(SELECT state FROM jobs j WHERE (j.kind='lesson' AND j.target=l.id) OR (j.kind='video_project' AND j.target=json_extract(l.data,'$.project_id')) ORDER BY created DESC LIMIT 1) AS job_state FROM lessons l WHERE coalesce(json_extract(l.data,'$.archived'),0)=0 AND coalesce(json_extract(l.data,'$.learning_enabled'),1)=1 ORDER BY created DESC"
     )
 
 
@@ -295,7 +295,7 @@ def list_videos():
 
 
 class VideoProjectRequest(BaseModel):
-    modes: list[str] | None = None
+    modes: list[Literal["deep_dive", "deep_dive_ja"]] | None = Field(default=None, min_length=1)
 
 
 @app.post("/api/papers/{ident}/video-projects", dependencies=[Depends(auth)])

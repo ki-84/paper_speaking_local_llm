@@ -14,7 +14,7 @@ def project():
     paper = papers.register(
         {"source_id": "health-check", "version": "v1", "title": "A paper"}
     )
-    info = story.create(paper, modes=["overview"])
+    info = story.create(paper, modes=["overview"], legacy=True)
     return db.one("SELECT * FROM video_projects WHERE id=?", (info["project_id"],))
 
 

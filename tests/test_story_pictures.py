@@ -167,7 +167,7 @@ def test_pictorial_templates_render_and_highlight_the_actual_picture_offline(
     )
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper_id, modes=["overview"])["project_id"],),
+        (story.create(paper_id, modes=["overview"], legacy=True)["project_id"],),
     )
     p["data"]["modes"]["overview"]["scenes"] = [scene]
     story_video.render_scene(p, "overview", 0)
@@ -251,7 +251,7 @@ def test_renderer_failure_rewrites_dialogue_for_its_replacement(database, monkey
     )
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper_id, modes=["overview"])["project_id"],),
+        (story.create(paper_id, modes=["overview"], legacy=True)["project_id"],),
     )
     s = {
         "title": "Norm bounds",
@@ -286,7 +286,7 @@ def test_tiny_later_response_does_not_erase_a_substantive_draft(database, monkey
     )
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper_id, modes=["overview"])["project_id"],),
+        (story.create(paper_id, modes=["overview"], legacy=True)["project_id"],),
     )
     p["data"]["evidence"] = [{"id": "C1", "source_ids": ["source"]}]
     monkeypatch.setattr(story, "source_lookup", lambda _: {"source": {}})
@@ -344,7 +344,7 @@ def test_picture_change_does_not_reuse_an_exhausted_old_script_fallback(database
     )
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper_id, modes=["overview"])["project_id"],),
+        (story.create(paper_id, modes=["overview"], legacy=True)["project_id"],),
     )
     scene = {
         "title": "Norm bounds",

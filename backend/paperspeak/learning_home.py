@@ -62,7 +62,7 @@ def course_state(ident, state):
 def dashboard(now=None):
     now = time.time() if now is None else now
     lessons = db.all(
-        "SELECT * FROM lessons WHERE coalesce(json_extract(data,'$.archived'),0)=0 ORDER BY created DESC"
+        "SELECT * FROM lessons WHERE coalesce(json_extract(data,'$.archived'),0)=0 AND coalesce(json_extract(data,'$.learning_enabled'),1)=1 ORDER BY created DESC"
     )
     cursors = {
         r["key"][7:]: r["data"]

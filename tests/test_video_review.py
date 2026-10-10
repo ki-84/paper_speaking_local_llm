@@ -17,7 +17,7 @@ def project(modes=None):
             "title": "A useful robot idea",
         }
     )
-    ident = story.create(paper, modes=modes)["project_id"]
+    ident = story.create(paper, modes=modes, legacy=True)["project_id"]
     return db.one("SELECT * FROM video_projects WHERE id=?", (ident,))
 
 

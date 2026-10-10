@@ -86,7 +86,7 @@ def test_manual_api_after_completion_lists_new_run_first_and_keeps_old(client):
 
 
 def test_legacy_unique_day_migration_keeps_history_and_project(database):
-    root = story.create(papers.register(meta("2609.00001")))
+    root = story.create(papers.register(meta("2609.00001")), legacy=True)
     with db.connection() as c:
         c.execute("DROP TABLE nightly_video_runs")
         c.execute("""CREATE TABLE nightly_video_runs (
@@ -135,7 +135,7 @@ def test_carry_over_and_paused_old_lessons_are_independent(database):
 
 def test_next_day_keeps_continuing_project_and_controls_visible(database):
     first = raw_run()
-    root = story.create(papers.register(meta("2610.00002")))
+    root = story.create(papers.register(meta("2610.00002")), legacy=True)
     first["state"] = "building"
     first["project_id"] = root["project_id"]
     first["data"]["selected"] = {"title": "The selected new paper"}
@@ -251,7 +251,7 @@ def test_expired_waiting_dates_do_not_create_a_queue_of_missed_days(database):
 
 def test_shortlist_filters_revisions_stale_future_and_keeps_domain_balance(database):
     pid = papers.register(meta("2609.00001"))
-    story.create(pid)
+    story.create(pid, legacy=True)
     candidates = [
         meta("2609.00001") | {"version": "v2"},
         meta("2610.00002", "cs.CL"),
@@ -397,7 +397,7 @@ def test_nightly_api_idempotence_and_pause_resume_children(client):
     a = client.post("/api/nightly-video-runs").json()
     b = client.post("/api/nightly-video-runs").json()
     assert a["id"] == b["id"]
-    root = story.create(papers.register(meta("2610.00002")))
+    root = story.create(papers.register(meta("2610.00002")), legacy=True)
     db.execute(
         "UPDATE nightly_video_runs SET project_id=? WHERE id=?",
         (root["project_id"], a["id"]),
@@ -420,7 +420,7 @@ def test_nightly_api_idempotence_and_pause_resume_children(client):
 
 def test_failed_thumbnail_does_not_wait_forever(database):
     run = raw_run()
-    root = story.create(papers.register(meta("2610.00002")))
+    root = story.create(papers.register(meta("2610.00002")), legacy=True)
     run["project_id"] = root["project_id"]
     run["data"].update(
         phase="production",
@@ -498,7 +498,7 @@ def test_widening_search_does_not_read_the_same_unsuitable_papers_again(database
 
 def test_cancelled_project_is_not_retried_as_a_generation_failure(database):
     run = raw_run()
-    root = story.create(papers.register(meta("2610.00002")))
+    root = story.create(papers.register(meta("2610.00002")), legacy=True)
     run["project_id"] = root["project_id"]
     run["data"].update(phase="production", production_started=time.time())
     nightly.save(run)

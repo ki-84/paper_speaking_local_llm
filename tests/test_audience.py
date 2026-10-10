@@ -143,7 +143,7 @@ def test_audience_and_scientific_editor_are_separate_and_checkpointed(
     )
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(pid, modes=["overview"])["project_id"],),
+        (story.create(pid, modes=["overview"], legacy=True)["project_id"],),
     )
     s = scene()
     p["data"]["modes"]["overview"]["scenes"] = [s]

@@ -44,7 +44,7 @@ def test_project_creation_is_atomic_idempotent_and_preserves_old_lessons(client)
     second = client.post(f"/api/papers/{pid}/video-projects").json()
     assert first == second
     project = client.get(f"/api/video-projects/{first['project_id']}").json()
-    assert set(project["data"]["modes"]) == {"overview", "deep_dive"}
+    assert set(project["data"]["modes"]) == {"deep_dive", "deep_dive_ja"}
     assert (
         len(
             db.all(
@@ -60,7 +60,7 @@ def test_project_creation_is_atomic_idempotent_and_preserves_old_lessons(client)
 
 
 def test_project_pause_and_resume_propagates_to_render_jobs(client):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     project = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     lid = project["data"]["modes"]["overview"]["lesson_id"]
     eid = db.uid()
@@ -76,7 +76,7 @@ def test_project_pause_and_resume_propagates_to_render_jobs(client):
 
 
 def test_project_progress_retains_checked_work_during_speech_retry(client):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     project = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     track = project["data"]["modes"]["deep_dive"]
     track.update(
@@ -170,7 +170,7 @@ def test_natural_c1_sentences_are_accepted_but_overview_math_and_unknown_citatio
 def test_repairs_are_bounded_and_practice_interruptions_do_not_consume_attempts(
     database,
 ):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     p = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
 
     class Bad:
@@ -265,7 +265,7 @@ def scene_data(database, equation=False):
 
 
 def test_local_equations_bilingual_visuals_and_mp4_with_burned_captions(database):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     p = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     t = p["data"]["modes"]["deep_dive"]
     t["scenes"] = [scene_data(database, True)]
@@ -353,7 +353,7 @@ def test_long_native_sentence_subtitles_keep_every_word_and_use_alignment_despit
 def test_speech_check_reads_the_real_recognizer_contract_and_varies_retry_seed(
     database,
 ):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     p = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     t = p["data"]["modes"]["overview"]
     s = scene_data(database)
@@ -413,7 +413,7 @@ def test_speech_check_reads_the_real_recognizer_contract_and_varies_retry_seed(
 def test_runtime_does_not_add_scenes_or_block_learning(
     database, monkeypatch, mode, seconds
 ):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     p = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     t = p["data"]["modes"][mode]
     a = scene_data(database)
@@ -446,7 +446,7 @@ def test_long_film_keeps_native_audio_and_saved_alignment(
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     track = p["data"]["modes"]["overview"]
     scene = scene_data(database)
@@ -471,7 +471,7 @@ def test_script_generation_ignores_legacy_scene_word_quotas(
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     # This unit exercises the existing writer after visual direction is ready.
     p["data"].pop("storyboard_policy", None)
@@ -515,7 +515,7 @@ def test_script_generation_ignores_legacy_scene_word_quotas(
 def test_duration_policy_upgrade_preserves_unfinished_work_and_audio(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     p["data"].pop("duration_policy")
     candidate = {"utterances": [{"text": "A saved explanation."}]}
@@ -556,7 +556,7 @@ def test_outline_uses_narrative_beats_instead_of_equal_word_budgets(
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     p["data"]["evidence"] = [{"id": "c1", "topic": "mechanism"}]
     monkeypatch.setattr(story, "plan_evidence", lambda *_: [])
@@ -581,7 +581,7 @@ def test_repair_candidate_prefers_valid_cited_explanation_over_matching_word_cou
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     p["data"]["modes"]["overview"]["scenes"] = [{"word_budget": 400}]
     monkeypatch.setattr(story, "source_lookup", lambda _: {"s1": {}})
@@ -636,7 +636,7 @@ def test_editorial_upgrade_checks_repetition_and_clarity_without_preserving_leng
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     scene = scene_data(database)
     scene["reviews"]["editorial"] = {
@@ -768,7 +768,7 @@ def test_expression_fallback_uses_exact_spoken_patterns_and_saved_japanese():
 def test_resumable_video_keeps_audio_and_subtitle_timing_across_segment_boundary(
     database,
 ):
-    result = story.create(paper())
+    result = story.create(paper(), legacy=True)
     p = db.one("SELECT * FROM video_projects WHERE id=?", (result["project_id"],))
     t = p["data"]["modes"]["overview"]
     s = scene_data(database)
@@ -848,7 +848,7 @@ def test_resumable_video_keeps_audio_and_subtitle_timing_across_segment_boundary
 def test_original_figure_does_not_hide_math_or_become_a_recursive_source(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     t = p["data"]["modes"]["deep_dive"]
     s = scene_data(database, True)
@@ -917,7 +917,7 @@ def test_source_shape_correction_invalidates_stale_audio_without_resetting_repai
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     p["data"]["paper_title"] = "LoRA"
     monkeypatch.setattr(
@@ -947,7 +947,7 @@ def test_worked_example_is_bounded_explicit_and_arithmetically_correct(
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     monkeypatch.setattr(story, "lora_anchor", lambda *_: "primary")
     t = p["data"]["modes"]["deep_dive"]
@@ -977,7 +977,7 @@ def test_new_paper_original_review_exhaustion_omits_crop_and_continues(
 
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     db.execute(
         "INSERT INTO sources VALUES (?,?,?,?)",
@@ -1012,7 +1012,7 @@ def test_one_checked_original_does_not_skip_remaining_figures(database, monkeypa
 
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     db.execute(
         "INSERT INTO sources VALUES (?,?,?,?)",
@@ -1056,7 +1056,7 @@ def test_overview_original_and_explicit_panel_are_available_in_script_and_render
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     t = p["data"]["modes"]["overview"]
     s = scene_data(database)
@@ -1129,7 +1129,7 @@ def test_simplified_visual_fallback_clears_stale_panel_cues_and_finishes(
 ):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     s = scene_data(database)
     s["utterances"][0]["visual_focus_region"] = "missing-source-panel"
@@ -1145,7 +1145,7 @@ def test_simplified_visual_fallback_clears_stale_panel_cues_and_finishes(
 def test_fallback_titles_are_distinct_and_generic_plan_does_not_invent_lora(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     p["data"]["paper_title"] = "LoRA"
     for mode in story.MODES:
@@ -1165,7 +1165,7 @@ def test_fallback_titles_are_distinct_and_generic_plan_does_not_invent_lora(data
 def test_robotics_exploration_is_not_mistaken_for_lora(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     p["data"].update(paper_title="Exploration for Robot Planning", evidence=[])
     assert not story.is_lora(p)
@@ -1182,7 +1182,7 @@ def test_robotics_exploration_is_not_mistaken_for_lora(database):
 def test_exact_number_reading_does_not_waste_voice_retries(database):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     t = p["data"]["modes"]["deep_dive"]
     s = scene_data(database)
@@ -1204,7 +1204,7 @@ def test_exact_number_reading_does_not_waste_voice_retries(database):
 def test_all_disputed_claims_are_omitted_after_repair_budget(database, monkeypatch):
     p = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     s = scene_data(database)
     old = s["utterances"][0]["text"]
@@ -1236,7 +1236,8 @@ def review_fixture():
         ),
     )
     p = db.one(
-        "SELECT * FROM video_projects WHERE id=?", (story.create(pid)["project_id"],)
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(pid, legacy=True)["project_id"],),
     )
     p["data"]["evidence"] = [
         {
@@ -1461,7 +1462,7 @@ def test_final_script_uses_actual_opening_joke_and_requests_recap_and_goodbye(
 ):
     project = db.one(
         "SELECT * FROM video_projects WHERE id=?",
-        (story.create(paper())["project_id"],),
+        (story.create(paper(), legacy=True)["project_id"],),
     )
     first = {
         "title": "The opening",

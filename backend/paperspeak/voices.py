@@ -11,12 +11,24 @@ GUIDE_INSTRUCTION = (
     "conversation pace. Clear English words, relaxed intonation, no theatrical emphasis."
 )
 GUIDE_STYLE_VERSION = "maya-warm-1"
+JAPANESE_STYLE_VERSION = "native-ja-documentary-1"
+JAPANESE_INSTRUCTIONS = {
+    "guide": "A native Japanese adult woman, warm and grounded, explaining scientific ideas clearly in a natural documentary conversation. Fluent standard Japanese, relaxed but engaging pace, subtle dry humor. No foreign accent, no theatrical or anime voice, no background sounds.",
+    "host": "A native Japanese adult man, curious and friendly, asking thoughtful questions in a natural documentary conversation. Fluent standard Japanese, relaxed but engaging pace, understated wit. No foreign accent, no theatrical or anime voice, no background sounds.",
+}
 
 
 def guide_audio_key(turn):
     revision = config.manifest()["models"]["tts-design"]["revision"]
     return hashlib.sha256(
-        (turn["id"] + turn["text"] + spoken_text(turn) + GUIDE_STYLE_VERSION + GUIDE_INSTRUCTION + revision).encode()
+        (
+            turn["id"]
+            + turn["text"]
+            + spoken_text(turn)
+            + GUIDE_STYLE_VERSION
+            + GUIDE_INSTRUCTION
+            + revision
+        ).encode()
     ).hexdigest()
 
 

@@ -39,7 +39,7 @@ def get(project_id, mode):
 
 
 def enqueue(project, mode, *, regenerate=False):
-    if mode not in {"overview", "deep_dive"}:
+    if mode not in {"overview", "deep_dive", "deep_dive_ja"}:
         raise ValueError("Unknown film mode")
     track = project["data"]["modes"][mode]
     if not track.get("packaging") or not track.get("scenes"):

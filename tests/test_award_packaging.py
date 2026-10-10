@@ -30,7 +30,8 @@ def project():
         }
     )
     row = db.one(
-        "SELECT * FROM video_projects WHERE id=?", (story.create(pid)["project_id"],)
+        "SELECT * FROM video_projects WHERE id=?",
+        (story.create(pid, legacy=True)["project_id"],),
     )
     row["state"] = "ready"
     publication.ensure(row)

@@ -118,12 +118,12 @@ test("Japanese paper search shows titles, abstracts, and a selectable paper", as
   await expect(page.getByText("未知の物をつかむ学習について読めます。")).toBeVisible();
   await expect(page.getByRole("heading", { name: "本文を確認したおすすめ" })).toHaveCount(0);
   const beforeJobs=await (await page.request.get("/api/jobs")).json();
-  await page.getByRole("button", { name: "解説・詳解動画を作る",exact:true }).click();
+  await page.getByRole("button", { name: "英語詳細・日本語解説を作る",exact:true }).click();
   await expect(page.getByRole("region", {name:"解説・詳解動画",exact:true})).toBeVisible();
   await expect.poll(async () => {
     const lessons = await (await page.request.get("/api/lessons")).json();
     return lessons.filter((lesson: any) => lesson.data.format === "paper-story-1" && lesson.data.title.includes("A Robot That Learns to Grasp")).length;
-  }).toBe(2);
+  }).toBe(1);
   const afterJobs=await (await page.request.get("/api/jobs")).json();
   expect(afterJobs.filter((j:any)=>j.kind==='lesson').map((j:any)=>j.id)).toEqual(beforeJobs.filter((j:any)=>j.kind==='lesson').map((j:any)=>j.id));
   await page.locator('nav').getByRole("button", { name: "論文を探す" }).click();
@@ -325,7 +325,7 @@ test("a missing system microphone explains the problem and refreshes connected d
 
 test("nightly videos are independent of old lesson automation", async ({ page }) => {
   await page.locator('nav').getByRole("button", { name: "設定", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "夜間に解説・詳解を自動作成" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "夜間に英語詳細・日本語解説を自動作成" })).toBeVisible();
   const old = await (await page.request.get('/api/settings')).json();
   await page.getByLabel("毎晩、注目論文から2本の動画と英語教材を作る").check();
   await page.getByLabel("最近のAI・ロボティクス学会の優秀論文賞・Test of Time賞を優先する").check();
@@ -548,7 +548,7 @@ test("arXiv and PDF import buttons create stories instead of legacy lessons", as
   await expect.poll(async()=>{
     const ls=await (await page.request.get('/api/lessons')).json();
     return ls.filter((l:any)=>l.data.format==='paper-story-1'&&l.data.title.includes('New paper')).length;
-  }).toBe(2);
+  }).toBe(1);
 });
 
 test('practice shows one paper with two editions and folds older lessons', async ({page})=>{
@@ -591,4 +591,23 @@ test('saved-paper picker prioritises current projects and searches other saved p
   await page.getByLabel('参考文献・未作成の論文も表示').uncheck();
   await expect(page.getByText('条件に合う保存済み論文がありません。')).toBeVisible();
   await expect(page.getByRole('region',{name:'解説・詳解動画',exact:true})).toHaveCount(0);
+});
+
+
+test('new documentary defaults to English detail and Japanese explanation with English-only practice',async({page})=>{
+  const papers=await(await page.request.get('/api/papers')).json();
+  const paper=papers.find((p:any)=>p.title==='Interface test: a small change');
+  const created=await(await page.request.post(`/api/papers/${paper.id}/video-projects`)).json();
+  const project=await(await page.request.get(`/api/video-projects/${created.project_id}`)).json();
+  expect(Object.keys(project.data.modes)).toEqual(['deep_dive','deep_dive_ja']);
+  expect(project.data.modes.deep_dive_ja.label).toBe('日本語解説');
+  expect(project.data.modes.deep_dive_ja.subtitle_languages).toEqual(['ja']);
+  const lessons=await(await page.request.get('/api/lessons')).json();
+  expect(lessons.some((l:any)=>l.id===project.data.modes.deep_dive_ja.lesson_id)).toBe(false);
+  expect((await page.request.post(`/api/papers/${paper.id}/video-projects`,{data:{modes:['overview']}})).status()).toBe(422);
+  await page.locator('nav').getByRole('button',{name:'動画を作る',exact:true}).click();
+  await page.getByRole('tab',{name:'保存済みの論文から作る'}).click();
+  await page.getByLabel('動画を作る論文').selectOption(paper.id);
+  await expect(page.getByText('日本語解説 · 日本語音声と大きな字幕',{exact:true})).toBeVisible();
+  await expect(page.getByText('英語版が完成した後、同じ内容の日本語版を作ります。',{exact:true})).toBeVisible();
 });

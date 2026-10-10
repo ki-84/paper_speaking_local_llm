@@ -112,8 +112,17 @@ def _wrap_japanese(value: str, size: int) -> list[str]:
     return result
 
 
-def layout_captions(english: str, japanese: str) -> dict:
+def layout_captions(english: str, japanese: str, *, languages=None) -> dict:
     """Choose a bounded, untruncated two-language layout for the 270 px footer."""
+    if languages == ["ja"]:
+        for max_lines in (2, 3):
+            for size in (64, 62, 60, 58, 56, 54):
+                lines = _wrap_japanese(japanese, size)
+                height = math.ceil(len(lines) * size * 1.17)
+                if len(lines) <= max_lines and height <= CAPTION_HEIGHT:
+                    return {"english": [], "japanese": lines, "en_size": 0, "ja_size": size,
+                            "en_top": CAPTION_TOP, "ja_top": CAPTION_TOP + (CAPTION_HEIGHT - height) // 2}
+        raise ValueError("Split Japanese captions into meaningful timed clauses")
     candidates = []
     for en_size in EN_SIZES:
         en = _wrap_english(english, en_size)
@@ -129,10 +138,18 @@ def layout_captions(english: str, japanese: str) -> dict:
                 continue
             candidates.append((en_size + ja_size, en_size, ja_size, en, ja, en_height))
     if not candidates:
-        raise ValueError("The English and Japanese subtitles do not fit the video footer.")
+        raise ValueError(
+            "The English and Japanese subtitles do not fit the video footer."
+        )
     _, en_size, ja_size, en, ja, en_height = max(candidates)
-    return {"english": en, "japanese": ja, "en_size": en_size, "ja_size": ja_size,
-            "en_top": CAPTION_TOP, "ja_top": CAPTION_TOP + en_height + 12}
+    return {
+        "english": en,
+        "japanese": ja,
+        "en_size": en_size,
+        "ja_size": ja_size,
+        "en_top": CAPTION_TOP,
+        "ja_top": CAPTION_TOP + en_height + 12,
+    }
 
 
 def _bisect_caption(text: str, japanese: bool) -> tuple[str, str]:
@@ -170,14 +187,14 @@ def _bisect_caption(text: str, japanese: bool) -> tuple[str, str]:
     return text[:cut], text[cut:]
 
 
-def caption_pages(english: str, japanese: str) -> list[dict]:
+def caption_pages(english: str, japanese: str, *, languages=None) -> list[dict]:
     """Split overflow by clauses; keep every character and readable font bounds."""
     pending = [(english, japanese)]
     pages = []
     while pending:
         en, ja = pending.pop()
         try:
-            layout = layout_captions(en, ja)
+            layout = layout_captions(en, ja, languages=languages)
         except ValueError:
             en_a, en_b = _bisect_caption(en, False)
             ja_a, ja_b = _bisect_caption(ja, True)

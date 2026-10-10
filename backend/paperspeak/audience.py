@@ -306,7 +306,22 @@ def assess(
     checkpoint="scene end",
     repair=None,
     question=None,
+    field=None,
 ):
+    personas = [dict(p) for p in PERSONAS]
+    field = {k: (field or {}).get(k) for k in ("kind", "domain")}
+    emphasis = {
+        "theory": "Focus on definitions, assumptions, witnesses and what a proof actually establishes.",
+        "analysis": "Focus on what was changed and measured, controls and what conclusions follow.",
+        "benchmark": "Focus on actual tasks, allowed information, scores and evaluation limitations.",
+        "dataset": "Focus on a data sample, annotation, coverage, splits and usable quality evidence.",
+        "survey": "Focus on the taxonomy, differences between approaches and provenance of cited evidence, rather than expecting a new algorithm.",
+        "systems": "Focus on request/data flow, runtime choices, latency/resources and tradeoffs.",
+    }.get(
+        field.get("kind"),
+        "Focus on the named input, operation and output appropriate to this field.",
+    )
+    personas[1]["brief"] += " " + emphasis
     result = runtime.ask(
         "Evaluate this checkpoint IN SPOKEN ORDER for EACH supplied persona. Later dialogue and the paper's answers are deliberately absent. "
         "Explain what you can now say in your own words and where you cannot follow. A term explained later is still unexplained at this checkpoint. "
@@ -336,7 +351,8 @@ def assess(
                 "checkpoint": checkpoint,
                 "viewer_question": question
                 or "What is happening, why, and what do you want to find out next?",
-                "personas": PERSONAS,
+                "personas": personas,
+                "field_context": field,
                 "remembered_from_earlier_viewing": memory or {},
                 "heard_and_seen": material,
             }
@@ -419,6 +435,7 @@ def draft_step(project, runtime, mode, scene, index):
             question="What is the concrete task and why might the next step be surprising?"
             if opening
             else scene.get("learning", {}).get("question_en"),
+            field=project["data"].get("research_profile"),
         )
         if opening:
             state["opening"] = result

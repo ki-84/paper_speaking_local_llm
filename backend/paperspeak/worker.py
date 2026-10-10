@@ -17,6 +17,7 @@ from . import (
     lessons,
     local_network,
     nightly,
+    paper_profile,
     paper_search,
     papers,
     phoneme_probe,
@@ -180,6 +181,9 @@ def run():
                 elif job["kind"] == "video_review":
                     with local_network.inference_only():
                         done = video_review.step(job, runtime)
+                elif job["kind"] == "paper_profile_audit":
+                    with local_network.inference_only():
+                        done = paper_profile.audit_step(job, runtime)
                 elif job["kind"] == "thumbnail":
                     with local_network.inference_only():
                         done = thumbnails.step(job, runtime)

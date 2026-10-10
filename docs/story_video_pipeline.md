@@ -44,6 +44,37 @@ is synthesized continuously; subtitle cues and sentence practice clips are
 aligned slices of that recording. New films use variable pauses, without
 changing the one-second pauses in existing video revisions.
 
+## Contribution types and cross-paper checks
+
+`youtube-storyboard-7-paper-types` selects a teaching profile from cited claims
+in the main paper before planning. Methods, formal theory, empirical analysis,
+benchmarks, datasets, systems and surveys receive different central questions
+and evidence sections. Related-paper results do not classify the main paper.
+A formal result uses assumptions and a proof idea; a dataset uses samples,
+collection and quality checks; a survey uses taxonomy and attributed evidence.
+None requires a new algorithm, optimizer or experiment when the source lacks it.
+
+Parameter learning is checked separately: a frozen backbone can still require
+training adapters or projection heads. The local model answers whether any
+new parameters are optimized; explicit main-paper training statements constrain
+that answer. A training-free inference wrapper instead explains preparation,
+runtime choices and cached state. Three unsuccessful attempts use a conservative
+generic profile and continue; recording preemption and GPU waits do not consume
+attempts.
+
+Fallback diagrams preserve a checked concrete example first. Broad words such
+as distribution, stability, coverage and efficiency do not by themselves select
+RL returns, robot control, gradient norms or fewer optimizer updates. A profile
+and diagram remain teaching guidance, never additional scientific evidence.
+The original LoRA's special rank/scaling examples apply only to that paper,
+not to variants or papers merely mentioning LoRA in their title.
+
+The internal `paper_profile_audit` worker job checks existing source notes
+without modifying projects, movies, recordings or learning progress. It saves
+one local-model result per worker step, so checks survive restart and keep
+recording priority. The cross-paper acceptance record is
+`evaluation/paper_generality_acceptance.json`.
+
 ## Sequential audience rehearsal
 
 New projects use `youtube-storyboard-6-audience-rehearsal`. Three local AI

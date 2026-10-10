@@ -1,0 +1,331 @@
+{
+  "checked_at": "2026-10-10T12:15:21.150833+09:00",
+  "pipeline_version": "youtube-storyboard-7-paper-types",
+  "profile_version": "evidence-led-paper-types-2-parameter-learning",
+  "actual_saved_papers": 9,
+  "source_profile_audit_job": "12eb2ebe367b4ff7bdc9c8f7974a8e95",
+  "local_model": "qwen-q8",
+  "cloud_inference": false,
+  "paper_profiles": [
+    {
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "kind": "method",
+      "domain": "language",
+      "training": "trained",
+      "math": "central",
+      "claim_ids": [
+        "C1",
+        "C2",
+        "C10",
+        "C19"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601370211758957.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "71b8b73b30a1e091a8e007c7f5668a461b5a7e7e7ec5a0726847d4ede23dc1a5",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "Characterizing the Expressivity of Local Attention in Transformers",
+      "kind": "theory",
+      "domain": "language",
+      "training": "not_applicable",
+      "math": "central",
+      "claim_ids": [
+        "C2",
+        "C3",
+        "C11",
+        "C18"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601378618507005.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "8ff907ef4e8d53802e9de59abd84bd80519af550e27fa0214568e5b0d083ef69",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "ImplicitMemBench: Measuring Unconscious Behavioral Adaptation in Large Language Models",
+      "kind": "benchmark",
+      "domain": "language",
+      "training": "not_applicable",
+      "math": "not_required",
+      "claim_ids": [
+        "C2",
+        "C3",
+        "C7",
+        "C8"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601385580289584.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "a34740ea67841f841be00d0ca2e0f2e28250e8453f8f9e2adb323d01d0086ab5",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+      "kind": "method",
+      "domain": "robotics",
+      "training": "trained",
+      "math": "supporting",
+      "claim_ids": [
+        "C3",
+        "C4",
+        "C9",
+        "C8"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601392968841739.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "8a3b34fdb0b9e799900af59e249088069b87943c23bfd6c9fc8c3b66343bcb95",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "Hierarchical Acoustic-Semantic Modeling: Modality Separation and Semantic Coherence for Full-Duplex SLMs",
+      "kind": "method",
+      "domain": "speech",
+      "training": "trained",
+      "math": "supporting",
+      "claim_ids": [
+        "C4",
+        "C5",
+        "C11",
+        "C12"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601400465975433.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "539129d34aab2699f6ff402afcfdb466aff88d98062fe3868c3ddc57d3337512",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "ViLL-E: Video LLM Embeddings for Retrieval",
+      "kind": "method",
+      "domain": "vision",
+      "training": "trained",
+      "math": "supporting",
+      "claim_ids": [
+        "C2",
+        "C3",
+        "C7",
+        "C8"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601408356663101.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "84b35adbb42723510f75f8e5c83d3025aa2fa29e126ba25ccb7f9397a1e6080d",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "Native and Compact Structured Latents for 3D Generation",
+      "kind": "method",
+      "domain": "general",
+      "training": "trained",
+      "math": "supporting",
+      "claim_ids": [
+        "C2",
+        "C20",
+        "C22",
+        "C6"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601416599338117.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "694759f8a1a3c72cd69ceae8a1fa27449506d8f2c41d1fe9e70d6524ec6c9f75",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "Muninn: Your Trajectory Diffusion Model But Faster",
+      "kind": "systems",
+      "domain": "robotics",
+      "training": "training_free",
+      "math": "supporting",
+      "claim_ids": [
+        "C3",
+        "C19",
+        "C5",
+        "C12"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601423650025238.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "d96090688211eb3cb9a3159751d735160fa074f9086996894043287e3eb5d8ac",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    },
+    {
+      "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "kind": "method",
+      "domain": "general",
+      "training": "trained",
+      "math": "supporting",
+      "claim_ids": [
+        "C4",
+        "C16",
+        "C25",
+        "C39"
+      ],
+      "generation": {
+        "record_path": "evaluation/1791601431723745152.json",
+        "model": "qwen-q8",
+        "prompt_sha256": "e116852aad673bc968bf81a8d4c99b6ca93f20b34b578dfa76ec33348897e792",
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "max_tokens": 1300,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        }
+      }
+    }
+  ],
+  "checks": {
+    "local_model_profiles_completed": 9,
+    "generic_fallbacks_in_actual_audit": 0,
+    "source_backed_profile_consistency": "passed",
+    "existing_scene_fallback_specifications": 134,
+    "actual_1080p_offline_native_renders": 9,
+    "python_tests_passed": 242,
+    "ruff": "passed",
+    "original_lora_vs_variants": "passed",
+    "reference_papers_do_not_classify_main_paper": "passed",
+    "no_forced_equations_without_source_equations": "passed",
+    "no_forced_new_parameter_training_for_training_free_methods": "passed",
+    "ambiguous_distribution_stability_control_keywords_do_not_force_rl_drawings": "passed",
+    "three_attempt_generic_fallback_and_recording_preemption": "passed",
+    "audit_does_not_edit_existing_projects": "passed"
+  },
+  "additional_fixture_types": [
+    "dataset",
+    "survey",
+    "empirical analysis",
+    "systems",
+    "generic/uncertain contribution"
+  ],
+  "initial_audit_issue": {
+    "problem": "The local model incorrectly labeled learned methods as training-free despite describing trained parameters in its explanation.",
+    "fix": "Ask whether any proposed parameters require optimization with a typed boolean; check against explicit primary training statements; supply additional source-backed training evidence and retry with the exact conflict."
+  },
+  "changes": [
+    "Source-led teaching profiles before planning",
+    "Type-specific proof, protocol, collection, synthesis and runtime story beats",
+    "Field-aware practitioner persona without exposing the answer key",
+    "Checked concrete diagrams before keyword fallback",
+    "Original LoRA-specific conventions excluded for variants and comparison titles"
+  ],
+  "limits": [
+    "Source profiles, outline/fallback logic and native rendering were verified; nine new full MP4s were not regenerated.",
+    "Dataset and survey coverage includes controlled fixtures, not a newly completed full film in this audit.",
+    "Viewer enjoyment and comprehension still need finished-film and human evaluation."
+  ],
+  "render_proofs": [
+    {
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "template": "signal_path",
+      "png": "evaluation/paper-generality-renders/0.png"
+    },
+    {
+      "title": "Characterizing the Expressivity of Local Attention in Transformers",
+      "template": "worked_steps",
+      "png": "evaluation/paper-generality-renders/1.png"
+    },
+    {
+      "title": "ImplicitMemBench: Measuring Unconscious Behavioral Adaptation in Large Language Models",
+      "template": "worked_steps",
+      "png": "evaluation/paper-generality-renders/2.png"
+    },
+    {
+      "title": "FlashSAC: Fast and Stable Off-Policy Reinforcement Learning for High-Dimensional Robot Control",
+      "template": "robot_control",
+      "png": "evaluation/paper-generality-renders/3.png"
+    },
+    {
+      "title": "Hierarchical Acoustic-Semantic Modeling: Modality Separation and Semantic Coherence for Full-Duplex SLMs",
+      "template": "signal_path",
+      "png": "evaluation/paper-generality-renders/4.png"
+    },
+    {
+      "title": "ViLL-E: Video LLM Embeddings for Retrieval",
+      "template": "signal_path",
+      "png": "evaluation/paper-generality-renders/5.png"
+    },
+    {
+      "title": "Native and Compact Structured Latents for 3D Generation",
+      "template": "signal_path",
+      "png": "evaluation/paper-generality-renders/6.png"
+    },
+    {
+      "title": "Muninn: Your Trajectory Diffusion Model But Faster",
+      "template": "robot_control",
+      "png": "evaluation/paper-generality-renders/7.png"
+    },
+    {
+      "title": "The Flexibility Trap: Rethinking the Value of Arbitrary Order in Diffusion Language Models",
+      "template": "signal_path",
+      "png": "evaluation/paper-generality-renders/8.png"
+    }
+  ]
+}

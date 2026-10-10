@@ -110,7 +110,9 @@ def validate(spec, project=None):
             project.get("data", {}).get("paper_title", "")
             + " "
             + " ".join(
-                c.get("claim", "") for c in project.get("data", {}).get("evidence", [])
+                c.get("claim", "")
+                for c in project.get("data", {}).get("evidence", [])
+                if c.get("topic") != "history"
             )
         )
         if not re.search(
@@ -134,15 +136,17 @@ def validate(spec, project=None):
             project.get("data", {}).get("paper_title", "")
             + " "
             + " ".join(
-                c.get("claim", "") for c in project.get("data", {}).get("evidence", [])
+                c.get("claim", "")
+                for c in project.get("data", {}).get("evidence", [])
+                if c.get("topic") != "history"
             )
         )
         pattern = {
-            "robot_control": r"robot|reinforcement|control",
-            "replay_memory": r"replay|off.policy|experience buffer",
-            "noise_trajectory": r"explor|reinforcement",
-            "distribution_return": r"reinforcement|return distribution|distributional critic",
-            "update_schedule": r"update.to.data|optimizer updates|flashsac",
+            "robot_control": r"\brobots?\b|robotic|humanoid|locomotion|manipulation|continuous.control",
+            "replay_memory": r"replay buffer|experience replay|experience buffer|replay.*transitions|off.policy",
+            "noise_trajectory": r"exploration|action noise|temporally.correlated noise",
+            "distribution_return": r"return distribution|distributional critic|predic\w*.*returns|reward.*return",
+            "update_schedule": r"update.to.data|fewer.*(?:optimizer|gradient).*updates|reduc\w*.*update frequency|flashsac",
         }[template]
         if not re.search(pattern, text, re.I):
             raise ValueError(
@@ -182,11 +186,24 @@ def relevant_original(scene, originals, *, used=()):
 
 
 def teaching_spec(scene, project=None):
+    learning = scene.get("learning", {})
+    if learning.get("example_steps"):
+        specific = {
+            "type": "example",
+            "template": "worked_steps",
+            "nodes": learning["example_steps"],
+            "caption_en": learning.get("takeaway_en", scene["focus"]),
+            "caption_ja": learning.get("takeaway_ja", scene.get("title_ja", "具体例")),
+            "question_en": learning.get("question_en", scene["focus"]),
+            "question_ja": learning.get("question_ja", "何が変わる？"),
+        }
+        try:
+            validate(specific, project)
+            return specific
+        except (ValueError, TypeError):
+            pass
     text = (scene["title"] + " " + scene["focus"]).lower()
-    if project and not re.search(
-        r"norm|gradient|stabiliz|stability|noise|explor|distribution|return prediction|coverage|replay|data reuse|on.policy|off.policy|scal|updat|capacity|efficien|paradox",
-        text,
-    ):
+    if project:
         text += (
             " "
             + " ".join(
@@ -195,7 +212,9 @@ def teaching_spec(scene, project=None):
                 if c.get("id") in scene.get("claim_ids", [])
             ).lower()
         )
-    if re.search(r"norm|gradient|stabiliz|stability", text):
+    if re.search(r"norm|gradient|stabiliz|stability", text) and re.search(
+        r"weight|feature|network", text
+    ):
         template, labels = (
             "norm_bounds",
             [
@@ -204,7 +223,7 @@ def teaching_spec(scene, project=None):
                 ("Gradient scale", "勾配の大きさ"),
             ],
         )
-    elif re.search(r"noise|explor", text):
+    elif re.search(r"exploration|action noise|temporally.correlated noise", text):
         template, labels = (
             "noise_trajectory",
             [
@@ -212,7 +231,10 @@ def teaching_spec(scene, project=None):
                 ("Persisting direction", "方向をしばらく保つ"),
             ],
         )
-    elif re.search(r"distribution|return prediction", text):
+    elif re.search(
+        r"return distribution|distributional critic|return prediction|predic\w*.*returns",
+        text,
+    ):
         template, labels = (
             "distribution_return",
             [
@@ -221,7 +243,9 @@ def teaching_spec(scene, project=None):
                 ("Expected return", "期待する収益"),
             ],
         )
-    elif re.search(r"coverage|replay|data reuse|on.policy|off.policy", text):
+    elif re.search(
+        r"replay buffer|experience replay|experience buffer|replay.*transitions", text
+    ):
         template, labels = (
             "replay_memory",
             [
@@ -230,7 +254,10 @@ def teaching_spec(scene, project=None):
                 ("Reuse a batch", "まとめて再利用"),
             ],
         )
-    elif re.search(r"scal|updat|capacity|efficien|paradox", text):
+    elif re.search(
+        r"update.to.data|fewer.*(?:optimizer|gradient).*updates|reduc\w*.*update frequency",
+        text,
+    ):
         template, labels = (
             "update_schedule",
             [
@@ -240,7 +267,7 @@ def teaching_spec(scene, project=None):
             ],
         )
     elif re.search(
-        r"robot|reinforcement|control",
+        r"\brobots?\b|robotic|humanoid|locomotion|manipulation|continuous.control",
         text + " " + (project or {}).get("data", {}).get("paper_title", "").lower(),
     ):
         template, labels = (
@@ -252,6 +279,18 @@ def teaching_spec(scene, project=None):
             ],
         )
     else:
+        profile = (project or {}).get("data", {}).get("research_profile", {})
+        if profile.get("kind") in {"theory", "survey", "dataset"}:
+            return {
+                "type": "comparison",
+                "nodes": [
+                    {"en": "Question", "ja": "問い"},
+                    {"en": "Source evidence", "ja": "出典の根拠"},
+                    {"en": "Scope and limits", "ja": "適用範囲と限界"},
+                ],
+                "caption_en": scene["focus"],
+                "caption_ja": scene.get("title_ja", "論文の根拠と適用範囲"),
+            }
         template, labels = (
             "signal_path",
             [

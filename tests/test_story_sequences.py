@@ -214,6 +214,7 @@ def test_preview_audio_is_prepared_before_the_unwritten_rest(database, monkeypat
 
 def test_empirical_deep_dive_does_not_invent_matrix_factorization(database):
     p = project()
+    p["data"]["research_profile"] = {"kind": "benchmark", "training": "not_applicable", "math": "not_required"}
     beats = story.story_beats(p, "deep_dive")
     assert any("behavioral test protocol" in b for b in beats)
     assert not any("rank hypothesis" in b for b in beats)

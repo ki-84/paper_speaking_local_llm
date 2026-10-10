@@ -914,6 +914,7 @@ def step(job, runtime):
                     else project["data"]["modes"][mode]["scenes"][index - 1]
                     .get("learning", {})
                     .get("question_en"),
+                    field=project["data"].get("research_profile"),
                 ),
             )
             if result is not None:

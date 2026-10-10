@@ -22,6 +22,7 @@ from . import (
     db,
     lessons,
     math_concepts,
+    paper_profile,
     papers,
     publication,
     story_direction,
@@ -43,7 +44,7 @@ from .runtime import GPUUnavailable, PracticePreempted
 
 log = logging.getLogger(__name__)
 FORMAT = "paper-story-1"
-VERSION = "youtube-storyboard-6-audience-rehearsal"
+VERSION = "youtube-storyboard-7-paper-types"
 SOURCE_REVIEW_VERSION = "bounded-local-repair-3"
 EDITORIAL_REVIEW_VERSION = "content-first-editorial-3"
 NOVICE_REVIEW_VERSION = "beginner-rehearsal-3-blind"
@@ -143,8 +144,11 @@ SYSTEM = (
 
 
 def is_lora(project):
-    # "Exploration" is a common robotics title, not the LoRA method.
-    return bool(re.search(r"\bLoRA\b", project["data"]["paper_title"], re.I))
+    # Mentioning LoRA in a comparison/variant does not authorize the original
+    # paper's fixed rank, scaling or worked-example conventions.
+    title = re.sub(r"\s+", " ", project["data"]["paper_title"]).strip()
+    return title.casefold() == "lora" or bool(re.fullmatch(
+        r"LoRA\s*:\s*Low[- ]Rank Adaptation of Large Language Models[.\s]*", title, re.I))
 
 
 def award_context_prompt(project):
@@ -164,25 +168,26 @@ def award_context_prompt(project):
 
 def story_beats(project, mode):
     if project["data"].get("direction_policy"):
+        central, construction, evidence = paper_profile.focus_beats(project)
         if mode == "overview":
             return [
                 "Briefly name today's paper, then immediately reenact one concrete task with a visible input and a surprising possible answer. Let the viewer predict what happens. Explain the first unfamiliar term through this task, not a definition dump or results table.",
                 "Show why the usual approach is awkward using the SAME task. Explain one necessary distinction and the relevant earlier attempts; retain learned knowledge versus disposable data, or stored information versus performing a rule, as appropriate to the source.",
-                "Reveal the paper's idea by changing one visible part of that example. Name the operation and causally explain how the expected answer changes.",
+                "Reveal the actual contribution: a changed operation, a formal distinction, a new resource or a useful taxonomy, as appropriate. Contrast it in the running example; do not invent a new algorithm for a dataset or survey.",
                 "Run the example from input through the steps to its outcome. Aiden makes one understandable prediction, Maya corrects it with the picture. Mark invented values/answers as illustrative rather than measured results.",
-                "Read one representative original experiment after explaining the task, metric and comparison. Explain tested conditions and what the outcome can and cannot establish. It is an observed result, not a universal ceiling or guarantee.",
+                evidence,
                 "Answer the opening question, give the practical takeaway and one limitation. Revisit the actual opening joke and finish warmly. "
                 + CLOSING_BRIEF,
             ]
         return [
             "Briefly orient a viewer who did not watch the overview. Start from the same concrete task with a new question about how it works; use a short recap, then move into the actual mechanism rather than repeating history or reading a leaderboard.",
             "Explain the actual inputs, outputs and assumptions using the example. Define symbols or task terms only when they are needed and attach them to visible objects.",
-            "Walk through the central mathematical relation OR behavioral test protocol in concrete steps. If mathematical, explain every quantity before its source equation. If empirical, show learning/exposure, interference and the first test answer without inventing unnecessary equations.",
+            central,
             "Work a small controlled example from beginning to end. Draw each intermediate value or decision, let Aiden predict the result and correct the specific mistake.",
-            "Explain how the method is learned or how the experiment is constructed. Distinguish data, learned parameters, context, memory, and any controlled variables relevant to this paper.",
-            "Explain how the method is actually used or how answers are scored. Show expected versus illustrative mistaken answers. Distinguish a simplified teaching model from the paper's actual implementation/objective.",
+            construction,
+            "Explain actual use, scoring or interpretation appropriate to this contribution. Show a source-backed example and a plausible mistaken interpretation; separate a teaching adaptation from the actual proposal.",
             "Explain one cost, scaling result, sensitivity test or evaluation-design tradeoff grounded in the source. Do not invent a formal scaling law for an empirical benchmark.",
-            "Read one original controlled result: dataset/task, tested systems, metric and comparison. Show a readable panel with axes and legend; do not present every benchmark as a shopping list.",
+            evidence,
             "Explain one ablation, subgroup, failure case or theoretical result and the conditions under which its explanation applies. Follow the example rather than swapping among unrelated metaphors.",
             "Resolve the technical question, revisit the concrete example, and state the limits of the evidence. Aiden explains the idea in his own words, then close with the actual opening callback and goodbye. "
             + CLOSING_BRIEF,
@@ -241,6 +246,7 @@ def create(paper_id, *, profile=None, modes=None):
                 "picture_policy": story_pictures.VERSION,
                 "direction_policy": story_direction.VERSION,
                 "audience_policy": audience.VERSION,
+                "profile_policy": paper_profile.VERSION,
                 "scope_review_policy": "experiment-scope-1",
                 "math_concept_policy": math_concepts.VERSION,
             }
@@ -1250,6 +1256,7 @@ def _sequence_script_prompt(project, mode, scene, index):
         + story_direction.BRIEF
         + story_direction.SCOPE_BRIEF
         + (audience.BRIEF if project["data"].get("audience_policy") else "")
+        + paper_profile.brief(project)
         + "Maya (guide) explains; Aiden (host) predicts, questions and sometimes makes a plausible mistake. Correct that exact mistake, with light wit tied to the visible task. "
         "Use natural, varied conversational English. No empty agreement or unrelated metaphors. Do not merely recite the source notes. "
         "Each paragraph is at most 135 words for local speech synthesis. Use meaningful exchanges, with no fixed total duration. "
@@ -2566,6 +2573,8 @@ def validate_hooks(result):
 
 def _plan_step(project, runtime):
     data = project["data"]
+    if data.get("profile_policy") and not paper_profile.prepare(project, runtime):
+        return
     overview = data["modes"].get("overview")
     if (
         data.get("direction_policy")
@@ -2591,6 +2600,8 @@ def _plan_step(project, runtime):
             + VISUAL_DIRECTION_BRIEF
             + story_pictures.BRIEF
             + (audience.BRIEF if data.get("audience_policy") else "")
+            + paper_profile.brief(project)
+            + ("Deep-dive focus: " + paper_profile.deep_focus(project) + ". " if mode == "deep_dive" else "")
             + "Give each scene a concrete visual question: what does the viewer see change, compare, or connect? "
             "Advance that question across scenes, rather than changing a title over the same background. Reuse a figure when reading another verified panel, not to illustrate a different mechanism. "
             + "This is not a chapter course or a list of paper sections. Make a central question and a recurring analogy carry the story. "
@@ -2729,8 +2740,9 @@ def _plan_step(project, runtime):
             + "Promise a concrete insight, not a lecture or a chapter course. Titles and hooks must have NO numerical performance promises and NO magic, universal guarantees or exaggerated superiority. "
             "Use an everyday dilemma, witty question or surprising contrast. The hook describes an actual exchange that Maya and Aiden can speak, not a stage direction needing a real actor to hold props. "
             "Tie the opening question and everyday analogy to this paper's actual problem and mechanism. Avoid scientific guarantees beyond the supplied experiments. "
-            "Keep Japanese titles under 65 characters; mention English learning or bilingual captions naturally. Deep dive titles should invite viewers to understand the mathematics. "
-            'Return {"hook_candidates":[{"title_ja":"...","title_en":"...","hook":"specific opening exchange","thumbnail_ja":"under 22 Japanese characters"}],"selected_hook":0}.\n'
+            "Keep Japanese titles under 65 characters; mention English learning or bilingual captions naturally. Deep dive titles should invite viewers to understand the paper's actual principle or protocol; mathematical promises apply only when relevant. "
+            + paper_profile.brief(project)
+            + 'Return {"hook_candidates":[{"title_ja":"...","title_en":"...","hook":"specific opening exchange","thumbnail_ja":"under 22 Japanese characters"}],"selected_hook":0}.\n'
             + "MODE: "
             + mode
             + "\nQUESTION: "
@@ -2772,8 +2784,9 @@ def _plan_step(project, runtime):
             + "Check that each scene adds a distinct insight, examples answer real questions, and transitions build curiosity. Remove duplicated explanation from the plan and preserve space for the necessary reasoning. "
             "Correct misleading claims, including parameter savings vs training-data savings, checkpoint size vs training-memory size, keeping the base model vs running a giant model on a laptop, empirical results vs universal guarantees. "
             "Preserve the interesting hook approaches. Do not introduce numerical performance promises, magic or exaggerated claims into titles. "
-            "Overview: no equations; use historical predecessors and one concrete analogy. Deep dive: retain mathematical scenes. "
-            'Return {"central_question":"...","recurring_analogy":"...","hook_candidates":[{"title_ja":"...","title_en":"...","hook":"...","thumbnail_ja":"..."}],"selected_hook":0,"scenes":[{"title":"...","title_ja":"...","focus":"...","claim_ids":["C1"],"visual_type":"..."}]}.\n'
+            "Overview: no equations; use sourced background and one concrete analogy. Deep dive: preserve the paper's actual formalism or protocol; do not force equations, training, interference or new experiments. "
+            + paper_profile.brief(project)
+            + 'Return {"central_question":"...","recurring_analogy":"...","hook_candidates":[{"title_ja":"...","title_en":"...","hook":"...","thumbnail_ja":"..."}],"selected_hook":0,"scenes":[{"title":"...","title_ja":"...","focus":"...","claim_ids":["C1"],"visual_type":"..."}]}.\n'
             + "MANDATORY ORDERED BEATS: "
             + json.dumps(story_beats(project, mode))
             + "\nOUTLINE: "
@@ -2892,18 +2905,56 @@ def _fallback_plan(project, mode):
         names = [
             ("Intuition first", "まず直感から"),
             ("Notation and building blocks", "記号と基本となる考え方"),
-            ("The central formal principle", "中心となる式と原理"),
+            ("The central principle or protocol", "中心となる原理と手順"),
             ("A worked example", "計算例"),
-            ("Learning and construction", "学習と構成の手順"),
-            ("Following the inference", "実行の流れを追う"),
-            ("Costs and implications", "費用と式からわかること"),
+            ("Construction and choices", "構成と選択"),
+            ("Use and interpretation", "使い方と解釈"),
+            ("Cost and scope", "費用と適用範囲"),
             ("Controlled comparisons", "条件をそろえた比較"),
-            ("Assumptions and ablations", "仮定と要素ごとの検証"),
+            ("Assumptions and failure cases", "仮定と失敗例"),
             ("What the method cannot promise", "保証できないこと"),
         ]
+        profile = project["data"].get("research_profile", {})
+        tailored = {
+            "theory": {
+                2: ("Statement and assumptions", "主張と仮定"),
+                4: ("Following the proof", "証明の流れ"),
+                5: ("Witnesses and counterexamples", "具体例と反例"),
+                7: ("Scope of the formal result", "理論の適用範囲"),
+            },
+            "dataset": {
+                2: ("A sample and its labels", "データ例とラベル"),
+                4: ("Collection and annotation", "収集と注釈"),
+                5: ("Reading the dataset", "データの読み方"),
+                7: ("Quality evidence", "品質の裏付け"),
+            },
+            "survey": {
+                2: ("The taxonomy", "分類の見方"),
+                4: ("Literature selection", "文献の選び方"),
+                5: ("Comparing approaches", "手法を比較する"),
+                7: ("What the cited studies establish", "引用研究からわかること"),
+            },
+            "benchmark": {
+                2: ("The test protocol", "試験の手順"),
+                4: ("Controls and task construction", "条件と課題の作り方"),
+                5: ("Scoring and exclusions", "採点と除外条件"),
+            },
+            "analysis": {
+                2: ("The competing hypotheses", "比較する仮説"),
+                4: ("Experimental controls", "実験でそろえる条件"),
+                5: ("Interpreting measurements", "測定の解釈"),
+            },
+        }.get(profile.get("kind"), {})
+        if profile.get("training") == "training_free":
+            tailored = tailored | {
+                4: ("Preparation and reusable state", "準備と再利用する情報"),
+                5: ("Runtime decisions", "実行時の判断"),
+            }
+        for index, name in tailored.items():
+            names[index] = name
     scenes = []
     topics = (
-        ["result", "history", "mechanism", "mechanism", "result", "limitation"]
+        ["background", "history", "mechanism", "mechanism", "result", "limitation"]
         if mode == "overview"
         else [
             "mechanism",
@@ -2929,13 +2980,17 @@ def _fallback_plan(project, mode):
                 "focus": "Understand " + en.lower(),
                 "claim_ids": [c["id"] for c in selected],
                 "visual_type": "equation"
-                if mode == "deep_dive" and i in {1, 2, 3}
+                if mode == "deep_dive"
+                and i in {1, 2, 3}
+                and any(c.get("topic") == "equation" for c in selected)
+                and project["data"].get("research_profile", {}).get("kind")
+                not in {"survey", "dataset", "benchmark"}
                 else "flow",
             }
         )
     return {
         "central_question": "What problem does this paper address, and why does its idea help?",
-        "recurring_analogy": "a small renovation",
+        "recurring_analogy": "the same concrete example from the supplied sources",
         "hook_candidates": fallback_hooks(project, mode),
         "selected_hook": 0,
         "scenes": scenes,

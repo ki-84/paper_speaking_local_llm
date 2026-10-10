@@ -6,28 +6,19 @@ import fcntl
 import json
 import os
 import signal
-import socket
 import sqlite3
 import subprocess
 import tarfile
 import time
 from pathlib import Path
 
-from paperspeak import config, db, youtube
+from paperspeak import config, db, lan, youtube
 from paperspeak.api import credentials, password_required
 from paperspeak.runtime import owned_command
 
 
 def host():
-    configured = os.environ.get("PAPERSPEAK_LAN_HOST")
-    if configured:
-        return configured
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        try:
-            s.connect(("1.1.1.1", 80))
-            return s.getsockname()[0]
-        except OSError:
-            return "localhost"
+    return lan.host()
 
 
 def process_alive(path, marker):
@@ -58,19 +49,7 @@ def serve():
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     addr = host()
-    hosts = f"https://{addr}:8443"
-    if addr != "localhost":
-        hosts += ", https://localhost:8443"
-    caddyfile = config.DATA / "Caddyfile"
-    caddyfile.write_text(
-        "{\n admin off\n auto_https disable_redirects\n skip_install_trust\n storage file_system {\n root "
-        + str(config.DATA / "tls")
-        + "\n }\n}\n"
-        + hosts
-        + " {\n tls internal\n encode zstd gzip\n reverse_proxy 127.0.0.1:"
-        + str(config.API_PORT)
-        + " {\n flush_interval -1\n }\n}\n"
-    )
+    caddyfile = lan.write_caddyfile(addr)
     specs = [
         (
             "api",
@@ -123,12 +102,24 @@ def serve():
             )
             children.append((name, proc))
         print(f"PaperSpeak is opening at https://{addr}:8443", flush=True)
+        network_checked = time.monotonic()
         while not stopped:
             for name, proc in children:
                 if proc.poll() is not None:
                     raise RuntimeError(
                         f"{name} stopped with code {proc.returncode}; see data/logs/{name}.log"
                     )
+            if time.monotonic() - network_checked >= 10:
+                for name, proc in children:
+                    if name == "caddy":
+                        updated = lan.refresh_caddy(proc, addr)
+                        if updated != addr:
+                            print(
+                                f"PaperSpeak LAN is ready at https://{updated}:8443",
+                                flush=True,
+                            )
+                            addr = updated
+                network_checked = time.monotonic()
             time.sleep(1)
     finally:
         for _, proc in children:

@@ -72,6 +72,30 @@ def test_restart_restores_fresh_dead_owner_without_waiting_or_losing_checkpoint(
     assert db.claim("new-worker")["id"] == voice
 
 
+def test_graceful_restart_does_not_keep_a_shutdown_message_while_resuming(database):
+    jid = db.enqueue("video_project", "saved-film")
+    db.patch_job(
+        jid,
+        state="queued",
+        stage="Saving the checkpoint for service restart.",
+        checkpoint={"scene": 3},
+        progress=0.4,
+        available=time.time() - 1,
+    )
+    waiting = db.enqueue("video_review", "not-yet-ready")
+    db.patch_job(waiting, stage="2本の動画の完成を待っています")
+    pipeline_health.recover_interrupted("new-worker")
+    claimed = db.claim("new-worker")
+    assert claimed["id"] == jid
+    assert claimed["stage"] == "Resuming after worker restart"
+    assert claimed["checkpoint"] == {"scene": 3}
+    assert claimed["progress"] == 0.4
+    assert (
+        db.one("SELECT stage FROM jobs WHERE id=?", (waiting,))["stage"]
+        == "2本の動画の完成を待っています"
+    )
+
+
 @pytest.mark.parametrize("interrupted_state", ["running", "queued"])
 def test_restart_preserves_stop_intent_if_crash_interrupts_cascade(
     database, interrupted_state

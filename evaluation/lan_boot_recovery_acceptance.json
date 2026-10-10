@@ -1,0 +1,33 @@
+{
+  "recorded_at": 1791635953.169709,
+  "issue": "LAN HTTPS configured as localhost when the service starts before network readiness",
+  "fix": [
+    "Remember last detected IPv4 address across boot",
+    "Detect active LAN without an external default route",
+    "Recheck every 10 seconds and reload only Caddy on address change",
+    "Preserve local generation checkpoints and explicit user stops",
+    "Replace graceful shutdown status with restart/resume status without losing checkpoints"
+  ],
+  "tests": {
+    "suite": "tests/test_lan.py tests/test_pipeline_health.py tests/test_practice_priority.py",
+    "passed": 32,
+    "ruff": "passed"
+  },
+  "live_verification": {
+    "lan_tls_trusted_ca": true,
+    "https_health_status": 200,
+    "graceful_caddy_reload_kept_worker": true,
+    "service_deployed": true,
+    "preserved_asset_sha256_count": 46,
+    "preserved_stopped_lesson_jobs": 3,
+    "same_generation_job_no_duplicate": true,
+    "project": "RoboJEPA: Scaling Robotic Latent World Models",
+    "job_state": "running",
+    "generation_error": null,
+    "generation_stage": "解説編 · 保存済みの工程から作成を再開しています"
+  },
+  "limits": [
+    "The MP4s are still being generated.",
+    "Network recovery does not prevent the Linux host itself from rebooting."
+  ]
+}

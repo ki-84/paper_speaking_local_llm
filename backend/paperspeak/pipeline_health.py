@@ -36,7 +36,11 @@ def recover_interrupted(owner):
             state = stopped_state(conn, row["kind"], row["target"])
             if json.loads(row["checkpoint"]).get("superseded"):
                 state = "cancelled"
-            if state is None and row["state"] == "queued":
+            if (
+                state is None
+                and row["state"] == "queued"
+                and row["stage"] != "Saving the checkpoint for service restart."
+            ):
                 continue
             state = state or "queued"
             conn.execute(
